@@ -184,7 +184,7 @@ class NifImport(NifCommon):
                 return self.bhkhelper.import_bhk_shape(n_node.collision_object.body)
             elif isinstance(n_node.collision_object, NifClasses.NiCollisionData):
                 return self.boundhelper.import_bounding_volume(n_node.collision_object.bounding_volume)
-        return []
+        return None
 
     def import_branch(self, n_block, b_armature=None):
         """Read the content of the current NIF tree branch to Blender recursively.
@@ -237,7 +237,9 @@ class NifImport(NifCommon):
 
             # import collision objects & bounding box
             if NifOp.props.process != "SKELETON_ONLY":
-                b_children.extend(self.import_collision(n_block))
+                collision_obj = self.import_collision(n_block)
+                if collision_obj:
+                    b_children.append(collision_obj)
                 b_children.extend(self.boundhelper.import_bounding_box(n_block))
 
             # set bind pose for children

@@ -1,13 +1,8 @@
-"""This script contains classes to export collision objects."""
-import bpy
-from io_scene_niftools import NifLog
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from nifgen.formats.nif import classes as NifClasses
-
+"""This script contains classes to help import bhk animations."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2012, NIF File Format Library and Tools contributors.
+# Copyright © 2019, NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -42,31 +37,25 @@ from nifgen.formats.nif import classes as NifClasses
 #
 # ***** END LICENSE BLOCK *****
 
+from io_scene_niftools.modules.nif_export.block_registry import block_store
+from io_scene_niftools.utils import consts
 
-class Collision:
 
-    @staticmethod
-    def calculate_largest_value(box_extends):
-        return ((box_extends[0][1] - box_extends[0][0]) * 0.5,
-                (box_extends[1][1] - box_extends[1][0]) * 0.5,
-                (box_extends[2][1] - box_extends[2][0]) * 0.5)
+class HavokAnimation():
 
-    @staticmethod
-    def calculate_box_extents(b_obj):
-        # calculate bounding box extents
-        b_vertlist = [vert.co for vert in b_obj.data.vertices]
-        minx = min([b_vert[0] for b_vert in b_vertlist])
-        maxx = max([b_vert[0] for b_vert in b_vertlist])
-        maxy = max([b_vert[1] for b_vert in b_vertlist])
-        miny = min([b_vert[1] for b_vert in b_vertlist])
-        minz = min([b_vert[2] for b_vert in b_vertlist])
-        maxz = max([b_vert[2] for b_vert in b_vertlist])
-        return [[minx, maxx], [miny, maxy], [minz, maxz]]
+    def export_bhk_blend_collision(self, b_obj):
+        n_col_obj = block_store.create_block("bhkBlendCollisionObject", b_obj)
+        n_col_obj.unknown_float_1 = 1.0
+        n_col_obj.unknown_float_2 = 1.0
+        return n_col_obj
 
-    @staticmethod
-    def update_rigid_body(b_col_obj, n_bhk_rigid_body):
-        if bpy.context.scene.niftools_scene.is_bs():
-            # Update rigid body center of mass and inertia
-            # Mass value should be set manually as it is not necessarily physically accurate
-            NifLog.warn("shit is happening!!")
-            n_bhk_rigid_body.update_mass_center_inertia(mass=n_bhk_rigid_body.rigid_body_info.mass, solid=True)
+    # TODO [collision][animation] Move out to an physic animation class.
+    def export_bhk_blend_controller(self, b_obj, parent_block):
+        # also add a controller for it
+        n_blend_ctrl = block_store.create_block("bhkBlendController", b_obj)
+        n_blend_ctrl.flags = 12
+        n_blend_ctrl.frequency = 1.0
+        n_blend_ctrl.phase = 0.0
+        n_blend_ctrl.start_time = consts.FLOAT_MAX
+        n_blend_ctrl.stop_time = consts.FLOAT_MIN
+        parent_block.add_controller(n_blend_ctrl)

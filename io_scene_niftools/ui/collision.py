@@ -62,15 +62,20 @@ class CollisionBoundsPanel(Panel):
         col_setting = context.active_object.nifcollision
 
         box = layout.box()
-        box.prop(col_setting, "col_filter", text='Col Filter')  # col filter prop
-        box.prop(col_setting, "mass", text='Mass')  # mass prop
-        box.prop(col_setting, "deactivator_type", text='Deactivator Type')  # motion deactivation prop
-        box.prop(col_setting, "solver_deactivation", text='Solver Deactivator')  # motion deactivation prop
-        box.prop(col_setting, "quality_type", text='Quality Type')  # quality type prop
         box.prop(col_setting, "collision_layer", text='Collision Layer')  # collision layer prop
+        box.prop(col_setting, "col_filter", text='Col Filter')  # col filter prop
+        box.prop(col_setting, "inertia_tensor", text='Inertia Tensor')  # inertia tensor prop
+        box.prop(col_setting, "center", text='Center')  # center prop
+        box.prop(col_setting, "mass", text='Mass')  # mass prop
         box.prop(col_setting, "max_linear_velocity", text='Max Linear Velocity')  # max velocity prop
         box.prop(col_setting, "max_angular_velocity", text='Max Angular Velocity')  # max angular velocity prop
+        box.prop(col_setting, "penetration_depth", text='Penetration Depth')  # penetration depth prop
         box.prop(col_setting, "motion_system", text='Motion System')  # motion system prop
+        box.prop(col_setting, "deactivator_type", text='Deactivator Type')  # deactivator typ prop
+        box.prop(col_setting, "solver_deactivation", text='Solver Deactivator')  # motion deactivation prop
+        box.prop(col_setting, "quality_type", text='Quality Type')  # quality type prop
+        box.prop(col_setting, "body_flags", text='React to Wind')  # body flags prop
+        box.prop(col_setting, "use_blender_properties", text='Use Blender Properties')  # use blender properties prop
 
 
 classes = [

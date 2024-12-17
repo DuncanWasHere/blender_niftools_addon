@@ -38,6 +38,7 @@
 # ***** END LICENSE BLOCK *****
 import bpy
 import mathutils
+from io_scene_niftools.modules.nif_export.collision.animation import HavokAnimation
 
 from nifgen.formats.nif import classes as NifClasses
 
@@ -50,33 +51,34 @@ from io_scene_niftools.utils.logging import NifLog
 
 
 class BhkCollision(Collision):
-    # TODO: Refactor collision code to get rid of hard-coded/redundant settings
-
-    IGNORE_BLENDER_PHYSICS = True
-    EXPORT_BHKLISTSHAPE = True
-    EXPORT_OB_MASS = 1.0
-    EXPORT_OB_SOLID = True
 
     def __init__(self):
         # To be filled during the export process:
         self.HAVOK_SCALE = None
 
-    def export_collision_helper(self, b_obj, parent_block):
+    def export_collision_helper(self, b_col_obj, n_parent_node):
         """Helper function to add collision objects to a node. This function
         exports the rigid body, and calls the appropriate function to export
         the collision geometry in the desired format.
 
-        @param b_obj: The object to export as collision.
-        @param parent_block: The NiNode parent of the collision.
+        @param b_col_obj: The object to export as collision.
+        @param n_parent_node: The NiNode parent of the collision.
         """
 
-        rigid_body = b_obj.rigid_body
+        rigid_body = b_col_obj.rigid_body
         if not rigid_body:
-            NifLog.warn(f"'{b_obj.name}' has no rigid body, skipping rigid body export")
+            NifLog.warn(f"'{b_col_obj.name}' has no rigid body, skipping rigid body export")
             return
 
         # Is it packed?
         coll_ispacked = (rigid_body.collision_shape == 'MESH')
+
+        # Is it a list?
+        coll_islist = (rigid_body.collision_shape == 'COMPOUND')
+
+        # Only use bhkRigidBodyT if there are transforms on a box or sphere shape
+        add_rigid_body_t = not b_col_obj.matrix_world.is_identity and (b_col_obj.rigid_body.collision_shape == 'BOX' or b_col_obj.rigid_body.collision_shape == 'SPHERE')
+
 
         # Set Havok Scale ratio
         self.HAVOK_SCALE = NifData.data.havok_scale
@@ -85,8 +87,8 @@ class BhkCollision(Collision):
         # Get Havok material type from the material of the first material in the object
         hav_mat_type = type(NifClasses.HavokMaterial(NifData.data).material)
         n_havok_mat_list = []
-        if b_obj.data.materials:
-            for mat in b_obj.data.materials:
+        if b_col_obj.data.materials:
+            for mat in b_col_obj.data.materials:
                 try:
                     n_havok_mat_list.append(hav_mat_type[mat.name])
                 except KeyError:
@@ -101,103 +103,96 @@ class BhkCollision(Collision):
         else:
             n_havok_material = n_havok_mat_list[0]
 
+        layer = int(b_col_obj.nifcollision.collision_layer)
 
-        # linear_velocity = b_obj.rigid_body.deactivate_linear_velocity
-        # angular_velocity = b_obj.rigid_body.deactivate_angular_velocity
-        layer = int(b_obj.nifcollision.collision_layer)
-
-        # TODO [object][collision][flags] export bsxFlags
-        # self.export_bsx_upb_flags(b_obj, parent_block)
-
-        # Only use bhkRigidBodyT if there are transforms on a box or sphere shape
-        add_rigid_body_t = not b_obj.matrix_world.is_identity and (b_obj.rigid_body.collision_shape == 'BOX' or b_obj.rigid_body.collision_shape == 'SPHERE')
+        #self.export_bsx_upb_flags(b_col_obj, n_parent_node)
 
         # If no collisions have been exported yet to this parent_block
         # then create new collision tree on parent_block
         # bhkCollisionObject -> bhkRigidBody
-        if not parent_block.collision_object:
+        if not n_parent_node.collision_object:
             # Note: collision settings are taken from lowerclasschair01.nif
             if layer == NifClasses.OblivionLayer.OL_BIPED:
                 # Special collision object for creatures
-                n_col_obj = self.export_bhk_blend_collision(b_obj)
+                n_col_obj = HavokAnimation.export_bhk_blend_collision(b_col_obj)
 
                 # TODO [collsion][animation] add detection for this
-                self.export_bhk_blend_controller(b_obj, parent_block)
+                HavokAnimation.export_bhk_blend_controller(b_col_obj, n_parent_node)
             else:
                 # Usual collision object
-                n_col_obj = self.export_bhk_collison_object(b_obj)
+                n_col_obj = self.export_bhk_collison_object(b_col_obj)
 
-            parent_block.collision_object = n_col_obj
-            n_col_obj.target = parent_block
+            n_parent_node.collision_object = n_col_obj
+            n_col_obj.target = n_parent_node
 
 
-            n_bhkrigidbody = self.export_bhk_rigid_body(b_obj, n_col_obj, add_rigid_body_t)
+            n_bhkrigidbody = self.export_bhk_rigid_body(b_col_obj, n_col_obj, add_rigid_body_t)
 
             # we will use n_col_body to attach shapes to below
             n_col_body = n_bhkrigidbody
 
         else:
-            n_col_body = parent_block.collision_object.body
+            n_col_body = n_parent_node.collision_object.body
             # Fix total mass
-            n_col_body.rigid_body_info.mass += rigid_body.mass
 
         if coll_ispacked:
-            self.export_collision_packed(b_obj, n_col_body, layer, n_havok_material)
+            self.export_collision_packed(b_col_obj, n_col_body, layer, n_havok_material)
         else:
-            if b_obj.rigid_body.collision_shape == 'COMPOUND':
-                self.export_collision_list(b_obj, n_col_body, layer, n_havok_material)
+            if b_col_obj.rigid_body.collision_shape == 'COMPOUND':
+                self.export_collision_list(b_col_obj, n_col_body, layer, n_havok_material)
             else:
-                self.export_collision_single(b_obj, n_col_body, layer, n_havok_material)
+                self.export_collision_single(b_col_obj, n_col_body, layer, n_havok_material)
 
-    def export_bhk_rigid_body(self, b_obj, n_col_obj, add_rigid_body_t):
+        if b_col_obj.nifcollision.use_blender_properties:
+            Collision.update_rigid_body(b_col_obj, n_col_body)
+
+    def export_bhk_rigid_body(self, b_col_obj, n_bhk_collision_object, add_rigid_body_t):
 
         if add_rigid_body_t:
-            n_r_body = block_store.create_block("bhkRigidBodyT", b_obj)
-            translation = b_obj.matrix_world.to_translation()
-            n_r_body.rigid_body_info.translation = NifClasses.Vector4.from_value([translation.x, translation.y, translation.z, 0.0])
-            rotation = b_obj.matrix_world.to_quaternion()
-            n_r_body.rigid_body_info.rotation.x = rotation.x
-            n_r_body.rigid_body_info.rotation.y = rotation.y
-            n_r_body.rigid_body_info.rotation.z = rotation.z
-            n_r_body.rigid_body_info.rotation.w = rotation.w
-            n_r_body.apply_scale(1 / self.HAVOK_SCALE)
+            n_bhk_rigid_body = block_store.create_block("bhkRigidBodyT", b_col_obj)
+            translation = b_col_obj.matrix_world.to_translation()
+            n_bhk_rigid_body.rigid_body_info.translation = NifClasses.Vector4.from_value([translation.x, translation.y, translation.z, 0.0])
+            rotation = b_col_obj.matrix_world.to_quaternion()
+            n_bhk_rigid_body.rigid_body_info.rotation.x = rotation.x
+            n_bhk_rigid_body.rigid_body_info.rotation.y = rotation.y
+            n_bhk_rigid_body.rigid_body_info.rotation.z = rotation.z
+            n_bhk_rigid_body.rigid_body_info.rotation.w = rotation.w
+            n_bhk_rigid_body.apply_scale(1 / self.HAVOK_SCALE)
         else:
-            n_r_body = block_store.create_block("bhkRigidBody", b_obj)
-        n_col_obj.body = n_r_body
+            n_bhk_rigid_body = block_store.create_block("bhkRigidBody", b_col_obj)
+        n_bhk_collision_object.body = n_bhk_rigid_body
 
-        n_r_body.havok_filter.layer = int(b_obj.nifcollision.collision_layer)
-        n_r_body.havok_filter.flags = b_obj.nifcollision.col_filter
+        b_r_body = b_col_obj.rigid_body # Blender rigid body object
+        n_r_info = n_bhk_rigid_body.rigid_body_info # bhkRigidBody Block
+
+        n_bhk_rigid_body.havok_filter.layer = int(b_col_obj.nifcollision.collision_layer)
+        n_bhk_rigid_body.havok_filter.flags = b_col_obj.nifcollision.col_filter
         # n_r_body.havok_filter.group = 0
 
-        n_r_body.entity_info.collision_response = 1
-        n_r_body.rigid_body_info.collision_response = 1
+        n_bhk_rigid_body.entity_info.collision_response = 1
+        n_r_info.collision_response = 1
 
-        n_r_body.rigid_body_info.havok_filter = n_r_body.havok_filter
+        n_r_info.havok_filter = n_bhk_rigid_body.havok_filter
 
-        b_r_body = b_obj.rigid_body
-        # mass is 1.0 at the moment (unless property was set on import or by the user)
-        # will be fixed in update_rigid_bodies()
-        n_r_info = n_r_body.rigid_body_info
-        # TODO [format] update response type and callback delay (if relevant)
-        # n_r_info.collision_response = ?
-        # n_r_info.process_contact_callback_delay = ?
-        n_r_info.mass = b_r_body.mass
+        n_r_info.inertia_tensor.m_11, n_r_info.inertia_tensor.m_22, n_r_info.inertia_tensor.m_33 = b_col_obj.nifcollision.inertia_tensor
+        n_r_info.center.x, n_r_info.center.y, n_r_info.center.z = b_col_obj.nifcollision.center
+        n_r_info.mass = b_col_obj.nifcollision.mass
         n_r_info.linear_damping = b_r_body.linear_damping
         n_r_info.angular_damping = b_r_body.angular_damping
-        # n_r_body.linear_velocity = linear_velocity
-        # n_r_body.angular_velocity = angular_velocity
         n_r_info.friction = b_r_body.friction
         n_r_info.restitution = b_r_body.restitution
-        n_r_info.max_linear_velocity = b_obj.nifcollision.max_linear_velocity
-        n_r_info.max_angular_velocity = b_obj.nifcollision.max_angular_velocity
-        n_r_info.penetration_depth = b_obj.nifcollision.penetration_depth
-        n_r_info.motion_system = NifClasses.HkMotionType[b_obj.nifcollision.motion_system]
-        n_r_info.deactivator_type = NifClasses.HkDeactivatorType[b_obj.nifcollision.deactivator_type]
-        n_r_info.solver_deactivation = NifClasses.HkSolverDeactivation[b_obj.nifcollision.solver_deactivation]
-        n_r_info.quality_type = NifClasses.HkQualityType[b_obj.nifcollision.quality_type]
-        self.update_rigid_bodies()
-        # TODO [collision] update the body flags to respond/not respond to wind
-        return n_r_body
+        n_r_info.max_linear_velocity = b_col_obj.nifcollision.max_linear_velocity
+        n_r_info.max_angular_velocity = b_col_obj.nifcollision.max_angular_velocity
+        n_r_info.penetration_depth = b_col_obj.nifcollision.penetration_depth
+
+        n_r_info.motion_system = NifClasses.HkMotionType[b_col_obj.nifcollision.motion_system]
+        n_r_info.deactivator_type = NifClasses.HkDeactivatorType[b_col_obj.nifcollision.deactivator_type]
+        n_r_info.solver_deactivation = NifClasses.HkSolverDeactivation[b_col_obj.nifcollision.solver_deactivation]
+        n_r_info.quality_type = NifClasses.HkQualityType[b_col_obj.nifcollision.quality_type]
+
+        n_bhk_rigid_body.body_flags = b_col_obj.nifcollision.body_flags
+
+        return n_bhk_rigid_body
 
     def export_bhk_collison_object(self, b_obj):
         layer = int(b_obj.nifcollision.collision_layer)
@@ -207,62 +202,12 @@ class BhkCollision(Collision):
         n_col_obj.flags._value = 0
         if layer == NifClasses.OblivionLayer.OL_ANIM_STATIC and col_filter != 128:
             # animated collision requires flags = 41
-            # unless it is a constrainted but not keyframed object
+            # unless it is a constrained but not keyframed object
             n_col_obj.flags = 41
         else:
             # in all other cases this seems to be enough
             n_col_obj.flags = 1
         return n_col_obj
-
-    def export_bhk_blend_collision(self, b_obj):
-        n_col_obj = block_store.create_block("bhkBlendCollisionObject", b_obj)
-        n_col_obj.unknown_float_1 = 1.0
-        n_col_obj.unknown_float_2 = 1.0
-        return n_col_obj
-
-    # TODO [collision][animation] Move out to an physic animation class.
-    def export_bhk_blend_controller(self, b_obj, parent_block):
-        # also add a controller for it
-        n_blend_ctrl = block_store.create_block("bhkBlendController", b_obj)
-        n_blend_ctrl.flags = 12
-        n_blend_ctrl.frequency = 1.0
-        n_blend_ctrl.phase = 0.0
-        n_blend_ctrl.start_time = consts.FLOAT_MAX
-        n_blend_ctrl.stop_time = consts.FLOAT_MIN
-        parent_block.add_controller(n_blend_ctrl)
-
-    # TODO [collision] Move to collision
-    def update_rigid_bodies(self):
-        if bpy.context.scene.niftools_scene.is_bs():
-            n_rigid_bodies = [n_rigid_body for n_rigid_body in block_store.block_to_obj if isinstance(n_rigid_body, NifClasses.BhkRigidBody)]
-
-            # update rigid body center of gravity and mass
-            if self.IGNORE_BLENDER_PHYSICS:
-                # we are not using blender properties to set the mass
-                # so calculate mass automatically first calculate distribution of mass
-                total_mass = 0
-                for n_block in n_rigid_bodies:
-                    n_block.update_mass_center_inertia(mass=0, solid=self.EXPORT_OB_SOLID)
-                    total_mass += n_block.mass
-
-                # to avoid zero division error later (if mass is zero then this does not matter anyway)
-                if total_mass == 0:
-                    total_mass = 1
-
-                # now update the mass ensuring that total mass is EXPORT_OB_MASS
-                for n_block in n_rigid_bodies:
-                    mass = self.EXPORT_OB_MASS * n_block.mass / total_mass
-                    # lower bound on mass
-                    if mass < 0.0001:
-                        mass = 0.05
-                    n_block.update_mass_center_inertia(mass=mass, solid=self.EXPORT_OB_SOLID)
-            else:
-                # using blender properties, so n_block.mass *should* have been set properly
-                for n_block in n_rigid_bodies:
-                    # lower bound on mass
-                    if n_block.mass < 0.0001:
-                        n_block.mass = 0.05
-                    n_block.update_mass_center_inertia(mass=n_block.mass, solid=self.EXPORT_OB_SOLID)
 
     def export_bhk_mopp_bv_tree_shape(self, b_obj, n_col_body):
         n_col_mopp = block_store.create_block("bhkMoppBvTreeShape", b_obj)
@@ -562,6 +507,8 @@ class BhkCollision(Collision):
             remapped_triangles = [[vertex_map[idx] for idx in tri] for tri in triangles]
 
             n_col_shape.add_shape(remapped_triangles, normals, subshape_vertices, layer, n_material)
+            n_col_shape.radius = b_obj.rigid_body.collision_margin
+            n_col_shape.radius_copy = b_obj.rigid_body.collision_margin
 
     def export_collision_single(self, b_obj, n_col_body, layer, n_havok_mat):
         """Add collision object to n_col_body.

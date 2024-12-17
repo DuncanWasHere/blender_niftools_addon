@@ -189,3 +189,5 @@ fabric.properties
 
 # Exclude temp build directory
 install/tmp
+.idea/mypy.xml
+.idea/MypyPlugin.xml

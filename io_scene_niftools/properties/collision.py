@@ -42,7 +42,7 @@ from bpy.props import (PointerProperty,
                        IntProperty,
                        BoolProperty,
                        EnumProperty,
-                       FloatProperty,
+                       FloatProperty, FloatVectorProperty,
                        )
 from bpy.types import PropertyGroup
 
@@ -72,43 +72,10 @@ def game_specific_col_layer_items(self, context):
 class CollisionProperty(PropertyGroup):
     """Group of Havok related properties, which gets attached to objects through a property pointer."""
 
-    motion_system: EnumProperty(
-        name='Motion System',
-        description='Havok Motion System settings for bhkRigidBody(t)',
-        items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.HkMotionType)],
-        # default = 'MO_SYS_FIXED',
-
-    )
-
     collision_layer: EnumProperty(
         name='Collision layer',
         description='Collision layer string (game-specific)',
         items=game_specific_col_layer_items,
-    )
-
-    penetration_depth: FloatProperty(
-        name='Penetration Depth',
-        description='The maximum allowed penetration for this object.',
-        default=0.15
-    )
-
-    deactivator_type: EnumProperty(
-        name='Deactivator Type',
-        description='Motion deactivation setting',
-        items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.HkDeactivatorType)],
-    )
-
-    solver_deactivation: EnumProperty(
-        name='Solver Deactivation',
-        description='Motion deactivation setting',
-        items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.HkSolverDeactivation)],
-    )
-
-    quality_type: EnumProperty(
-        name='Quality Type',
-        description='Determines quality of motion',
-        items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.HkQualityType)],
-        # default = 'MO_QUAL_FIXED',
     )
 
     col_filter: IntProperty(
@@ -117,16 +84,16 @@ class CollisionProperty(PropertyGroup):
         default=0
     )
 
-    max_linear_velocity: FloatProperty(
-        name='Max Linear Velocity',
-        description='Linear velocity limit for bhkRigidBody(t)',
-        default=0
+    inertia_tensor: FloatVectorProperty(
+        name='Inertia Tensor',
+        description='Inertia tensor for bhkRigidBody(t)',
+        default=(0,0,0)
     )
 
-    max_angular_velocity: FloatProperty(
-        name='Max Angular Velocity',
-        description='Angular velocity limit for bhkRigidBody(t)',
-        default=0
+    center: FloatVectorProperty(
+        name='Center',
+        description='Center of mass for bhkRigidBody(t)',
+        default=(0,0,0)
     )
 
     mass: FloatProperty(
@@ -135,10 +102,56 @@ class CollisionProperty(PropertyGroup):
         default=0
     )
 
-    export_bhklist: BoolProperty(
-        name='Export BHKList',
-        description='None',
-        default=False
+    max_linear_velocity: FloatProperty(
+        name='Max Linear Velocity',
+        description='Linear velocity limit for bhkRigidBody(t)',
+        default=1068.0
+    )
+
+    max_angular_velocity: FloatProperty(
+        name='Max Angular Velocity',
+        description='Angular velocity limit for bhkRigidBody(t)',
+        default=31.57
+    )
+
+    penetration_depth: FloatProperty(
+        name='Penetration Depth',
+        description='The maximum allowed penetration for this object.',
+        default=0.15
+    )
+
+    motion_system: EnumProperty(
+        name='Motion System',
+        description='Havok Motion System settings for bhkRigidBody(t)',
+        items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.HkMotionType)],
+        default = 'MO_SYS_FIXED',
+    )
+
+    deactivator_type: EnumProperty(
+        name='Deactivator Type',
+        description='Motion deactivation setting',
+        items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.HkDeactivatorType)],
+        default = 'DEACTIVATOR_NEVER',
+    )
+
+    solver_deactivation: EnumProperty(
+        name='Solver Deactivation',
+        description='Motion deactivation setting',
+        items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.HkSolverDeactivation)],
+        default = 'SOLVER_DEACTIVATION_OFF',
+    )
+
+    quality_type: EnumProperty(
+        name='Quality Type',
+        description='Determines quality of motion',
+        items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.HkQualityType)],
+        default = 'MO_QUAL_FIXED',
+    )
+
+    body_flags: BoolProperty(
+        name='Body Flags',
+        description='Whether or not to react to wind',
+        default=False,
     )
 
     use_blender_properties: BoolProperty(
