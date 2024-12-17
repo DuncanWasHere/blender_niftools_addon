@@ -105,10 +105,10 @@ class MorphAnimation(Animation):
 
         # create interpolators (for newer nif versions)
         morph_ctrl.num_interpolators = len(b_key.key_blocks)
-        morph_ctrl.reset_field("interpolators")
+        interpolators_exist = morph_ctrl.reset_field("interpolators")[0]
 
         # interpolator weights (for Fallout 3)
-        morph_ctrl.reset_field("interpolator_weights")
+        interp_weights_exist = morph_ctrl.reset_field("interpolator_weights")[0]
         # TODO [morph] some unknowns, bethesda only
         # TODO [morph] just guessing here, data seems to be zero always
         morph_ctrl.num_unknown_ints = len(b_key.key_blocks)
@@ -140,11 +140,12 @@ class MorphAnimation(Animation):
             # create interpolator for shape b_key (needs to be there even if there is no fcu)
             interpol = block_store.create_block("NiFloatInterpolator")
             interpol.value = 0
-            # [TODO] condition this - only qualifying fields will have been reset to the correct size
-            morph_ctrl.interpolators[key_block_num] = interpol
+            if interpolators_exist:
+                morph_ctrl.interpolators[key_block_num] = interpol
 
             # fallout 3 stores interpolators inside the interpolator_weights block
-            morph_ctrl.interpolator_weights[key_block_num].interpolator = interpol
+            if interp_weights_exist:
+                morph_ctrl.interpolator_weights[key_block_num].interpolator = interpol
 
             # geometry only export has no float data also skip keys that have no fcu (such as base b_key)
             if NifOp.props.animation == 'GEOM_NIF' or not b_shape_action.fcurves:
@@ -161,17 +162,19 @@ class MorphAnimation(Animation):
             n_floatdata = interpol.data.data
             # note: we set data on n_morph for older nifs and on floatdata for newer nifs
             # of course only one of these will be actually written to the file
+            data_keys_exist = []
             for n_data in (n_morph, n_floatdata):
                 n_data.interpolation = NifClasses.KeyType.LINEAR_KEY
                 n_data.num_keys = len(fcurves[0].keyframe_points)
-                n_data.reset_field("keys")
+                data_keys_exist.append(n_data.reset_field("keys")[0])
 
             for i, b_keyframe in enumerate(fcurves[0].keyframe_points):
                 frame, value = b_keyframe.co
                 t = frame / self.fps
-                for n_data in (n_morph, n_floatdata):
-                    n_data.keys[i].arg = n_morph.interpolation
-                    n_data.keys[i].time = t
-                    n_data.keys[i].value = value
-                    # n_data.keys[i].forwardTangent = 0.0 # ?
-                    # n_data.keys[i].backwardTangent = 0.0 # ?
+                for keys_exist, n_data in zip(data_keys_exist, (n_morph, n_floatdata)):
+                    if keys_exist:
+                        n_data.keys[i].arg = n_morph.interpolation
+                        n_data.keys[i].time = t
+                        n_data.keys[i].value = value
+                        # n_data.keys[i].forwardTangent = 0.0 # ?
+                        # n_data.keys[i].backwardTangent = 0.0 # ?

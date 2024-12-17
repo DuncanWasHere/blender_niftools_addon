@@ -129,6 +129,12 @@ class CollisionProperty(PropertyGroup):
         default=0
     )
 
+    mass: FloatProperty(
+        name='Mass',
+        description='Mass for bhkRigidBody(t)',
+        default=0
+    )
+
     export_bhklist: BoolProperty(
         name='Export BHKList',
         description='None',

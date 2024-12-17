@@ -58,3 +58,4 @@ class ObjectAnimation(Animation):
         n_ctrl_data = self.get_controller_data(n_vis_ctrl)
         times, keys = self.get_keys_values(n_ctrl_data.keys)
         self.add_keys(b_obj_action, "hide_viewport", (0,), n_vis_ctrl.flags, times, keys, "CONSTANT")
+        self.set_max_key_time()

@@ -59,7 +59,8 @@ class ShaderProps(PropertyGroup):
             ('BSShaderProperty', 'BS Shader Property', "", 1),
             ('BSShaderPPLightingProperty', 'BS Shader PP Lighting Property', "", 2),
             ('BSLightingShaderProperty', 'BS Lighting Shader Property', "", 3),
-            ('BSEffectShaderProperty', 'BS Effect Shader Property', "", 4)
+            ('BSEffectShaderProperty', 'BS Effect Shader Property', "", 4),
+            ('BSShaderNoLightingProperty', 'BS Shader No Lighting Property', "", 5)
         )
     )
 

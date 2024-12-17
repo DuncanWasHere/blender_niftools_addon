@@ -121,6 +121,7 @@ class MaterialAnimation(Animation):
                 if 1 == LOC_DP and array_ind == 1:
                     keys = [-key for key in keys]
                 self.add_keys(b_mat_action, f'nodes["{transform.name}"].inputs[{data_path}].default_value', (array_ind,), n_ctrl.flags, times, keys, interp)
+                self.set_max_key_time()
 
     def import_tex_transform_controller(self, b_material, n_geom):
         """Import UV controller data as a mapping node with animated values."""
@@ -132,14 +133,12 @@ class MaterialAnimation(Animation):
             NifLog.info("Importing Texture Transform controller")
 
             n_ctrl_data = self.get_controller_data(n_ctrl)
-            if not n_ctrl_data.keys:
-                return
-            # todo [material] get the mapping from enum to node, and standardize texture slot names everywhere
-            # the whole node logic needs to be refactored to seamlessly integrate this
-            # get tex slot
+            if not n_ctrl_data or not hasattr(n_ctrl_data, "keys") or not n_ctrl_data.keys:
+                NifLog.warn(f"Texture Transform Controller has no valid key data: {n_ctrl}. Skipping...")
+                continue
+
             tex_slot = n_ctrl.texture_slot
             times, keys = self.get_keys_values(n_ctrl_data.keys)
-            # get operation
             operation = n_ctrl.operation
             if operation == NifClasses.TransformMember.TT_TRANSLATE_U:
                 data_path = LOC_DP
@@ -147,12 +146,10 @@ class MaterialAnimation(Animation):
             elif operation == NifClasses.TransformMember.TT_TRANSLATE_V:
                 data_path = LOC_DP
                 array_ind = 1
-                # UV V coordinate is inverted in blender
-                keys = [-key for key in keys]
+                keys = [-key for key in keys]  # UV V coordinate is inverted in Blender
             elif operation == NifClasses.TransformMember.TT_ROTATE:
-                # not sure, need example nif
                 NifLog.warn("Rotation in Texture Transform is not supported")
-                return
+                continue
             elif operation == NifClasses.TransformMember.TT_SCALE_U:
                 data_path = SCALE_DP
                 array_ind = 0
@@ -160,11 +157,17 @@ class MaterialAnimation(Animation):
                 data_path = SCALE_DP
                 array_ind = 1
 
-            # in example nif, no node tree exists, so this doesn't link the transform node
             b_mat_action, transform = self.insert_mapping_node(b_material)
-
             interp = self.get_b_interp_from_n_interp(n_ctrl_data.interpolation)
-            self.add_keys(b_mat_action, f'nodes["{transform.name}"].inputs[{data_path}].default_value', (array_ind,), n_ctrl.flags, times, keys, interp)
+            self.add_keys(
+                b_mat_action,
+                f'nodes["{transform.name}"].inputs[{data_path}].default_value',
+                (array_ind,),
+                n_ctrl.flags,
+                times,
+                keys,
+                interp,
+            )
 
     def insert_mapping_node(self, b_material):
         b_mat_action = self.create_action(b_material.node_tree, f"{b_material.name}-MaterialNodesAction")

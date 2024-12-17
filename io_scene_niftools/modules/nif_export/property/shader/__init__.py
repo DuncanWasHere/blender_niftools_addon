@@ -68,6 +68,10 @@ class BSShaderProperty:
         if b_mat.niftools_shader.bs_shadertype == 'BSEffectShaderProperty':
             bsshader = self.export_bs_effect_shader_property(b_mat)
 
+
+        if b_mat.niftools_shader.bs_shadertype == 'BSShaderNoLightingProperty':
+            bsshader = self.export_bs_shader_no_lighting_property(b_mat)
+
         return bsshader
 
     def export_bs_effect_shader_property(self, b_mat):
@@ -141,6 +145,12 @@ class BSShaderProperty:
         self.texturehelper.export_bs_shader_pp_lighting_prop_textures(bsshader)
 
         # Shader Flags
+        BSShaderProperty.export_shader_flags(b_mat, bsshader)
+        return bsshader
+
+    def export_bs_shader_no_lighting_property(self, b_mat):
+        bsshader = NifClasses.BSShaderNoLightingProperty(NifData.data)
+        bsshader.shader_type = NifClasses.BSShaderType[b_mat.niftools_shader.bsspplp_shaderobjtype]
         BSShaderProperty.export_shader_flags(b_mat, bsshader)
         return bsshader
 

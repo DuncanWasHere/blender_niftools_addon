@@ -63,6 +63,7 @@ class CollisionBoundsPanel(Panel):
 
         box = layout.box()
         box.prop(col_setting, "col_filter", text='Col Filter')  # col filter prop
+        box.prop(col_setting, "mass", text='Mass')  # mass prop
         box.prop(col_setting, "deactivator_type", text='Deactivator Type')  # motion deactivation prop
         box.prop(col_setting, "solver_deactivation", text='Solver Deactivator')  # motion deactivation prop
         box.prop(col_setting, "quality_type", text='Quality Type')  # quality type prop

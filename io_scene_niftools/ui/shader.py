@@ -66,7 +66,7 @@ class ShaderPanel(Panel):
 
         row.prop(nif_obj_props, "bs_shadertype")
 
-        if nif_obj_props.bs_shadertype == 'BSShaderPPLightingProperty':
+        if nif_obj_props.bs_shadertype == 'BSShaderPPLightingProperty' or nif_obj_props.bs_shadertype == 'BSShaderNoLightingProperty':
             row.prop(nif_obj_props, "bsspplp_shaderobjtype")
 
             for property_name in sorted(NifClasses.BSShaderFlags.__members__):

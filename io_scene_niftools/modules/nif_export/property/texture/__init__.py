@@ -160,28 +160,78 @@ class TextureSlotManager:
         return used_uvlayers
 
     def determine_texture_types(self, b_mat):
-        """Checks all texture nodes of a material and checks their labels for relevant texture cues.
+        """Checks all texture nodes of a material and determines their slots based on the shader node properties they are linked to.
         Stores all slots as class properties."""
         self.b_mat = b_mat
         self._reset_fields()
 
         for b_texture_node in self.get_used_textslots(b_mat):
-            shown_label = b_texture_node.label
-            if shown_label == '':
-                shown_label = b_texture_node.image.name
-            NifLog.debug(f"Found node {b_texture_node.name} of type {shown_label}")
+            NifLog.info(f"Processing texture node: {b_texture_node.label}")
 
-            # go over all slots
-            for slot_name in self.slots.keys():
-                if slot_name in shown_label:
-                    # slot has already been populated
-                    if self.slots[slot_name]:
-                        raise NifError(f"Multiple {slot_name} textures in material '{b_mat.name}''.\n"
-                                       f"Make sure there is only one texture node labeled as '{slot_name}'")
-                    # it's a new slot so store it
-                    self.slots[slot_name] = b_texture_node
-                    break
-            # unsupported texture type
+            final_slot = self.find_final_slot(b_texture_node)
+            
+            if final_slot is None:
+                shown_label = b_texture_node.label
+                if shown_label == '':
+                    shown_label = b_texture_node.image.name
+                NifLog.info(f"Using label for node '{b_texture_node.name}' with label '{shown_label}'")
+
+                for slot_name in self.slots.keys():
+                    if slot_name in shown_label:
+                        if self.slots[slot_name]:
+                            raise NifError(f"Multiple {slot_name} textures in material '{b_mat.name}'.\n"
+                                           f"Make sure there is only one texture node labeled as '{slot_name}'")
+                        self.slots[slot_name] = b_texture_node
+                        NifLog.info(f"Assigned texture node '{shown_label}' to slot '{slot_name}' based on label")
+                        break
+                else:
+                    raise NifError(f"Do not know how to export texture node '{shown_label}' in material '{b_mat.name}' with label '{shown_label}'."
+                                   f" Delete it or change its label.")
+            
             else:
-                raise NifError(f"Do not know how to export texture node '{b_texture_node.name}' in material '{b_mat.name}' with label '{shown_label}'."
-                               f"Delete it or change its label.")
+                if self.slots[final_slot]:
+                    raise NifError(f"Multiple {final_slot} textures in material '{b_mat.name}'.\n"
+                                   f"Make sure there is only one texture node connected to a '{final_slot}' property or labeled as '{final_slot}'")
+
+                self.slots[final_slot] = b_texture_node
+                NifLog.info(f"Assigned texture node '{b_texture_node.label}' to slot '{final_slot}'")
+
+    def find_final_slot(self, texture_node):
+        """Recursively finds the final slot for a texture node based on the shader node attribute it is linked to."""
+        def recursive_search(node):
+            visited_nodes = set()
+            nodes_to_visit = [node]
+
+            while nodes_to_visit:
+                current_node = nodes_to_visit.pop()
+                if current_node in visited_nodes:
+                    continue
+                visited_nodes.add(current_node)
+                NifLog.debug(f"Visiting node: {current_node.name}")
+
+                for output in current_node.outputs:
+                    for link in output.links:
+                        to_node = link.to_node
+                        to_socket = link.to_socket.name.lower()
+                        NifLog.debug(f"Checking link from '{current_node.name}' to '{to_node.name}', property '{to_socket}'")
+
+                        if isinstance(to_node, bpy.types.ShaderNodeBsdfPrincipled) or isinstance(to_node, bpy.types.ShaderNodeBsdfDiffuse):
+                            # No shader slot for parallax textures
+                            if 'detail' in texture_node.label:
+                                return TEX_SLOTS.DETAIL
+                            if 'base color' in to_socket or 'color' in to_socket:
+                                return TEX_SLOTS.BASE
+                            if 'specular' in to_socket:
+                                return TEX_SLOTS.SPECULAR
+                            if 'normal' in to_socket:
+                                return TEX_SLOTS.NORMAL
+                            if 'gloss' in to_socket or 'roughness' in to_socket:
+                                return TEX_SLOTS.GLOSS
+                            if 'emission' in to_socket:
+                                return TEX_SLOTS.GLOW
+
+                        nodes_to_visit.append(to_node)
+
+            return None
+
+        return recursive_search(texture_node)

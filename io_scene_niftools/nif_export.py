@@ -169,25 +169,27 @@ class NifExport(NifCommon):
 
             # bhkConvexVerticesShape of children of bhkListShapes need an extra bhkConvexTransformShape (see issue #3308638, reported by Koniption)
             # note: block_store.block_to_obj changes during iteration, so need list copy
-            for block in list(block_store.block_to_obj.keys()):
-                if isinstance(block, NifClasses.BhkListShape):
-                    for i, sub_shape in enumerate(block.sub_shapes):
-                        if isinstance(sub_shape, NifClasses.BhkConvexVerticesShape):
-                            coltf = block_store.create_block("bhkConvexTransformShape")
-                            coltf.material = sub_shape.material
-                            coltf.unknown_float_1 = 0.1
-                            unk_8 = coltf.unknown_8_bytes
-                            unk_8[0] = 96
-                            unk_8[1] = 120
-                            unk_8[2] = 53
-                            unk_8[3] = 19
-                            unk_8[4] = 24
-                            unk_8[5] = 9
-                            unk_8[6] = 253
-                            unk_8[7] = 4
-                            coltf.transform.set_identity()
-                            coltf.shape = sub_shape
-                            block.sub_shapes[i] = coltf
+            # TODO: Not necessary for FNV and won't work in Skyrim. Is this even needed for Oblivion?
+            if bpy.context.scene.niftools_scene.game == 'OBLIVION':
+                for block in list(block_store.block_to_obj.keys()):
+                    if isinstance(block, NifClasses.BhkListShape):
+                        for i, sub_shape in enumerate(block.sub_shapes):
+                            if isinstance(sub_shape, NifClasses.BhkConvexVerticesShape):
+                                n_coltf = block_store.create_block("bhkConvexTransformShape")
+                                n_coltf.material = sub_shape.material
+                                n_coltf.radius = 0.1
+                                unk_8 = n_coltf.unknown_8_bytes
+                                unk_8[0] = 96
+                                unk_8[1] = 120
+                                unk_8[2] = 53
+                                unk_8[3] = 19
+                                unk_8[4] = 24
+                                unk_8[5] = 9
+                                unk_8[6] = 253
+                                unk_8[7] = 4
+                                n_coltf.transform.set_identity()
+                                n_coltf.shape = sub_shape
+                                block.sub_shapes[i] = n_coltf
 
             # export constraints
             for b_obj in self.exportable_objects:

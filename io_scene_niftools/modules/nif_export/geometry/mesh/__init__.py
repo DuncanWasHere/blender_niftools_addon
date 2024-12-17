@@ -53,7 +53,6 @@ from io_scene_niftools.modules.nif_export.property.texture.types.nitextureprop i
 from io_scene_niftools.utils import math
 from io_scene_niftools.utils.singleton import NifOp, NifData
 from io_scene_niftools.utils.logging import NifLog, NifError
-from io_scene_niftools.modules.nif_export.geometry.mesh.skin_partition import update_skin_partition
 
 
 class Mesh:
@@ -317,10 +316,10 @@ class Mesh:
                     # override pyffi n_geom.update_bind_position with custom one that is relative to the nif root
                     self.update_bind_position(n_geom, n_root, b_obj_armature)
 
+                    self.export_skin_partition(b_obj, bodypartfacemap, triangles, n_geom)
+
                     # calculate center and radius for each skin bone data block
                     n_geom.update_skin_center_radius()
-
-                    self.export_skin_partition(b_obj, bodypartfacemap, triangles, n_geom)
 
             if isinstance(n_geom, NifClasses.NiTriBasedGeom):
                 # fix data consistency type
@@ -572,6 +571,14 @@ class Mesh:
             for n_n, b_n in zip([data.normal for data in n_geom.vertex_data], vertex_information['NORMAL']):
                 n_n.x, n_n.y, n_n.z = b_n
         if vertex_flags.tangents:
+            # Tangents and bitangents are (mostly) stored as normbyte and therefore must be limited to [-1.0, 1.0]
+            # However, Blender can sometimes give a value outside the bound due to rounding.
+            vertex_information['BITANGENT'] = NifClasses.Normbyte.from_function(
+                                                  NifClasses.Normbyte.to_function(vertex_information['BITANGENT'])
+                                                  )
+            vertex_information['TANGENT'] = NifClasses.Normbyte.from_function(
+                                                  NifClasses.Normbyte.to_function(vertex_information['TANGENT'])
+                                                  )
             # B_tan: +d(B_u), B_bit: +d(B_v) and N_tan: +d(N_v), N_bit: +d(N_u)
             # moreover, N_v = 1 - B_v, so d(B_v) = - d(N_v), therefore N_tan = -B_bit and N_bit = B_tan
             for n_t, b_t in zip([data.tangent for data in n_geom.vertex_data], vertex_information['BITANGENT']):
@@ -579,6 +586,7 @@ class Mesh:
             for n_vert, b_b in zip(n_geom.vertex_data, vertex_information['TANGENT']):
                 n_vert.bitangent_x, n_vert.bitangent_y, n_vert.bitangent_z = b_b
         if vertex_flags.vertex_colors:
+            vertex_information['COLOR'] = np.rint(vertex_information['COLOR'] * 255).astype(int)
             for n_c, b_c in zip([data.vertex_colors for data in n_geom.vertex_data], vertex_information['COLOR']):
                 n_c.r, n_c.g, n_c.b, n_c.a = b_c
 
@@ -670,8 +678,6 @@ class Mesh:
 
             part_order = [NifClasses.BSDismemberBodyPartType[face_map.name] for face_map in
                           b_obj.face_maps if face_map.name in NifClasses.BSDismemberBodyPartType.__members__]
-            # override pyffi n_geom.update_skin_partition with custom one (that allows ordering)
-            n_geom.update_skin_partition = update_skin_partition.__get__(n_geom)
             lostweight = n_geom.update_skin_partition(
                 maxbonesperpartition=NifOp.props.max_bones_per_partition,
                 maxbonespervertex=NifOp.props.max_bones_per_vertex,

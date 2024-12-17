@@ -178,7 +178,7 @@ class ObjectProperty:
         """Return existing specular property with given flags, or create new one
         if a specular property with required flags is not found."""
         # search for duplicate
-        if b_mat and not (bpy.context.scene.niftools_scene.is_skyrim()):
+        if b_mat and not (bpy.context.scene.niftools_scene.is_skyrim()) and "FALLOUT" not in bpy.context.scene.niftools_scene.game:
             # add NiTriShape's specular property
             # but NOT for sid meier's railroads and other extra shader
             # games (they use specularity even without this property)

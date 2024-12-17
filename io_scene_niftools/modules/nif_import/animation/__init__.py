@@ -54,11 +54,17 @@ class Animation:
         # to prevent overwriting existing animations from older imports
         # and still be able to access existing actions from this run
         self.actions = {}
+        self.max_key_time = 0
 
     @staticmethod
     def get_controller_data(ctrl):
         """Return data for ctrl, look in interpolator (for newer games) or directly on ctrl"""
+        # TODO: Is full support for NiBlendFloatInterpolator and NiBlendPoint3Interpolator possible?
         if hasattr(ctrl, 'interpolator') and ctrl.interpolator:
+            if isinstance(ctrl.interpolator, NifClasses.NiBlendFloatInterpolator):
+                # NiBlendFloatInterpolator has no data
+                NifLog.warn(f"NiBlendFloatInterpolator is not fully supported!")
+                return None
             data = ctrl.interpolator.data
         else:
             data = ctrl.data
@@ -184,6 +190,8 @@ class Animation:
                 fcurve.keyframe_points.foreach_set("interpolation", interpolations)
                 # update
                 fcurve.update()
+                # Update max_key_time
+                self.max_key_time = max(self.max_key_time, max(times))
         except RuntimeError:
             # blender throws F-Curve ... already exists in action ...
             NifLog.warn(f"Could not add fcurve '{key_type}' to '{b_action.name}', already added before?")
@@ -251,3 +259,7 @@ class Animation:
         bpy.context.scene.render.fps = fps
         bpy.context.scene.frame_set(0)
 
+    def set_max_key_time(self):
+            # Set the end frame to the last key time
+            bpy.context.scene.frame_end = round(self.max_key_time * self.fps)
+            NifLog.info(f"Animation length set to {self.max_key_time * self.fps} frames.")

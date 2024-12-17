@@ -106,6 +106,7 @@ class MorphAnimation(Animation):
                     interp = self.get_b_interp_from_n_interp(morph.interpolation)
                     times, keys = self.get_keys_values(morph.keys)
                     self.add_keys(shape_action, "value", (0,), n_morph_ctrl.flags, times, keys, interp, key_name=shape_key.name)
+                    self.set_max_key_time()
 
     def import_egm_morphs(self, b_obj):
         """Import all EGM morphs as shape keys for blender object."""

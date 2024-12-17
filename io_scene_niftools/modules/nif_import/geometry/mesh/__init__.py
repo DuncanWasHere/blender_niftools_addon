@@ -153,7 +153,8 @@ class Mesh:
         if uvs is not None:
             Vertex.map_uv_layer(b_mesh, uvs)
         if vertex_colors is not None:
-            Vertex.map_vertex_colors(b_mesh, vertex_colors)
+            # TODO: Add vertex vs. face corner setting to import operator UI
+            self.map_vertex_colors_to_corners(b_mesh, vertex_colors)
         if normals is not None:
             # for some cases, normals can be four-component structs instead of 3, discard the 4th.
             Vertex.map_normals(b_mesh, np.array(normals)[:, :3])
@@ -177,3 +178,18 @@ class Mesh:
         for poly in b_mesh.polygons:
             poly.use_smooth = smooth
             poly.material_index = 0  # only one material
+
+    @staticmethod
+    def map_vertex_colors_to_corners(b_mesh, vertex_colors):
+        """Map vertex colors to face corners in a mesh."""
+
+        color_attr = b_mesh.color_attributes.new(name="RGBA", type="FLOAT_COLOR", domain="CORNER")
+
+        corner_colors = []
+        for poly in b_mesh.polygons:
+            for loop_index in poly.loop_indices:
+                vertex_index = b_mesh.loops[loop_index].vertex_index
+                corner_colors.append(vertex_colors[vertex_index])
+
+        flat_colors = [channel for color in corner_colors for channel in color]
+        color_attr.data.foreach_set("color", flat_colors)

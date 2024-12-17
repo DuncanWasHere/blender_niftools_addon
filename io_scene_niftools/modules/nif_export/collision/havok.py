@@ -50,14 +50,15 @@ from io_scene_niftools.utils.logging import NifLog
 
 
 class BhkCollision(Collision):
+    # TODO: Refactor collision code to get rid of hard-coded/redundant settings
 
-    IGNORE_BLENDER_PHYSICS = False
-    EXPORT_BHKLISTSHAPE = False
-    EXPORT_OB_MASS = 10.0
+    IGNORE_BLENDER_PHYSICS = True
+    EXPORT_BHKLISTSHAPE = True
+    EXPORT_OB_MASS = 1.0
     EXPORT_OB_SOLID = True
 
     def __init__(self):
-        # to be filled during the export process:
+        # To be filled during the export process:
         self.HAVOK_SCALE = None
 
     def export_collision_helper(self, b_obj, parent_block):
@@ -74,19 +75,32 @@ class BhkCollision(Collision):
             NifLog.warn(f"'{b_obj.name}' has no rigid body, skipping rigid body export")
             return
 
-        # is it packed
+        # Is it packed?
         coll_ispacked = (rigid_body.collision_shape == 'MESH')
 
         # Set Havok Scale ratio
         self.HAVOK_SCALE = NifData.data.havok_scale
 
-        # find physics properties/defaults
-        # get havok material name from material name
+        # Find physics properties/defaults
+        # Get Havok material type from the material of the first material in the object
         hav_mat_type = type(NifClasses.HavokMaterial(NifData.data).material)
+        n_havok_mat_list = []
         if b_obj.data.materials:
-            n_havok_mat = hav_mat_type[b_obj.data.materials[0].name]
+            for mat in b_obj.data.materials:
+                try:
+                    n_havok_mat_list.append(hav_mat_type[mat.name])
+                except KeyError:
+                    NifLog.warn(f"Unknown Havok material '{mat.name}', defaulting to 0")
+                    n_havok_mat_list.append(hav_mat_type.from_value(0))
         else:
-            n_havok_mat = hav_mat_type.from_value(0)
+            n_havok_mat_list.append(hav_mat_type.from_value(0))
+
+        # Determine if a single material or multiple materials are needed
+        if coll_ispacked:
+            n_havok_material = n_havok_mat_list
+        else:
+            n_havok_material = n_havok_mat_list[0]
+
 
         # linear_velocity = b_obj.rigid_body.deactivate_linear_velocity
         # angular_velocity = b_obj.rigid_body.deactivate_angular_velocity
@@ -95,45 +109,60 @@ class BhkCollision(Collision):
         # TODO [object][collision][flags] export bsxFlags
         # self.export_bsx_upb_flags(b_obj, parent_block)
 
-        # if no collisions have been exported yet to this parent_block
+        # Only use bhkRigidBodyT if there are transforms on a box or sphere shape
+        add_rigid_body_t = not b_obj.matrix_world.is_identity and (b_obj.rigid_body.collision_shape == 'BOX' or b_obj.rigid_body.collision_shape == 'SPHERE')
+
+        # If no collisions have been exported yet to this parent_block
         # then create new collision tree on parent_block
         # bhkCollisionObject -> bhkRigidBody
         if not parent_block.collision_object:
-            # note: collision settings are taken from lowerclasschair01.nif
+            # Note: collision settings are taken from lowerclasschair01.nif
             if layer == NifClasses.OblivionLayer.OL_BIPED:
-                # special collision object for creatures
+                # Special collision object for creatures
                 n_col_obj = self.export_bhk_blend_collision(b_obj)
 
-                # TODO [collsion][annimation] add detection for this
+                # TODO [collsion][animation] add detection for this
                 self.export_bhk_blend_controller(b_obj, parent_block)
             else:
-                # usual collision object
+                # Usual collision object
                 n_col_obj = self.export_bhk_collison_object(b_obj)
 
             parent_block.collision_object = n_col_obj
             n_col_obj.target = parent_block
 
-            n_bhkrigidbody = self.export_bhk_rigid_body(b_obj, n_col_obj)
+
+            n_bhkrigidbody = self.export_bhk_rigid_body(b_obj, n_col_obj, add_rigid_body_t)
 
             # we will use n_col_body to attach shapes to below
             n_col_body = n_bhkrigidbody
 
         else:
             n_col_body = parent_block.collision_object.body
-            # fix total mass
+            # Fix total mass
             n_col_body.rigid_body_info.mass += rigid_body.mass
 
         if coll_ispacked:
-            self.export_collision_packed(b_obj, n_col_body, layer, n_havok_mat)
+            self.export_collision_packed(b_obj, n_col_body, layer, n_havok_material)
         else:
-            if b_obj.nifcollision.export_bhklist:
-                self.export_collision_list(b_obj, n_col_body, layer, n_havok_mat)
+            if b_obj.rigid_body.collision_shape == 'COMPOUND':
+                self.export_collision_list(b_obj, n_col_body, layer, n_havok_material)
             else:
-                self.export_collision_single(b_obj, n_col_body, layer, n_havok_mat)
+                self.export_collision_single(b_obj, n_col_body, layer, n_havok_material)
 
-    def export_bhk_rigid_body(self, b_obj, n_col_obj):
+    def export_bhk_rigid_body(self, b_obj, n_col_obj, add_rigid_body_t):
 
-        n_r_body = block_store.create_block("bhkRigidBody", b_obj)
+        if add_rigid_body_t:
+            n_r_body = block_store.create_block("bhkRigidBodyT", b_obj)
+            translation = b_obj.matrix_world.to_translation()
+            n_r_body.rigid_body_info.translation = NifClasses.Vector4.from_value([translation.x, translation.y, translation.z, 0.0])
+            rotation = b_obj.matrix_world.to_quaternion()
+            n_r_body.rigid_body_info.rotation.x = rotation.x
+            n_r_body.rigid_body_info.rotation.y = rotation.y
+            n_r_body.rigid_body_info.rotation.z = rotation.z
+            n_r_body.rigid_body_info.rotation.w = rotation.w
+            n_r_body.apply_scale(1 / self.HAVOK_SCALE)
+        else:
+            n_r_body = block_store.create_block("bhkRigidBody", b_obj)
         n_col_obj.body = n_r_body
 
         n_r_body.havok_filter.layer = int(b_obj.nifcollision.collision_layer)
@@ -166,6 +195,7 @@ class BhkCollision(Collision):
         n_r_info.deactivator_type = NifClasses.HkDeactivatorType[b_obj.nifcollision.deactivator_type]
         n_r_info.solver_deactivation = NifClasses.HkSolverDeactivation[b_obj.nifcollision.solver_deactivation]
         n_r_info.quality_type = NifClasses.HkQualityType[b_obj.nifcollision.quality_type]
+        self.update_rigid_bodies()
         # TODO [collision] update the body flags to respond/not respond to wind
         return n_r_body
 
@@ -212,7 +242,7 @@ class BhkCollision(Collision):
                 # so calculate mass automatically first calculate distribution of mass
                 total_mass = 0
                 for n_block in n_rigid_bodies:
-                    n_block.update_mass_center_inertia(solid=self.EXPORT_OB_SOLID)
+                    n_block.update_mass_center_inertia(mass=0, solid=self.EXPORT_OB_SOLID)
                     total_mass += n_block.mass
 
                 # to avoid zero division error later (if mass is zero then this does not matter anyway)
@@ -277,14 +307,17 @@ class BhkCollision(Collision):
 
         return colhull
 
-    def export_collision_object(self, b_obj, layer, n_havok_mat):
+    def export_collision_object(self, b_obj, layer, n_havok_mat, add_transform_shape=False):
         """Export object obj as box, sphere, capsule, or convex hull.
-        Note: polyheder is handled by export_collision_packed."""
+        Note: polyhedron is handled by export_collision_packed."""
 
         # find bounding box data
         if not b_obj.data.vertices:
             NifLog.warn(f"Skipping collision object {b_obj} without vertices.")
             return None
+
+        # Check if transforms are applied
+        has_transform = not b_obj.matrix_world.is_identity
 
         box_extends = self.calculate_box_extents(b_obj)
         calc_bhkshape_radius = (box_extends[0][1] - box_extends[0][0] +
@@ -301,68 +334,80 @@ class BhkCollision(Collision):
 
         collision_shape = b_r_body.collision_shape
         if collision_shape in {'BOX', 'SPHERE'}:
-            # note: collision settings are taken from lowerclasschair01.nif
-            n_coltf = block_store.create_block("bhkConvexTransformShape", b_obj)
+            # Create bhkTransformShape if transforms are applied
+            if has_transform and add_transform_shape:
+                n_coltf = block_store.create_block("bhkTransformShape", b_obj)
+                n_coltf.material.material = n_havok_mat
+                n_coltf.radius = radius
 
-            n_coltf.material.material = n_havok_mat
-            n_coltf.radius = radius
+                matrix = math.get_object_bind(b_obj)
+                row0 = list(matrix[0])
+                row1 = list(matrix[1])
+                row2 = list(matrix[2])
+                row3 = list(matrix[3])
+                n_coltf.transform.set_rows(row0, row1, row2, row3)
+                n_coltf.apply_scale(1.0 / self.HAVOK_SCALE)
 
-            hktf = math.get_object_bind(b_obj)
-            # the translation part must point to the center of the data
-            # so calculate the center in local coordinates
+                if collision_shape == 'BOX':
+                    n_colbox = block_store.create_block("bhkBoxShape", b_obj)
+                    n_coltf.shape = n_colbox
+                    n_colbox.material.material = n_havok_mat
+                    n_colbox.radius = radius
 
-            # TODO [collsion] Replace when method moves to bound class, causes circular dependency
-            center = mathutils.Vector(((box_extends[0][0] + box_extends[0][1]) / 2.0,
-                                      (box_extends[1][0] + box_extends[1][1]) / 2.0,
-                                      (box_extends[2][0] + box_extends[2][1]) / 2.0))
+                    dims = n_colbox.dimensions
+                    dims.x = (box_extends[0][1] - box_extends[0][0]) / (2.0 * self.HAVOK_SCALE)
+                    dims.y = (box_extends[1][1] - box_extends[1][0]) / (2.0 * self.HAVOK_SCALE)
+                    dims.z = (box_extends[2][1] - box_extends[2][0]) / (2.0 * self.HAVOK_SCALE)
+                    n_colbox.minimum_size = min(dims.x, dims.y, dims.z)
 
-            # and transform it to global coordinates
-            center = center @ hktf
-            hktf[0][3] = center[0]
-            hktf[1][3] = center[1]
-            hktf[2][3] = center[2]
+                elif collision_shape == 'SPHERE':
+                    n_colsphere = block_store.create_block("bhkSphereShape", b_obj)
+                    n_coltf.shape = n_colsphere
+                    n_colsphere.material.material = n_havok_mat
+                    n_colsphere.radius = radius
+                    matrix = math.get_object_bind(b_obj)
+                    row0 = list(matrix[0])
+                    row1 = list(matrix[1])
+                    row2 = list(matrix[2])
+                    row3 = list(matrix[3])
+                    n_coltf.transform.set_rows(row0, row1, row2, row3)
+                    n_coltf.apply_scale(1.0 / self.HAVOK_SCALE)
 
-            # we need to store the transpose of the matrix
-            hktf.transpose()
-            n_coltf.transform.set_rows(*hktf)
+                return n_coltf
 
-            # fix matrix for havok coordinate system
-            n_coltf.transform.m_14 /= self.HAVOK_SCALE
-            n_coltf.transform.m_24 /= self.HAVOK_SCALE
-            n_coltf.transform.m_34 /= self.HAVOK_SCALE
+            # No transform shape needed
+            else:
+                if collision_shape == 'BOX':
+                    n_colbox = block_store.create_block("bhkBoxShape", b_obj)
+                    n_colbox.material.material = n_havok_mat
+                    n_colbox.radius = radius
 
-            if collision_shape == 'BOX':
-                n_colbox = block_store.create_block("bhkBoxShape", b_obj)
-                n_coltf.shape = n_colbox
-                n_colbox.material.material = n_havok_mat
-                n_colbox.radius = radius
+                    # Fix dimensions for Havok coordinate system
+                    box_extends = self.calculate_box_extents(b_obj)
+                    dims = n_colbox.dimensions
+                    dims.x = (box_extends[0][1] - box_extends[0][0]) / (2.0 * self.HAVOK_SCALE)
+                    dims.y = (box_extends[1][1] - box_extends[1][0]) / (2.0 * self.HAVOK_SCALE)
+                    dims.z = (box_extends[2][1] - box_extends[2][0]) / (2.0 * self.HAVOK_SCALE)
+                    n_colbox.minimum_size = min(dims.x, dims.y, dims.z)
 
-                # fix dimensions for havok coordinate system
-                box_extends = self.calculate_box_extents(b_obj)
-                dims = n_colbox.dimensions
-                dims.x = (box_extends[0][1] - box_extends[0][0]) / (2.0 * self.HAVOK_SCALE)
-                dims.y = (box_extends[1][1] - box_extends[1][0]) / (2.0 * self.HAVOK_SCALE)
-                dims.z = (box_extends[2][1] - box_extends[2][0]) / (2.0 * self.HAVOK_SCALE)
-                n_colbox.minimum_size = min(dims.x, dims.y, dims.z)
+                    return n_colbox
 
-            elif collision_shape == 'SPHERE':
-                n_colsphere = block_store.create_block("bhkSphereShape", b_obj)
-                n_coltf.shape = n_colsphere
-                n_colsphere.material.material = n_havok_mat
-                # TODO [object][collision] find out what this is: fix for havok coordinate system (6 * 7 = 42)
-                # take average radius
-                n_colsphere.radius = radius
+                elif collision_shape == 'SPHERE':
+                    n_colsphere = block_store.create_block("bhkSphereShape", b_obj)
+                    n_colsphere.material.material = n_havok_mat
+                    # TODO [object][collision] find out what this is: fix for havok coordinate system (6 * 7 = 42)
+                    # take average radius
+                    n_colsphere.radius = radius
 
-            return n_coltf
+                    return n_colsphere
 
         elif collision_shape in {'CYLINDER', 'CAPSULE'}:
-
             length = b_obj.dimensions.z - b_obj.dimensions.x
             radius = b_obj.dimensions.x / 2
             matrix = math.get_object_bind(b_obj)
 
             length_half = length / 2
-            # calculate the direction unit vector
+            # Calculate the direction unit vector
             v_dir = (mathutils.Vector((0, 0, 1)) @ matrix.to_3x3().inverted()).normalized()
             first_point = matrix.translation + v_dir * length_half
             second_point = matrix.translation - v_dir * length_half
@@ -387,29 +432,23 @@ class BhkCollision(Collision):
             n_col_caps.radius = radius
             n_col_caps.radius_1 = radius
             n_col_caps.radius_2 = radius
+
             return n_col_caps
 
         elif collision_shape == 'CONVEX_HULL':
+            # Note: we apply transforms to convex shapes directly. No need for bhkConvexTransformShape or bhkRigidBodyT
             b_mesh = b_obj.data
             b_transform_mat = math.get_object_bind(b_obj)
 
             b_rot_quat = b_transform_mat.decompose()[1]
             b_scale_vec = b_transform_mat.decompose()[0]
-            '''
-            scale = math.avg(b_scale_vec.to_tuple())
-            if scale < 0:
-                scale = - (-scale) ** (1.0 / 3)
-            else:
-                scale = scale ** (1.0 / 3)
-            rotation /= scale
-            '''
 
-            # calculate vertices, normals, and distances
+            # Calculate vertices, normals, and distances
             vertlist = [b_transform_mat @ vert.co for vert in b_mesh.vertices]
             fnormlist = [b_rot_quat @ b_face.normal for b_face in b_mesh.polygons]
             fdistlist = [(b_transform_mat @ (-1 * b_mesh.vertices[b_mesh.polygons[b_face.index].vertices[0]].co)).dot(b_rot_quat.to_matrix() @ b_face.normal) for b_face in b_mesh.polygons]
 
-            # remove duplicates through dictionary
+            # Remove duplicates through dictionary
             vertdict = {}
             for i, vert in enumerate(vertlist):
                 vertdict[(int(vert[0] * consts.VERTEX_RESOLUTION),
@@ -423,7 +462,7 @@ class BhkCollision(Collision):
                        int(norm[2] * consts.NORMAL_RESOLUTION),
                        int(dist * consts.VERTEX_RESOLUTION))] = i
 
-            # sort vertices and normals
+            # Sort vertices and normals
             vertkeys = sorted(vertdict.keys())
             fkeys = sorted(fdict.keys())
             vertlist = [vertlist[vertdict[hsh]] for hsh in vertkeys]
@@ -438,7 +477,7 @@ class BhkCollision(Collision):
         else:
             raise io_scene_niftools.utils.logging.NifError(f'Cannot export collision type {collision_shape} to collision shape list')
 
-    def export_collision_packed(self, b_obj, n_col_body, layer, n_havok_mat):
+    def export_collision_packed(self, b_obj, n_col_body, layer, n_havok_mat_list):
         """Add object ob as packed collision object to collision body
         n_col_body. If parent_block hasn't any collisions yet, a new
         packed list is created. If the current collision system is not
@@ -446,39 +485,83 @@ class BhkCollision(Collision):
         a ValueError is raised.
         """
 
-        if not n_col_body.shape:
-
-            n_col_mopp = self.export_bhk_mopp_bv_tree_shape(b_obj, n_col_body)
-            n_col_shape = self.export_bhk_packed_nitristrip_shape(b_obj, n_col_mopp)
-
-        else:
-            raise ValueError('Multi-material mopps not supported for now')
-            # TODO [object][collision] this code will do the trick once multi-material mopps work
-            # n_col_mopp = n_col_body.shape
-            # if not isinstance(n_col_mopp, NifFormat.bhkMoppBvTreeShape):
-            #     raise ValueError('Not a packed list of collisions')
-            # n_col_shape = n_col_mopp.shape
-            # if not isinstance(n_col_shape, NifFormat.bhkPackedNiTriStripsShape):
-            #     raise ValueError('Not a packed list of collisions')
-
         b_mesh = b_obj.data
         transform = math.get_object_bind(b_obj)
         rotation = transform.decompose()[1]
 
-        vertices = [transform @ vert.co for vert in b_mesh.vertices]
-        triangles = []
-        normals = []
+        # Transform vertices
+        transformed_vertices = [transform @ vert.co for vert in b_mesh.vertices]
+
+        # Collect triangles and normals by material
+        triangles_by_material = {}
+        normals_by_material = {}
+
         for face in b_mesh.polygons:
             if len(face.vertices) < 3:
-                continue  # ignore degenerate polygons
-            triangles.append([face.vertices[i] for i in (0, 1, 2)])
-            normals.append(rotation @ face.normal)
-            if len(face.vertices) == 4:
-                triangles.append([face.vertices[i] for i in (0, 2, 3)])
-                normals.append(rotation @ face.normal)
+                continue  # Ignore degenerate polygons
 
-        # TODO [collision][havok] Redo this as a material lookup
-        n_col_shape.add_shape(triangles, normals, vertices, layer, n_havok_mat)
+            material_idx = face.material_index
+
+            if material_idx not in triangles_by_material:
+                triangles_by_material[material_idx] = []
+                normals_by_material[material_idx] = []
+
+            triangles_by_material[material_idx].append([face.vertices[i] for i in (0, 1, 2)])
+            normals_by_material[material_idx].append(rotation @ face.normal)
+
+            if len(face.vertices) == 4:
+                triangles_by_material[material_idx].append([face.vertices[i] for i in (0, 2, 3)])
+                normals_by_material[material_idx].append(rotation @ face.normal)
+
+        # Sort materials and align geometry
+        material_mapping = {
+            old_idx: new_idx for new_idx, (old_idx, _) in enumerate(
+                sorted(enumerate(n_havok_mat_list), key=lambda item: item[1].value)
+            )
+        }
+        n_havok_mat_list.sort(key=lambda mat: mat.value)
+
+        # Align geometry to sorted materials
+        aligned_triangles_by_material = {}
+        aligned_normals_by_material = {}
+
+        for old_idx, triangles in triangles_by_material.items():
+            new_idx = material_mapping[old_idx]
+            aligned_triangles_by_material[new_idx] = triangles
+            aligned_normals_by_material[new_idx] = normals_by_material[old_idx]
+
+        # Replace old geometry with aligned geometry
+        triangles_by_material = aligned_triangles_by_material
+        normals_by_material = aligned_normals_by_material
+
+        # Initialize collision body shape if needed
+        if not n_col_body.shape:
+            n_col_mopp = self.export_bhk_mopp_bv_tree_shape(b_obj, n_col_body)
+            n_col_shape = self.export_bhk_packed_nitristrip_shape(b_obj, n_col_mopp)
+        else:
+            n_col_mopp = n_col_body.shape
+            n_col_shape = n_col_mopp.shape
+
+        # Export geometry for each material group
+        for mat_idx in sorted(triangles_by_material.keys()):
+            triangles = triangles_by_material[mat_idx]
+            normals = normals_by_material[mat_idx]
+
+            try:
+                n_material = n_havok_mat_list[mat_idx]
+            except IndexError:
+                NifLog.warn(f"Material index {mat_idx} out of bounds, using default material")
+                n_material = n_havok_mat_list[0]
+
+            # Collect unique vertices used by this material's triangles
+            used_vertex_indices = {idx for tri in triangles for idx in tri}
+            subshape_vertices = [transformed_vertices[idx] for idx in used_vertex_indices]
+
+            # Map old vertex indices to new indices
+            vertex_map = {old_idx: new_idx for new_idx, old_idx in enumerate(used_vertex_indices)}
+            remapped_triangles = [[vertex_map[idx] for idx in tri] for tri in triangles]
+
+            n_col_shape.add_shape(remapped_triangles, normals, subshape_vertices, layer, n_material)
 
     def export_collision_single(self, b_obj, n_col_body, layer, n_havok_mat):
         """Add collision object to n_col_body.
@@ -488,15 +571,13 @@ class BhkCollision(Collision):
         n_col_body.shape = self.export_collision_object(b_obj, layer, n_havok_mat)
 
     def export_collision_list(self, b_obj, n_col_body, layer, n_havok_mat):
-        """Add collision object obj to the list of collision objects of n_col_body.
+        """
+        Add collision object b_obj to the list of collision objects of n_col_body.
         If n_col_body has no collisions yet, a new list is created.
         If the current collision system is not a list of collisions
-        (bhkListShape), then a ValueError is raised."""
-
-        # if no collisions have been exported yet to this parent_block
-        # then create new collision tree on parent_block
-        # bhkCollisionObject -> bhkRigidBody -> bhkListShape
-        # (this works in all cases, can be simplified just before the file is written)
+        (bhkListShape), then a ValueError is raised.
+        """
+        # Ensure the n_col_body has a bhkListShape attached
         if not n_col_body.shape:
             n_col_shape = block_store.create_block("bhkListShape")
             n_col_body.shape = n_col_shape
@@ -506,4 +587,9 @@ class BhkCollision(Collision):
             if not isinstance(n_col_shape, NifClasses.BhkListShape):
                 raise ValueError('Not a list of collisions')
 
-        n_col_shape.add_shape(self.export_collision_object(b_obj, layer, n_havok_mat))
+        # Iterate through the children of b_obj to export collision objects
+        for child in b_obj.children:
+            if child.type == 'MESH' and child.rigid_body:  # Only process mesh objects with rigid bodies
+                subshape = self.export_collision_object(child, layer, n_havok_mat, True)
+                if subshape:
+                    n_col_shape.add_shape(subshape)

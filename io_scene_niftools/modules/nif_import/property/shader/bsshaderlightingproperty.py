@@ -73,6 +73,7 @@ class BSShaderLightingPropertyProcessor(BSShader):
 
     def register(self, processor):
         processor.register(NifClasses.BSShaderPPLightingProperty, self.import_bs_shader_pp_lighting_property)
+        processor.register(NifClasses.BSShaderNoLightingProperty, self.import_bs_shader_no_lighting_property)
 
     def import_bs_shader_pp_lighting_property(self, bs_shader_prop):
         # Shader Flags
@@ -84,3 +85,13 @@ class BSShaderLightingPropertyProcessor(BSShader):
         flags = bs_shader_prop.shader_flags
         self.import_flags(self._b_mat, flags)
         self.texturehelper.import_bsshaderproperty_textureset(bs_shader_prop, self._nodes_wrapper)
+
+    def import_bs_shader_no_lighting_property(self, bs_shader_prop):
+        # Shader Flags
+        b_shader = self._b_mat.niftools_shader
+        b_shader.bs_shadertype = 'BSShaderNoLightingProperty'
+
+        b_shader.bsspplp_shaderobjtype = bs_shader_prop.shader_type.name
+
+        flags = bs_shader_prop.shader_flags
+        self.import_flags(self._b_mat, flags)

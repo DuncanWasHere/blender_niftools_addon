@@ -113,7 +113,12 @@ class MeshPropertyProcessor:
             NifLog.debug(f"{type(prop)} property found")
             self.process_property(prop)
 
-        self.nodes_wrapper.connect_to_output(b_mesh.vertex_colors)
+        # TODO: Is the rest of the addon even still compatible with earlier versions?
+        if (3, 2, 0) > bpy.app.version:
+            self.nodes_wrapper.connect_to_output(b_mesh.vertex_colors)
+        else:
+            self.nodes_wrapper.connect_to_output(b_mesh.color_attributes)
+
 
     def process_property(self, prop):
         """Base method to warn user that this property is not supported"""

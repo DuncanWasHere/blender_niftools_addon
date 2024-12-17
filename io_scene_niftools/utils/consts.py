@@ -74,17 +74,17 @@ class EmptyObject:
 
 
 TEX_SLOTS = EmptyObject()
-TEX_SLOTS.BASE = "Base"
-TEX_SLOTS.DARK = "Dark"
-TEX_SLOTS.DETAIL = "Detail"
-TEX_SLOTS.GLOSS = "Gloss"
-TEX_SLOTS.GLOW = "Glow"
-TEX_SLOTS.BUMP_MAP = "Bump Map"
-TEX_SLOTS.DECAL_0 = "Decal 0"
-TEX_SLOTS.DECAL_1 = "Decal 1"
-TEX_SLOTS.DECAL_2 = "Decal 2"
-TEX_SLOTS.SPECULAR = "Specular"
-TEX_SLOTS.NORMAL = "Normal"
+TEX_SLOTS.BASE = "base"
+TEX_SLOTS.DARK = "dark"
+TEX_SLOTS.DETAIL = "detail"
+TEX_SLOTS.GLOSS = "gloss"
+TEX_SLOTS.GLOW = "glow"
+TEX_SLOTS.BUMP_MAP = "bump map"
+TEX_SLOTS.DECAL_0 = "decal 0"
+TEX_SLOTS.DECAL_1 = "decal 1"
+TEX_SLOTS.DECAL_2 = "decal 2"
+TEX_SLOTS.SPECULAR = "specular"
+TEX_SLOTS.NORMAL = "normal"
 
 # fcurve data types for blender
 QUAT = "rotation_quaternion"

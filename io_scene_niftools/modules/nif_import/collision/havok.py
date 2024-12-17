@@ -90,11 +90,25 @@ class BhkCollision(Collision):
         return self.process_bhk(bhk_shape)
 
     def import_bhk_nitristrips_shape(self, bhk_shape):
-        self.havok_mat = bhk_shape.material  # TODO [collision] Havok collision when nif.xml supported.
         return reduce(operator.add, (self.import_bhk_shape(strips) for strips in bhk_shape.strips_data))
 
     def import_bhk_list_shape(self, bhk_shape):
-        return reduce(operator.add, (self.import_bhk_shape(subshape) for subshape in bhk_shape.sub_shapes))
+        """Imports a BhkListShape block as a compound parent collision object"""
+        NifLog.debug(f"Importing {bhk_shape.__class__.__name__}")
+
+        # Create the parent collision object
+        name = "collision_list"
+        b_me = bpy.data.meshes.new(name)
+        b_obj = Object.create_b_obj(None, b_me, name)
+        self.set_b_collider(b_obj, bounds_type="COMPOUND", radius=0, n_obj=bhk_shape)
+
+        # Import all subshapes and parent them to the list shape
+        for subshape in bhk_shape.sub_shapes:
+            b_subshape_objs = self.import_bhk_shape(subshape)
+            for b_subshape_obj in b_subshape_objs:
+                b_subshape_obj.parent = b_obj
+
+        return [b_obj]
 
     def import_bhk_mopp_bv_tree_shape(self, bhk_shape):
         NifLog.debug(f"Importing {bhk_shape.__class__.__name__}")
@@ -210,8 +224,11 @@ class BhkCollision(Collision):
             b_col_obj.nifcollision.max_angular_velocity = body_info.max_angular_velocity
 
             b_col_obj.nifcollision.collision_layer = str(body_info.havok_filter.layer.value)
-            # b_col_obj.nifcollision.quality_type = NifFormat.MotionQuality._enumkeys[bhkshape.quality_type]
-            # b_col_obj.nifcollision.motion_system = NifFormat.MotionSystem._enumkeys[bhkshape.motion_system]
+            b_col_obj.nifcollision.quality_type = body_info.quality_type.name
+            b_col_obj.nifcollision.motion_system = body_info.motion_system.name
+
+            b_col_obj.nifcollision.mass = body_info.mass
+
             b_col_obj.nifcollision.col_filter = bhkshape.havok_filter.flags
 
         # import constraints
@@ -233,7 +250,7 @@ class BhkCollision(Collision):
         maxz = +dims.z * self.HAVOK_SCALE
 
         # create blender object
-        b_obj = Object.box_from_extents("box", minx, maxx, miny, maxy, minz, maxz)
+        b_obj = Object.box_from_extents("collision_box", minx, maxx, miny, maxy, minz, maxz)
         self.set_b_collider(b_obj, radius=r, n_obj=bhk_shape)
         return [b_obj]
 
@@ -242,7 +259,7 @@ class BhkCollision(Collision):
         NifLog.debug(f"Importing {bhk_shape.__class__.__name__}")
 
         r = bhk_shape.radius * self.HAVOK_SCALE
-        b_obj = Object.box_from_extents("sphere", -r, r, -r, r, -r, r)
+        b_obj = Object.box_from_extents("collision_sphere", -r, r, -r, r, -r, r)
         self.set_b_collider(b_obj, display_type="SPHERE", bounds_type='SPHERE', radius=r, n_obj=bhk_shape)
         return [b_obj]
 
@@ -262,7 +279,7 @@ class BhkCollision(Collision):
         maxz = length / 2 + radius
 
         # create blender object
-        b_obj = Object.box_from_extents("capsule", minx, maxx, miny, maxy, minz, maxz)
+        b_obj = Object.box_from_extents("collision_capsule", minx, maxx, miny, maxy, minz, maxz)
         # here, these are not encoded as a direction so we must first calculate the direction
         b_obj.matrix_local = self.center_origin_to_matrix((first_point + second_point) / 2, first_point - second_point)
         self.set_b_collider(b_obj, bounds_type="CAPSULE", display_type="CAPSULE", radius=radius, n_obj=bhk_shape)
@@ -281,7 +298,7 @@ class BhkCollision(Collision):
             verts = []
             faces = []
 
-        b_obj = Object.mesh_from_data("convexpoly", verts, faces)
+        b_obj = Object.mesh_from_data("collision_convexpoly", verts, faces)
         radius = bhk_shape.radius * self.HAVOK_SCALE
         self.set_b_collider(b_obj, bounds_type="CONVEX_HULL", radius=radius, n_obj=bhk_shape)
         return [b_obj]
@@ -290,13 +307,16 @@ class BhkCollision(Collision):
         """Import a BhkPackedNiTriStrips block as a Triangle-Mesh collision object"""
         NifLog.debug(f"Importing {bhk_shape.__class__.__name__}")
 
-        # create mesh for each sub shape
-        hk_objects = []
+        # Create mesh for each sub shape
+        all_verts = []
+        all_faces = []
+        material_map = {}  # Map of material names to material indices
+        material_indices = []
         vertex_offset = 0
         subshapes = bhk_shape.sub_shapes
 
         if not subshapes:
-            # fallout 3 stores them in the data
+            # Fallout 3 stores them in the data
             subshapes = bhk_shape.data.sub_shapes
 
         for subshape_num, subshape in enumerate(subshapes):
@@ -310,28 +330,47 @@ class BhkCollision(Collision):
 
             for bhk_triangle in bhk_shape.data.triangles:
                 bhk_tri = bhk_triangle.triangle
-                if (vertex_offset <= bhk_tri.v_1) and (bhk_tri.v_1 < vertex_offset + subshape.num_vertices):
+                if vertex_offset <= bhk_tri.v_1 < vertex_offset + subshape.num_vertices:
                     faces.append((bhk_tri.v_1 - vertex_offset,
                                   bhk_tri.v_2 - vertex_offset,
                                   bhk_tri.v_3 - vertex_offset))
-                else:
-                    continue
+                    # Assign the material index for this face
+                    havok_material = getattr(subshape, 'material', None)
+                    if havok_material:
+                        if hasattr(havok_material, "material"):
+                            mat_enum = havok_material.material
+                            mat_name = mat_enum.name
+                            b_mat = collision.get_material(mat_name)
+                            if b_mat not in material_map:
+                                material_map[b_mat] = len(material_map)
 
-            b_obj = Object.mesh_from_data(f'poly{subshape_num:d}', verts, faces)
-            radius = min(vert.co.length for vert in b_obj.data.vertices)
-            self.set_b_collider(b_obj, bounds_type="MESH", radius=radius, n_obj=subshape)
+                            material_indices.append(material_map[b_mat])
 
+            # Extend global lists with this subshape's data
+            all_verts.extend(verts)
+            all_faces.extend([(v1 + vertex_offset, v2 + vertex_offset, v3 + vertex_offset) for v1, v2, v3 in faces])
             vertex_offset += subshape.num_vertices
-            hk_objects.append(b_obj)
 
-        return hk_objects
+        # Create a single mesh object with all vertices and faces
+        b_obj = Object.mesh_from_data("collision_poly", all_verts, all_faces)
+        b_me = b_obj.data
+
+        for b_mapped_mat in material_map.keys():
+            b_me.materials.append(b_mapped_mat)
+
+        for poly, mat_index in zip(b_me.polygons, material_indices):
+            poly.material_index = mat_index
+
+        radius = min(vert.co.length for vert in b_me.vertices)
+        self.set_b_collider(b_obj, bounds_type="MESH", radius=radius)
+        return [b_obj]
 
     def import_nitristrips(self, bhk_shape):
         """Import a NiTriStrips block as a Triangle-Mesh collision object"""
         # no factor 7 correction!!!
         verts = [(v.x, v.y, v.z) for v in bhk_shape.vertices]
         faces = list(bhk_shape.get_triangles())
-        b_obj = Object.mesh_from_data("poly", verts, faces)
+        b_obj = Object.mesh_from_data("collision_poly", verts, faces)
         # TODO [collision] self.havok_mat!
         self.set_b_collider(b_obj, bounds_type="MESH", radius=bhk_shape.bounding_sphere.radius)
         return [b_obj]

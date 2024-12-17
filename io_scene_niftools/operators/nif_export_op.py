@@ -75,7 +75,7 @@ class NifExportOperator(Operator, ExportHelper, CommonDevOperator, CommonNif, Co
     stripify: bpy.props.BoolProperty(
         name="Stripify Geometries",
         description="Stripify geometries",
-        default=False,
+        default=True,
         options={'HIDDEN'})
 
     # Stitch strips. Deprecate? (Strips are slower than triangle shapes.)
@@ -134,7 +134,7 @@ class NifExportOperator(Operator, ExportHelper, CommonDevOperator, CommonNif, Co
         description="When tangents are stored:\n"
                     "Split vertices if tangents differ (not used by Oblivion head nifs).\n"
                     "Warning: Unchecking causes seams on mirrored UV boundaries",
-        default=True)
+        default=False)
 
     def draw(self, context):
         pass
