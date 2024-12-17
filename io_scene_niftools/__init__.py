@@ -48,13 +48,13 @@ bl_info = {
     "name": "NetImmerse/Gamebryo format support",
     "description": "Import and export files in the NetImmerse/Gamebryo formats (.nif, .kf, .egm)",
     "author": "Niftools team",
-    "blender": (2, 82, 0),
-    "version": (0, 1, 3),  # can't read from VERSION, blender wants it hardcoded
+    "blender": (3, 6, 0),
+    "version": (0, 1, 4),  # can't read from VERSION, blender wants it hardcoded
     "api": 39257,
     "location": "File > Import-Export",
-    "warning": "Generally stable port of the Niftool's Blender NifScripts, many improvements, still work in progress",
+    "warning": "WIP fork of Blender Niftools Addon prioritizing support for Fallout New Vegas.",
     "wiki_url": "https://blender-niftools-addon.readthedocs.io/",
-    "tracker_url": "https://github.com/niftools/blender_niftools_addon/issues",
+    "tracker_url": "https://github.com/DuncanWasHere/blender_niftools_addon/issues",
     "support": "COMMUNITY",
     "category": "Import-Export"
 }
