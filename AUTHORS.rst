@@ -4,6 +4,7 @@ Current developers
 * @neomonkeus
 * @HENDRIX-ZT2
 * @Candoran2
+* @DuncanWasHere
 
 
 Former developers

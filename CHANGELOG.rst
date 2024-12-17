@@ -1,3 +1,9 @@
+Version v0.1.2
+===============
+- #[todo]
+    - Fix for #617
+    - Fix for Blender sometimes calculating tangent/bitangent outside [-1.0, 1.0] range.
+
 Version v0.1.1
 ===============
 
