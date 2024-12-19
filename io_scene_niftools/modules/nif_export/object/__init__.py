@@ -49,6 +49,7 @@ from io_scene_niftools.modules.nif_export.geometry.mesh import Mesh
 from io_scene_niftools.modules.nif_export.property.object import ObjectDataProperty
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.utils import math
+from io_scene_niftools.utils.consts import UPB_DEFAULT
 from io_scene_niftools.utils.logging import NifLog
 
 # dictionary of names, to map NIF blocks to correct Blender names
@@ -92,28 +93,28 @@ class Object:
             return self.get_export_objects(only_selected=False)
         return exportable_objects, root_objects
 
-    def export_root_node(self, root_objects, filebase):
+    def export_root_node(self, b_root_objects, filebase):
         """ Exports a nif's root node; use blender root if there is only one, else create a meta root """
         # TODO [collsion] detect root collision -> root collision node (can be mesh or empty)
         #     self.export_collision(b_obj, n_parent)
         #     return None  # done; stop here
         self.n_root = None
         # there is only one root object so that will be our final root
-        if len(root_objects) == 1:
-            b_obj = root_objects[0]
+        if len(b_root_objects) == 1:
+            b_obj = b_root_objects[0]
             self.export_node(b_obj, None, n_node_type=b_obj.niftools.nodetype)
 
         # there is more than one root object so we create a meta root
         else:
-            NifLog.info(f"Created meta root because blender scene had {len(root_objects)} root objects")
+            NifLog.info(f"Created meta root because blender scene had {len(b_root_objects)} root objects")
             self.n_root = types.create_ninode()
             self.n_root.name = "Scene Root"
-            for b_obj in root_objects:
+            for b_obj in b_root_objects:
                 self.export_node(b_obj, self.n_root)
 
         # various extra datas
         object_property = ObjectDataProperty()
-        object_property.export_bsxflags_upb(self.n_root, root_objects)
+        object_property.export_bs_x_flags(self.n_root, b_root_objects)
         object_property.export_inventory_marker(self.n_root, b_obj)
         object_property.export_weapon_location(self.n_root, b_obj)
         types.export_furniture_marker(self.n_root, filebase)
@@ -179,29 +180,30 @@ class Object:
                     b_action = False
 
         # -> everything else (empty/armature) is a (more or less regular) node
-        node = types.create_ninode(b_obj, n_node_type=n_node_type)
+        n_node = types.create_ninode(b_obj, n_node_type=n_node_type)
         # set parenting here so that it can be accessed
         if not self.n_root:
-            self.n_root = node
+            self.n_root = n_node
 
         # make it child of its parent in the nif, if it has one
         if n_parent:
-            n_parent.add_child(node)
+            n_parent.add_child(n_node)
 
         # and fill in this node's non-trivial values
-        node.name = block_store.get_full_name(b_obj)
-        self.set_node_flags(b_obj, node)
-        math.set_object_matrix(b_obj, node)
+        n_node.name = block_store.get_full_name(b_obj)
+        self.set_node_flags(b_obj, n_node)
+        math.set_object_matrix(b_obj, n_node)
+        self.export_upb(n_node, b_obj)
 
         # export object animation
-        self.transform_anim.export_transforms(node, b_obj, b_action)
-        self.object_anim.export_visibility(node, b_action)
+        self.transform_anim.export_transforms(n_node, b_obj, b_action)
+        self.object_anim.export_visibility(n_node, b_action)
         # if it is a mesh, export the mesh as n_geom children of this ninode
         if b_obj.type == 'MESH':
-            return self.mesh_helper.export_tri_shapes(b_obj, node, self.n_root)
+            return self.mesh_helper.export_tri_shapes(b_obj, n_node, self.n_root)
         # if it is an armature, export the bones as ninode children of this ninode
         elif b_obj.type == 'ARMATURE':
-            self.armaturehelper.export_bones(b_obj, node)
+            self.armaturehelper.export_bones(b_obj, n_node)
             # special case: objects parented to armature bones
             for b_child in b_obj.children:
                 # find and attach to the right node
@@ -213,13 +215,13 @@ class Object:
                     self.export_node(b_child, n_node)
                 # just child of the armature itself, so attach to armature root
                 else:
-                    self.export_node(b_child, node)
+                    self.export_node(b_child, n_node)
         else:
             # export all children of this empty object as children of this node
             for b_child in b_obj.children:
-                self.export_node(b_child, node)
+                self.export_node(b_child, n_node)
 
-        return node
+        return n_node
 
     def export_collision(self, b_obj, n_parent):
         """Main function for adding collision object b_obj to a node.
@@ -262,3 +264,12 @@ class Object:
             NifLog.warn(f"Collisions not supported for game '{bpy.context.scene.niftools_scene.game}', skipped collision object '{b_obj.name}'")
 
         return True
+
+    def export_upb(self, n_node, b_obj):
+        # Export UPB NiStringExtraData if not optimizer junk
+        if b_obj.niftools.upb:
+            if 'BSBoneLOD' in b_obj.niftools.upb or 'Bip' in b_obj.niftools.upb:
+                upb = block_store.create_block("NiStringExtraData")
+                upb.name = 'UPB'
+                upb.string_data = b_obj.niftools.upb
+                n_node.add_extra_data(upb)

@@ -123,7 +123,7 @@ class Mesh:
             # create a n_geom block
             if game in ("SKYRIM_SE",):
                 n_geom = block_store.create_block("BSTriShape", b_obj)
-            elif not NifOp.props.stripify:
+            elif not NifOp.props.stripify or (b_obj.parent and b_obj.parent.type == 'ARMATURE'):
                 n_geom = block_store.create_block("NiTriShape", b_obj)
                 n_geom.data = block_store.create_block("NiTriShapeData", b_obj)
             else:
@@ -651,7 +651,7 @@ class Mesh:
                     # NIF flips the texture V-coordinate (OpenGL standard)
                     n_uv.v = 1.0 - uv_coords[i][j][1]  # opengl standard
         # set triangles stitch strips for civ4
-        n_geom.data.set_triangles(triangles, stitchstrips=NifOp.props.stitch_strips)
+        n_geom.data.set_triangles(triangles, stitchstrips=True)
 
     def export_skin_partition(self, b_obj, bodypartfacemap, triangles, n_geom):
         """Attaches a skin partition to n_geom if needed"""
@@ -682,7 +682,7 @@ class Mesh:
                 maxbonesperpartition=NifOp.props.max_bones_per_partition,
                 maxbonespervertex=NifOp.props.max_bones_per_vertex,
                 stripify=NifOp.props.stripify,
-                stitchstrips=NifOp.props.stitch_strips,
+                stitchstrips=True,
                 padbones=NifOp.props.pad_bones,
                 triangles=triangles,
                 trianglepartmap=bodypartfacemap,

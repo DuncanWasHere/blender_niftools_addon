@@ -67,14 +67,14 @@ class Constraint:
             # so skip this object
             return
 
-        if not hasattr(b_obj, "constraints"):
+        if not hasattr(b_obj, "rigid_body_constraint"):
             # skip text buffers etc
             return
 
         # Set Havok Scale ratio
         self.HAVOK_SCALE = NifData.data.havok_scale
 
-        for b_constr in b_obj.constraints:
+        for b_constr in b_obj.rigid_body_constraint:
             # rigid body joints
             if b_constr.type == 'RIGID_BODY_JOINT':
                 if bpy.context.scene.niftools_scene.is_bs():

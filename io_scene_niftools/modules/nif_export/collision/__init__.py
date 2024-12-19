@@ -68,5 +68,4 @@ class Collision:
         if bpy.context.scene.niftools_scene.is_bs():
             # Update rigid body center of mass and inertia
             # Mass value should be set manually as it is not necessarily physically accurate
-            NifLog.warn("shit is happening!!")
-            n_bhk_rigid_body.update_mass_center_inertia(mass=n_bhk_rigid_body.rigid_body_info.mass, solid=True)
+            n_bhk_rigid_body.update_mass_center_inertia(mass=n_bhk_rigid_body.rigid_body_info.mass, solid=b_col_obj.nifcollision.solid)

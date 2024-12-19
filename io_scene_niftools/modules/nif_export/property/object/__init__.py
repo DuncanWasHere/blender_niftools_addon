@@ -207,15 +207,35 @@ class ObjectProperty:
         return self.get_matching_block("NiStencilProperty", flags=flags)
 
 
-# TODO [object][property][extradata] doesn't account for mult-root
 class ObjectDataProperty:
 
     @staticmethod
     def has_collision():
         """Helper function that determines if a blend file contains a collider."""
+        b_objs = []
         for b_obj in bpy.data.objects:
-            if b_obj.display_type == "BOUNDS":
-                return b_obj
+            if b_obj.rigid_body and not b_obj.parent.rigid_body:
+                b_objs.append(b_obj)
+
+        return b_objs
+
+    @staticmethod
+    def has_dynamic_collision():
+        """Helper function that determines if a blend file contains a collider with dynamic motion system."""
+        b_objs = []
+        for b_obj in bpy.data.objects:
+            if b_obj.rigid_body:
+                if not 'INVALID' in b_obj.nifcollision.motion_system and not 'FIXED' in b_obj.nifcollision.motion_system:
+                    b_objs.append(b_obj)
+
+        return b_objs
+
+    @staticmethod
+    def has_animation():
+        """Helper function that determines if a blend file contains a collider with dynamic motion system."""
+        for b_obj in bpy.data.objects:
+            if b_obj.animation_data:
+                return True
 
     # TODO [object][property] Move to object property
     @staticmethod
@@ -244,34 +264,44 @@ class ObjectDataProperty:
                 prn.string_data = loc
                 n_root.add_extra_data(prn)
 
-    # TODO [object][property] Move to object property
-    def export_bsxflags_upb(self, root_block, root_objects):
-        # TODO [object][property] Fixme
-        NifLog.info("Checking collision")
-        # activate oblivion/Fallout 3 collision and physics
-        if bpy.context.scene.niftools_scene.is_bs():
-            b_obj = self.has_collision()
-            if b_obj:
-                # enable collision
-                bsx = block_store.create_block("BSXFlags")
-                bsx.name = 'BSX'
-                root_block.add_extra_data(bsx)
-                found_bsx = False
-                for root_object in root_objects:
-                    if root_object.niftools.bsxflags:
-                        if found_bsx:
-                            raise NifError("Multiple objects have BSXFlags. Only one onject may contain this data")
-                        else:
-                            found_bxs = True
-                            bsx.integer_data = root_object.niftools.bsxflags
+    def export_bs_x_flags(self, n_root_node, b_root_objects):
+        # Export BSXFlags and update to enable collision and animation if needed
 
-                # many Oblivion nifs have a UPB, but export is disabled as
-                # they do not seem to affect anything in the game
-                if b_obj.niftools.upb:
-                    upb = block_store.create_block("NiStringExtraData")
-                    upb.name = 'UPB'
-                    if b_obj.niftools.upb == '':
-                        upb.string_data = UPB_DEFAULT
+        if bpy.context.scene.niftools_scene.is_bs():
+            bsx = block_store.create_block("BSXFlags")
+            bsx.name = 'BSX'
+            n_root_node.add_extra_data(bsx)
+            found_bsx = False
+
+            # Export root object's BSXFlags property
+            for b_root_object in b_root_objects:
+                if b_root_object.niftools.nodetype == 'BSFadeNode':
+                    if found_bsx:
+                        raise NifError("Multiple objects have BSXFlags. Only one object may contain this data")
                     else:
-                        upb.string_data = b_obj.niftools.upb.encode()
-                    root_block.add_extra_data(upb)
+                        found_bxs = True
+                        bsx.integer_data = b_root_object.niftools.bsxflags
+
+            # Set or clear animated bit
+            if self.has_animation():
+                bsx.integer_data |= 0x1
+            else:
+                bsx.integer_data &= ~0x1
+
+            # Set or clear Havok bit
+            if self.has_collision():
+                bsx.integer_data |= 0x2
+            else:
+                bsx.integer_data &= ~0x2
+
+            # Set or clear complex bit
+            if self.has_dynamic_collision() and len(self.has_collision()) > 1:
+                bsx.integer_data |= 0x4
+            else:
+                bsx.integer_data &= ~0x4
+
+            # Set or clear dynamic bit
+            if self.has_dynamic_collision():
+                bsx.integer_data |= 0x20
+            else:
+                bsx.integer_data &= ~0x20

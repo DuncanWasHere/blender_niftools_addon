@@ -141,23 +141,24 @@ class NifImport(NifCommon):
         if NifOp.props.override_scene_info:
             scene.import_version_info(NifData.data)
 
-    def import_root(self, root_block):
+    def import_root(self, n_root_node):
         """Main import function."""
         # check that this is not a kf file
-        if isinstance(root_block, (NifClasses.NiSequence, NifClasses.NiSequenceStreamHelper)):
+        if isinstance(n_root_node, (NifClasses.NiSequence, NifClasses.NiSequenceStreamHelper)):
             raise io_scene_niftools.utils.logging.NifError("Use the KF import operator to load KF files.")
 
         # divinity 2: handle CStreamableAssetData
-        if isinstance(root_block, NifClasses.CStreamableAssetData):
-            root_block = root_block.root
+        if isinstance(n_root_node, NifClasses.CStreamableAssetData):
+            n_root_node = n_root_node.root
 
         # mark armature nodes and bones
-        self.armaturehelper.check_for_skin(root_block)
+        self.armaturehelper.check_for_skin(n_root_node)
 
         # read the NIF tree
-        if isinstance(root_block, NifClasses.NiNode) or self.objecthelper.has_geometry(root_block):
-            b_obj = self.import_branch(root_block)
-            ObjectProperty().import_extra_datas(root_block, b_obj)
+        if isinstance(n_root_node, NifClasses.NiNode) or self.objecthelper.has_geometry(n_root_node):
+            b_obj = self.import_branch(n_root_node)
+            ObjectProperty().import_object_properties(n_root_node, b_obj)
+            ObjectProperty().import_root_extra_data(n_root_node, b_obj)
 
             # now all havok objects are imported, so we are ready to import the havok constraints
             self.constrainthelper.import_bhk_constraints()
@@ -168,14 +169,14 @@ class NifImport(NifCommon):
                     self.objecthelper.remove_armature_modifier(b_child)
                     self.objecthelper.append_armature_modifier(b_child, b_obj)
 
-        elif isinstance(root_block, NifClasses.NiCamera):
+        elif isinstance(n_root_node, NifClasses.NiCamera):
             NifLog.warn('Skipped NiCamera root')
 
-        elif isinstance(root_block, NifClasses.NiPhysXProp):
+        elif isinstance(n_root_node, NifClasses.NiPhysXProp):
             NifLog.warn('Skipped NiPhysXProp root')
 
         else:
-            NifLog.warn(f"Skipped unsupported root block type '{root_block.__class__}' (corrupted nif?).")
+            NifLog.warn(f"Skipped unsupported root block type '{n_root_node.__class__}' (corrupted nif?).")
 
     def import_collision(self, n_node):
         """ Imports a NiNode's collision_object, if present"""
@@ -225,7 +226,6 @@ class NifImport(NifCommon):
             else:
                 # import as an empty
                 b_obj = NiTypes.import_empty(n_block)
-            b_obj.niftools.flags = n_block.flags
 
             # find children
             b_children = []
@@ -246,6 +246,8 @@ class NifImport(NifCommon):
             self.objecthelper.set_object_bind(b_obj, b_children, b_armature)
 
             # import extra node data, such as node type
+            ObjectProperty().import_object_properties(n_block, b_obj)
+            ObjectProperty().import_extra_data(n_block, b_obj)
             NiTypes.import_root_collision(n_block, b_obj)
             NiTypes.import_billboard(n_block, b_obj)
             NiTypes.import_range_lod_data(n_block, b_obj, b_children)

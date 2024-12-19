@@ -38,6 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 from bpy.types import Panel
+from io_scene_niftools.operators.shrink_hull import OperatorShrinkHull
 
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 
@@ -75,11 +76,15 @@ class CollisionBoundsPanel(Panel):
         box.prop(col_setting, "solver_deactivation", text='Solver Deactivator')  # motion deactivation prop
         box.prop(col_setting, "quality_type", text='Quality Type')  # quality type prop
         box.prop(col_setting, "body_flags", text='React to Wind')  # body flags prop
-        box.prop(col_setting, "use_blender_properties", text='Use Blender Properties')  # use blender properties prop
+        box.prop(col_setting, "use_blender_properties", text='Use Blender Properties')  # use blender properties prop\
+        box.prop(col_setting, "solid", text='Solid')  # solid prop
+        box.prop(col_setting, "shrink_offset", text='Shrink Offset') # shrink offset prop
+        box.operator("niftools.shrink_hull", text='Shrink Hull') # shrink hull operator
 
 
 classes = [
-    CollisionBoundsPanel
+    CollisionBoundsPanel,
+    OperatorShrinkHull
 ]
 
 

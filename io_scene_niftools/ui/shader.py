@@ -71,6 +71,8 @@ class ShaderPanel(Panel):
 
             for property_name in sorted(NifClasses.BSShaderFlags.__members__):
                 row.prop(nif_obj_props, property_name)
+            for property_name in sorted(NifClasses.BSShaderFlags2.__members__):
+                row.prop(nif_obj_props, property_name)
 
         elif nif_obj_props.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty'):
             row.prop(nif_obj_props, "bslsp_shaderobjtype")

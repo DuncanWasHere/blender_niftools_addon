@@ -1,4 +1,4 @@
-""" Nif User Interface, connect custom properties from properties.py into Blenders UI"""
+"""Nif User Interface, custom nif properties store for animation settings"""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -37,17 +37,54 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from io_scene_niftools.utils.decorators import register_modules, unregister_modules
+import bpy
+from bpy.props import EnumProperty, FloatProperty
+from bpy.types import PropertyGroup
 
-from io_scene_niftools.ui import animation, armature, collision, material, object, operators, shader, scene
+from nifgen.formats.nif import classes as NifClasses
 
-MODS = [animation, armature, collision, material, object, operators, shader, scene]
+from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+
+
+class AnimationProperty(PropertyGroup):
+    """Group of Havok related properties, which gets attached to objects through a property pointer."""
+
+
+    weight: FloatProperty(
+        name='Weight',
+        description='How the NiControllerSequence blends with other sequences at the same priority',
+        default=1.0,
+        min=0,
+        max=1.0,
+    )
+
+    cycle_type: EnumProperty(
+        name='Cycle Type',
+        description='Playback behavior of the NiControllerSequence',
+        items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.CycleType)],
+        default = 'CYCLE_LOOP'
+    )
+
+    frequency: FloatProperty(
+        name='Frequency',
+        description='Playback speed of the NiControllerSequence',
+        min=0,
+        default=1.0,
+    )
+
+
+CLASSES = [
+    AnimationProperty
+]
 
 
 def register():
-    register_modules(MODS, __name__)
+    register_classes(CLASSES, __name__)
+
+    bpy.types.Action.nifanimation = bpy.props.PointerProperty(type=AnimationProperty)
 
 
 def unregister():
-    unregister_modules(MODS, __name__)
+    del bpy.types.Action.nifanimation
 
+    unregister_classes(CLASSES, __name__)

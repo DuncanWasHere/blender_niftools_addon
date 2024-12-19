@@ -148,7 +148,15 @@ class ObjectProperty(PropertyGroup):
         description='Type of node this empty represents',
         items=(
               ('NiNode', 'NiNode', "", 0),
-              ('BSFadeNode', 'BSFadeNode', "", 1)),
+              ('BSFadeNode', 'BSFadeNode', "", 1),
+              ('NiLODNode', 'NiLODNode', "", 2),
+              ('NiBillboardNode', 'NiBillboardNode', "", 3),
+              ('BSBlastNode', 'BSBlastNode', "", 4),
+              ('BSDamageStage', 'BSDamageStage', "", 5),
+              ('BSDebrisNode', 'BSDebrisNode', "", 6),
+              ('BSMultiBoundNode', 'BSMultiBoundNode', "", 7),
+              ('BSOrderedNode', 'BSOrderedNode', "", 8),
+              ('BSValueNode', 'BSValueNode', "", 9)),
         default='NiNode',
     )
 
@@ -171,9 +179,9 @@ class ObjectProperty(PropertyGroup):
     )
 
     flags: IntProperty(
-        name='Object Flag',
+        name='Object Flags',
         description='Controls animation and collision',
-        default=0
+        default=524302
     )
 
     bsxflags: IntProperty(
@@ -184,13 +192,13 @@ class ObjectProperty(PropertyGroup):
 
     upb: StringProperty(
         name='UPB',
-        description='Commands for an optimizer?',
+        description='Rarely used for backpacks and bone LOD (rest is optimizer junk)',
         default=''
     )
 
     extra_data_store: PointerProperty(
         name="Extra Data",
-        description="Used to store all the Extra data",
+        description="Used to store all the extra data",
         type=ExtraDataStore,
     )
 

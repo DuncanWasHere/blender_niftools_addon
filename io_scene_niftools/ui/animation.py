@@ -1,5 +1,5 @@
-""" Nif User Interface, connect custom properties from properties.py into Blenders UI"""
-
+"""Nif User Interface, connect custom animation properties from properties.py into Blenders UI"""
+import bpy
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2014, NIF File Format Library and Tools contributors.
@@ -37,17 +37,43 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from io_scene_niftools.utils.decorators import register_modules, unregister_modules
+from bpy.types import Panel
+from io_scene_niftools.operators.shrink_hull import OperatorShrinkHull
 
-from io_scene_niftools.ui import animation, armature, collision, material, object, operators, shader, scene
+from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 
-MODS = [animation, armature, collision, material, object, operators, shader, scene]
+
+class AnimationPanel(Panel):
+    bl_idname = "NIFTOOLS_PT_AnimationPanel"
+    bl_label = "Niftools Animation"
+
+    bl_space_type = 'DOPESHEET_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = 'Action'
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.mode == 'ACTION' and context.active_action
+
+    def draw(self, context):
+        layout = self.layout
+
+        col_setting = context.active_action.nifanimation
+
+        box = layout.box()
+        box.prop(col_setting, "weight", text='Weight')  # weight prop
+        box.prop(col_setting, "frequency", text='Frequency')  # frequency prop
+        box.prop(col_setting, "cycle_type", text='Cycle Type')  # cycle type prop
+
+
+classes = [
+    AnimationPanel,
+]
 
 
 def register():
-    register_modules(MODS, __name__)
+    register_classes(classes, __name__)
 
 
 def unregister():
-    unregister_modules(MODS, __name__)
-
+    unregister_classes(classes, __name__)

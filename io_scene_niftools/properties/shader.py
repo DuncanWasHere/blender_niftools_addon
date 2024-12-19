@@ -90,6 +90,7 @@ def prettify_prop_name(property_name):
 annotations_dict = ShaderProps.__dict__.get('__annotations__', None)
 if annotations_dict:
     for flag_field in (NifClasses.BSShaderFlags,
+                       NifClasses.BSShaderFlags2,
                        NifClasses.SkyrimShaderPropertyFlags1,
                        NifClasses.SkyrimShaderPropertyFlags2):
         for property_name in flag_field.__members__:

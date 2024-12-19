@@ -169,8 +169,8 @@ class BhkCollision(Collision):
         n_bhk_rigid_body.havok_filter.flags = b_col_obj.nifcollision.col_filter
         # n_r_body.havok_filter.group = 0
 
-        n_bhk_rigid_body.entity_info.collision_response = 1
-        n_r_info.collision_response = 1
+        n_bhk_rigid_body.entity_info.collision_response = NifClasses.HkResponseType['RESPONSE_SIMPLE_CONTACT']
+        n_r_info.collision_response = NifClasses.HkResponseType['RESPONSE_SIMPLE_CONTACT']
 
         n_r_info.havok_filter = n_bhk_rigid_body.havok_filter
 

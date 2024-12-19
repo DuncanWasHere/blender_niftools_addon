@@ -66,13 +66,13 @@ class ObjectPanel(ObjectButtonsPanel):
 
         layout = self.layout
         row = layout.column()
+        if b_obj.type == "EMPTY":
+            row.prop(nif_obj_props, "nodetype")
+            row.prop(nif_obj_props, "upb")
         if self.is_root_object(b_obj):
-            if b_obj.type == "EMPTY":
-                row.prop(nif_obj_props, "nodetype")
             if b_obj.type != "ARMATURE":
                 # prn nistringextradata is only useful as replacement for rigging data
                 row.prop(nif_obj_props, "prn_location")
-            row.prop(nif_obj_props, "upb")
             row.prop(nif_obj_props, "bsxflags")
         if b_obj.type == "MESH":
             # consistency flags only exist for NiGeometry

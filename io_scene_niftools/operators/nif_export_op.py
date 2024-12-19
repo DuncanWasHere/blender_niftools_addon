@@ -78,13 +78,6 @@ class NifExportOperator(Operator, ExportHelper, CommonDevOperator, CommonNif, Co
         default=True,
         options={'HIDDEN'})
 
-    # Stitch strips. Deprecate? (Strips are slower than triangle shapes.)
-    stitch_strips: bpy.props.BoolProperty(
-        name="Stitch Strips",
-        description="Stitch strips",
-        default=True,
-        options={'HIDDEN'})
-
     # Flatten skin.
     flatten_skin: bpy.props.BoolProperty(
         name="Flatten Skin",

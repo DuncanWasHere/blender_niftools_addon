@@ -45,6 +45,112 @@ from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.utils.singleton import NifOp, NifData
 from io_scene_niftools.utils.logging import NifLog, NifError
 
+class NiControllerManager:
+
+    def __init__(self):
+        from io_scene_niftools.modules.nif_export.animation.material import MaterialAnimation
+        from io_scene_niftools.modules.nif_export.animation.morph import MorphAnimation
+        from io_scene_niftools.modules.nif_export.animation.shader import ShaderAnimation
+        from io_scene_niftools.modules.nif_export.animation.texture import TextureAnimation
+        from io_scene_niftools.modules.nif_export.animation.object import ObjectAnimation
+        from io_scene_niftools.modules.nif_export.animation.transform import TransformAnimation
+
+        self.fps = bpy.context.scene.render.fps
+        self.transform_animation_helper = TransformAnimation()
+        self.material_animation_helper = MaterialAnimation()
+        self.texture_animation_helper = TextureAnimation()
+        self.shader_animation_helper = ShaderAnimation()
+        self.object_animation_helper = ObjectAnimation()
+        self.morph_animation_helper = MorphAnimation()
+        # self.particle_animation_helper =
+
+    def export_nif_animations(self, n_root_node):
+        # Collect NLA tracks by name
+        # All NLA tracks with the same name = one NiControllerSequence
+        # Sequence name = dict key
+        b_sequences = {}
+
+        if not bpy.data.actions:
+            return # No animation data in the scene
+
+        for b_obj in bpy.data.objects:
+            if not b_obj.animation_data or not b_obj.animation_data.nla_tracks:
+                continue
+
+            for b_nla_track in b_obj.animation_data.nla_tracks:
+                if b_nla_track.name not in b_sequences:
+                    b_sequences[b_nla_track.name] = set()
+
+                # TODO: Support multiple strips per track?
+                b_sequence_data = (b_nla_track.strips[0], b_obj)
+                b_sequences[b_nla_track.name].add(b_sequence_data)
+
+        # Export the NiControllerManager
+        self.export_ni_controller_manager(n_root_node, b_sequences)
+
+    def export_ni_controller_manager(self, n_root_node, b_sequences):
+        # Create a NiControllerManager and parent it to the root node
+        n_ni_controller_manager = block_store.create_block("NiControllerManager")
+        n_ni_controller_manager.target = n_root_node
+        n_root_node.controller = n_ni_controller_manager
+
+        n_ni_multi_target_transform_controller = None
+
+        for n_sequence_name, b_sequence_data in b_sequences.items():
+            # Create a NiControllerSequence for each Blender quasi sequence
+            n_ni_controller_sequence = self.export_ni_controller_sequence(n_sequence_name, b_sequence_data, n_root_node.name)
+            n_ni_controller_manager.add_controller_sequence(n_ni_controller_sequence)
+            n_ni_controller_sequence.manager = n_ni_controller_manager
+
+            for n_controlled_block in n_ni_controller_sequence.controlled_blocks:
+                if n_controlled_block.controller_type == 'NiTransformController':
+                    if not n_ni_multi_target_transform_controller:
+                        n_ni_multi_target_transform_controller = block_store.create_block(
+                            "NiMultiTargetTransformController")
+                        n_ni_controller_manager.next_controller = n_ni_multi_target_transform_controller
+                    n_controlled_block.controller = n_ni_multi_target_transform_controller
+
+        n_ni_default_av_object_palette = block_store.create_block("NiDefaultAVObjectPalette")
+        n_ni_controller_manager.object_palette = n_ni_default_av_object_palette
+        n_ni_default_av_object_palette.scene = n_root_node
+
+    def export_ni_controller_sequence(self, n_sequence_name, b_sequence_data, n_accum_root_name):
+        # Create a NiControllerSequence and set its properties
+        n_ni_controller_sequence = block_store.create_block("NiControllerSequence")
+        n_ni_controller_sequence.accum_root_name = n_accum_root_name
+        n_ni_controller_sequence.name = n_sequence_name
+        n_ni_controller_sequence.array_grow_by = 1
+
+        for b_sequence in b_sequence_data:
+            b_nla_strip = b_sequence[0]
+
+            n_ni_controller_sequence.start_time = b_nla_strip.frame_start / bpy.context.scene.render.fps
+            n_ni_controller_sequence.stop_time = b_nla_strip.frame_end / bpy.context.scene.render.fps
+            n_ni_controller_sequence.weight = b_nla_strip.influence
+            n_ni_controller_sequence.frequency = b_nla_strip.scale
+
+            if b_nla_strip.use_reverse:
+                n_ni_controller_sequence.cycle_type = NifClasses.CycleType['CYCLE_REVERSE']
+            elif b_nla_strip.use_animated_time_cyclic:
+                n_ni_controller_sequence.cycle_type = NifClasses.CycleType['CYCLE_REVERSE']
+            else:
+                n_ni_controller_sequence.cycle_type = NifClasses.CycleType['CYCLE_CLAMP']
+
+            # Export controlled blocks for all objects with strips on these tracks
+            self.export_controlled_blocks(b_sequence[1],
+                                          b_sequence[1].animation_data.action,
+                                          n_ni_controller_sequence)
+
+        self.export_text_keys()
+
+        return n_ni_controller_sequence
+
+    def export_controlled_blocks(self, b_obj, b_action, n_ni_controller_sequence):
+        # Add a controlled block for each controller type in the action's keying set
+        self.transform_animation_helper.export_transforms(n_ni_controller_sequence, b_obj, b_action)
+
+    def export_text_keys(self):
+        return
 
 class Animation(ABC):
 

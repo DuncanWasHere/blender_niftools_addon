@@ -42,16 +42,15 @@ from nifgen.formats.nif import classes as NifClasses
 from io_scene_niftools.modules.nif_import.property.shader import BSShader
 from io_scene_niftools.modules.nif_import.property.texture.types.bsshadertexture import BSShaderTexture
 
-"""
-<niobject name="BSShaderLightingProperty" abstract="true" inherit="BSShaderProperty" module="BSMain" versions="#FO3#">Bethesda-specific property.
-<niobject name="BSShaderNoLightingProperty" inherit="BSShaderLightingProperty" module="BSMain" versions="#FO3#">Bethesda-specific property.
-<niobject name="BSShaderPPLightingProperty" inherit="BSShaderLightingProperty" module="BSMain" versions="#FO3#">Bethesda-specific property.
-<niobject name="SkyShaderProperty" inherit="BSShaderLightingProperty" module="BSMain" versions="#BETHESDA#">Bethesda-specific property. Found in Fallout3
-<niobject name="TileShaderProperty" inherit="BSShaderLightingProperty" module="BSMain" versions="#FO3#">Bethesda-specific property.
-"""
-
 
 class BSShaderLightingPropertyProcessor(BSShader):
+    """
+    <niobject name="BSShaderLightingProperty" abstract="true" inherit="BSShaderProperty" module="BSMain" versions="#FO3#">Bethesda-specific property.
+    <niobject name="BSShaderNoLightingProperty" inherit="BSShaderLightingProperty" module="BSMain" versions="#FO3#">Bethesda-specific property.
+    <niobject name="BSShaderPPLightingProperty" inherit="BSShaderLightingProperty" module="BSMain" versions="#FO3#">Bethesda-specific property.
+    <niobject name="SkyShaderProperty" inherit="BSShaderLightingProperty" module="BSMain" versions="#BETHESDA#">Bethesda-specific property. Found in Fallout3
+    <niobject name="TileShaderProperty" inherit="BSShaderLightingProperty" module="BSMain" versions="#FO3#">Bethesda-specific property.
+    """
 
     __instance = None
 
@@ -83,7 +82,9 @@ class BSShaderLightingPropertyProcessor(BSShader):
         b_shader.bsspplp_shaderobjtype = bs_shader_prop.shader_type.name
 
         flags = bs_shader_prop.shader_flags
+        flags_2 = bs_shader_prop.shader_flags_2
         self.import_flags(self._b_mat, flags)
+        self.import_flags(self._b_mat, flags_2)
         self.texturehelper.import_bsshaderproperty_textureset(bs_shader_prop, self._nodes_wrapper)
 
     def import_bs_shader_no_lighting_property(self, bs_shader_prop):
@@ -94,4 +95,6 @@ class BSShaderLightingPropertyProcessor(BSShader):
         b_shader.bsspplp_shaderobjtype = bs_shader_prop.shader_type.name
 
         flags = bs_shader_prop.shader_flags
+        flags_2 = bs_shader_prop.shader_flags_2
         self.import_flags(self._b_mat, flags)
+        self.import_flags(self._b_mat, flags_2)

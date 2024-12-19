@@ -41,9 +41,8 @@
 import os.path
 
 import bpy
+from io_scene_niftools.modules.nif_export.animation import NiControllerManager
 from nifgen.formats.nif import classes as NifClasses
-
-from io_scene_niftools.modules.nif_export.animation.transform import TransformAnimation
 from io_scene_niftools.modules.nif_export.constraint import Constraint
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.object import Object
@@ -55,9 +54,6 @@ from io_scene_niftools.utils.singleton import NifOp, EGMData, NifData
 from io_scene_niftools.utils.logging import NifLog, NifError
 
 
-# main export class
-
-
 class NifExport(NifCommon):
 
     # TODO: - Expose via properties
@@ -66,9 +62,10 @@ class NifExport(NifCommon):
         NifCommon.__init__(self, operator, context)
 
         # Helper systems
-        self.transform_anim = TransformAnimation()
-        self.constrainthelper = Constraint()
-        self.objecthelper = Object()
+        self.animation_helper = NiControllerManager()
+        self.transform_anim_helper = self.animation_helper.transform_animation_helper
+        self.constraint_helper = Constraint()
+        self.object_helper = Object()
         self.exportable_objects = []
         self.root_objects = []
 
@@ -79,21 +76,21 @@ class NifExport(NifCommon):
 
         NifLog.info(f"Exporting {NifOp.props.filepath}")
 
-        # extract directory, base name, extension
+        # Extract directory, base name, extension
         directory = os.path.dirname(NifOp.props.filepath)
         filebase, fileext = os.path.splitext(os.path.basename(NifOp.props.filepath))
 
-        block_store.block_to_obj = {}  # clear out previous iteration
+        block_store.block_to_obj = {}  # Clear out previous iteration
 
-        try:  # catch export errors
+        try:  # Catch export errors
 
-            # protect against null nif versions
+            # Protect against null nif versions
             if bpy.context.scene.niftools_scene.game == 'UNKNOWN':
                 raise NifError("You have not selected a game. Please select a game and"
                                 " nif version in the scene tab.")
 
             # find all objects that do not have a parent
-            self.exportable_objects, self.root_objects = self.objecthelper.get_export_objects()
+            self.exportable_objects, self.root_objects = self.object_helper.get_export_objects()
             if not self.exportable_objects:
                 NifLog.warn("No objects can be exported!")
                 return {'FINISHED'}
@@ -132,7 +129,7 @@ class NifExport(NifCommon):
             NifData.init(data)
 
             # export the actual root node (the name is fixed later to avoid confusing the exporter with duplicate names)
-            root_block = self.objecthelper.export_root_node(self.root_objects, filebase)
+            root_block = self.object_helper.export_root_node(self.root_objects, filebase)
 
             # post-processing:
             # ----------------
@@ -149,7 +146,7 @@ class NifExport(NifCommon):
                 if (not has_keyframecontrollers) and (not NifOp.props.bs_animation_node):
                     NifLog.info("Defining dummy keyframe controller")
                     # add a trivial keyframe controller on the scene root
-                    self.transform_anim.create_controller(root_block, root_block.name)
+                    self.transform_anim_helper.create_controller(root_block, root_block.name)
 
                 if NifOp.props.bs_animation_node:
                     for block in block_store.block_to_obj:
@@ -162,10 +159,12 @@ class NifExport(NifCommon):
                                 root_block.replace_global_node(block, new_block)
                                 if root_block is block:
                                     root_block = new_block
+            else:
+                self.animation_helper.export_nif_animations(root_block)
 
             # oblivion skeleton export: check that all bones have a transform controller and transform interpolator
-            if bpy.context.scene.niftools_scene.is_bs() and filebase.lower() in ('skeleton', 'skeletonbeast'):
-                self.transform_anim.add_dummy_controllers()
+            if bpy.context.scene.niftools_scene.game == 'OBLIVION' and filebase.lower() in ('skeleton', 'skeletonbeast'):
+                self.transform_anim_helper.add_dummy_controllers()
 
             # bhkConvexVerticesShape of children of bhkListShapes need an extra bhkConvexTransformShape (see issue #3308638, reported by Koniption)
             # note: block_store.block_to_obj changes during iteration, so need list copy
@@ -193,8 +192,8 @@ class NifExport(NifCommon):
 
             # export constraints
             for b_obj in self.exportable_objects:
-                if b_obj.constraints:
-                    self.constrainthelper.export_constraints(b_obj, root_block)
+                if b_obj.rigid_body_constraint:
+                    self.constraint_helper.export_constraints(b_obj, root_block)
 
             object_prop = ObjectProperty()
             object_prop.export_root_node_properties(root_block)

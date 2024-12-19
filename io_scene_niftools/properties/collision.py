@@ -160,6 +160,19 @@ class CollisionProperty(PropertyGroup):
         default=False,
     )
 
+    solid: BoolProperty(
+        name='Solid',
+        description='Recalculate inertia tensor for a solid object',
+        default=True,
+    )
+
+    shrink_offset: FloatProperty(
+        name="Shrink Offset",
+        description='Value to shrink the collision hull by',
+        default=0.072,
+        min=0
+    )
+
 
 CLASSES = [
     CollisionProperty

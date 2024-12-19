@@ -38,6 +38,8 @@
 
 from itertools import repeat
 import logging
+
+from nifgen.utils.meshopt_stripify import stripify as meshopt_stripify
 from nifgen.utils.vertex_cache import get_cache_optimized_triangles, stable_stripify
 from nifgen.formats.nif import classes as NifClasses
 
@@ -444,8 +446,8 @@ def update_skin_partition(self,
         # optimize triangles for vertex cache and calculate strips
         triangles = get_cache_optimized_triangles(
             triangles)
-        strips = stable_stripify(
-            triangles, stitchstrips=stitchstrips)
+        num_vertices = len(set([vertex for triangle in triangles for vertex in triangle]))
+        strips = meshopt_stripify(triangles, num_vertices)
         triangles_size = 3 * len(triangles)
         strips_size = len(strips) + sum(len(strip) for strip in strips)
         vertices = []
