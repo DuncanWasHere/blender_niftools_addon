@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2016, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,9 +38,8 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from nifgen.formats.nif import classes as NifClasses
-
 from io_scene_niftools.modules.nif_import.object import Object
+from nifgen.formats.nif import classes as NifClasses
 
 
 class NiTypes:

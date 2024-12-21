@@ -1,7 +1,7 @@
 """This module contains helper methods to export Mesh information."""
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2019, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -36,23 +36,19 @@
 #
 # ***** END LICENSE BLOCK *****
 
-import bpy
-import bmesh
-import mathutils
 import numpy as np
-import struct
 
-from nifgen.formats.nif import classes as NifClasses
-
-import io_scene_niftools.utils.logging
-from io_scene_niftools.modules.nif_export.geometry import mesh
+import bmesh
+import bpy
 from io_scene_niftools.modules.nif_export.animation.morph import MorphAnimation
 from io_scene_niftools.modules.nif_export.block_registry import block_store
+from io_scene_niftools.modules.nif_export.geometry import mesh
 from io_scene_niftools.modules.nif_export.property.object import ObjectProperty
 from io_scene_niftools.modules.nif_export.property.texture.types.nitextureprop import NiTextureProp
 from io_scene_niftools.utils import math
-from io_scene_niftools.utils.singleton import NifOp, NifData
 from io_scene_niftools.utils.logging import NifLog, NifError
+from io_scene_niftools.utils.singleton import NifOp, NifData
+from nifgen.formats.nif import classes as NifClasses
 
 
 class Mesh:
@@ -418,7 +414,6 @@ class Mesh:
 
         if normal:
             # calculate normals
-            b_mesh.calc_normals_split()
             loop_normals = np.zeros((n_loops, 3), dtype=float)
             b_mesh.loops.foreach_get('normal', loop_normals.reshape((-1, 1)))
             # smooth = vertex normal, non-smooth = face normal)
@@ -744,10 +739,10 @@ class Mesh:
         """Returns the body part indices of the mesh polygons. -1 is either not assigned to a face map or not a valid
         body part"""
         index_group_map = {-1: -1}
-        for bodypartgroupname in [member.name for member in NifClasses.BSDismemberBodyPartType]:
-            face_map = b_obj.face_maps.get(bodypartgroupname)
-            if face_map:
-                index_group_map[face_map.index] = NifClasses.BSDismemberBodyPartType[bodypartgroupname]
+        for body_part_group_name in [member.name for member in NifClasses.BSDismemberBodyPartType]:
+            if body_part_group_name in b_mesh.attributes:
+                b_body_part_group = b_mesh.attributes[body_part_group_name]
+                index_group_map[b_body_part_group.index] = NifClasses.BSDismemberBodyPartType[body_part_group_name]
         if len(index_group_map) <= 1:
             # there were no valid face maps
             return np.array([])

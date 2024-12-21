@@ -1,8 +1,8 @@
-"""Nif User Interface, custom preference in the Blenders UI for updating the plugin automagically"""
+"""NIF User Interface: custom preferences in the Blender add-ons UI for updating the plugin automatically."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2020, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -48,35 +48,37 @@ from io_scene_niftools.utils.decorators import register_classes, unregister_clas
 class UpdaterPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    # addon updater preferences
+    # Addon updater preferences
     auto_check_update: bpy.props.BoolProperty(
         name="Auto-check for Update",
-        description="If enabled, auto-check for updates using an interval",
+        description="Auto-check for updates between interval",
         default=False,
     )
+
     updater_interval_months: bpy.props.IntProperty(
         name='Months',
-        description="Number of months between checking for updates",
+        description="Number of months between update checks",
         default=0,
         min=0
     )
+
     updater_interval_days: bpy.props.IntProperty(
         name='Days',
-        description="Number of days between checking for updates",
+        description="Number of days between update checks",
         default=7,
         min=0,
         max=31
     )
     updater_interval_hours: bpy.props.IntProperty(
         name='Hours',
-        description="Number of hours between checking for updates",
+        description="Number of hours between update checks",
         default=0,
         min=0,
         max=23
     )
     updater_interval_minutes: bpy.props.IntProperty(
         name='Minutes',
-        description="Number of minutes between checking for updates",
+        description="Number of minutes between update checks",
         default=0,
         min=0,
         max=59
@@ -85,12 +87,12 @@ class UpdaterPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
 
-        # works best if a column, or even just self.layout
+        # Works best if a column, or even just self.layout
         mainrow = layout.row()
         col = mainrow.column()
 
-        # updater draw function
-        # could also pass in col as third arg
+        # Updater draw function
+        # Could also pass in col as third arg
         addon_updater_ops.update_settings_ui(self, context, col)
 
     # Alternate draw function, which is more condensed and can be

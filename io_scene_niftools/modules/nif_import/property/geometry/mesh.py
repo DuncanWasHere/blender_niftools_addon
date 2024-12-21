@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2020, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,14 +37,14 @@
 #
 # ***** END LICENSE BLOCK *****
 
-import bpy
-
-from functools import singledispatch
 import itertools
+from functools import singledispatch
 
+import bpy
 from io_scene_niftools.modules.nif_import.property.geometry.niproperty import NiPropertyProcessor
 from io_scene_niftools.modules.nif_import.property.nodes_wrapper import NodesWrapper
-from io_scene_niftools.modules.nif_import.property.shader.bsshaderlightingproperty import BSShaderLightingPropertyProcessor
+from io_scene_niftools.modules.nif_import.property.shader.bsshaderlightingproperty import \
+    BSShaderLightingPropertyProcessor
 from io_scene_niftools.modules.nif_import.property.shader.bsshaderproperty import BSShaderPropertyProcessor
 from io_scene_niftools.utils.logging import NifLog
 

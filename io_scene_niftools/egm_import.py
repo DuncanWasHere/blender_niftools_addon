@@ -1,8 +1,8 @@
-"""This script imports Netimmerse/Gamebryo nif files to Blender."""
+"""Main EGM -> Blender import script."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2019, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -55,17 +55,17 @@ class EgmImport(NifCommon):
         self.morph_anim = MorphAnimation()
 
     def execute(self):
-        """Main import function."""
+        """Main EGM import function."""
 
         try:
             egm_path = NifOp.props.filepath
 
             if egm_path:
                 EGMData.init(EGMFile.load_egm(egm_path))
-                # scale the data
+                # Scale the data
                 EGMData.data.apply_scale(NifOp.props.scale_correction)
-                # TODO [morph][egm] if there is an egm, the assumption is that there is only one mesh in the nif
-                # grab the active object
+                # TODO [morph][egm]: If there is an EGM, the assumption is that there is only one mesh in the NIF
+                # Grab the active object
                 b_obj = bpy.context.view_layer.objects.active
                 if b_obj and b_obj.type == "MESH":
                     self.morph_anim.import_egm_morphs(b_obj)

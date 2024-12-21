@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2019, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,13 +39,12 @@
 
 import bpy
 import mathutils
-from nifgen.formats.nif import classes as NifClasses
-
 from io_scene_niftools.modules.nif_import import animation
 from io_scene_niftools.modules.nif_import.animation import Animation
 from io_scene_niftools.utils import math
-from io_scene_niftools.utils.singleton import EGMData
 from io_scene_niftools.utils.logging import NifLog
+from io_scene_niftools.utils.singleton import EGMData
+from nifgen.formats.nif import classes as NifClasses
 
 
 class MorphAnimation(Animation):

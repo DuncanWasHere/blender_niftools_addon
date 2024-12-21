@@ -1,8 +1,11 @@
-"""This module contains helper methods to import/export the nif data to files."""
+"""Helper methods for file import/export operations."""
+from io_scene_niftools.file_io import nif
+from io_scene_niftools.file_io.nif import NifFile
+
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2016, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -36,3 +39,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
+
+class File:
+
+    @staticmethod
+    def read_file():
+        return
+
+    @staticmethod
+    def write_file(n_data, directory, file_base, file_ext):
+        if file_ext == '.nif':
+            NifFile.write_nif(n_data, directory, file_base, file_ext)

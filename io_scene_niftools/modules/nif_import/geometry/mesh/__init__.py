@@ -1,7 +1,7 @@
 """This module contains helper methods to import Mesh information."""
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2019, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,19 +38,17 @@
 
 import numpy as np
 
-from nifgen.formats.nif import classes as NifClasses
-from nifgen.formats.nif.nimesh.structs.DisplayList import DisplayList
-
 import io_scene_niftools.utils.logging
 from io_scene_niftools.modules.nif_import.animation.morph import MorphAnimation
-from io_scene_niftools.modules.nif_import.geometry.vertex.groups import VertexGroup
 from io_scene_niftools.modules.nif_import.geometry import mesh
 from io_scene_niftools.modules.nif_import.geometry.vertex import Vertex
-from io_scene_niftools.modules.nif_import.property.material import Material
+from io_scene_niftools.modules.nif_import.geometry.vertex.groups import VertexGroup
 from io_scene_niftools.modules.nif_import.property.geometry.mesh import MeshPropertyProcessor
-from io_scene_niftools.utils import math
+from io_scene_niftools.modules.nif_import.property.material import Material
+from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.singleton import NifOp
-from io_scene_niftools.utils.logging import NifLog, NifError
+from nifgen.formats.nif import classes as NifClasses
+from nifgen.formats.nif.nimesh.structs.DisplayList import DisplayList
 
 
 class Mesh:

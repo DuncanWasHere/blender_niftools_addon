@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2020, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,13 +37,12 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from nifgen.formats.nif import classes as NifClasses
-
 from io_scene_niftools.modules.nif_import.animation.material import MaterialAnimation
 from io_scene_niftools.modules.nif_import.property.material import Material, NiMaterial
 from io_scene_niftools.modules.nif_import.property.texture.types.nitextureprop import NiTextureProp
-from io_scene_niftools.utils.singleton import NifData
 from io_scene_niftools.utils.logging import NifLog
+from io_scene_niftools.utils.singleton import NifData
+from nifgen.formats.nif import classes as NifClasses
 
 
 class NiPropertyProcessor:

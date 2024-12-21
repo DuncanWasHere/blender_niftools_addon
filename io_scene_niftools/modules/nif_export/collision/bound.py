@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2020, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,14 +38,13 @@
 # ***** END LICENSE BLOCK *****
 
 import mathutils
-
-from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export import types
-from io_scene_niftools.modules.nif_export.collision import Collision
+from io_scene_niftools.modules.nif_export.block_registry import block_store
+from io_scene_niftools.modules.nif_export.collision.common import CollisionCommon
 from io_scene_niftools.utils import math
 
 
-class BSBound(Collision):
+class Bound(CollisionCommon):
 
     def export_bounds(self, b_obj, block_parent, bsbound=False):
         """Export a Morrowind or Oblivion bounding box."""
@@ -103,7 +102,7 @@ class BSBound(Collision):
         radius.z = largest[2]
 
 
-class NiCollision(Collision):
+class NiCollision(CollisionCommon):
 
     def export_nicollisiondata(self, b_obj, n_parent):
         """ Export b_obj as a NiCollisionData """

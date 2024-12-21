@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2013, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,11 +37,9 @@
 #
 # ***** END LICENSE BLOCK *****
 import bpy
-
-from nifgen.formats.nif import classes as NifClasses
-
-from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.consts import QUAT, EULER, LOC, SCALE
+from io_scene_niftools.utils.logging import NifLog
+from nifgen.formats.nif import classes as NifClasses
 
 
 class Animation:

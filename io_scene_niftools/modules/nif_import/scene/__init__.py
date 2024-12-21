@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2016, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,9 +38,8 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from nifgen.formats.nif.versions import get_game
-
 from io_scene_niftools.utils.logging import NifLog
+from nifgen.formats.nif.versions import get_game
 
 
 def import_version_info(data):

@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2020, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,11 +38,10 @@
 # ***** END LICENSE BLOCK *****
 
 
-from nifgen.formats.nif import classes as NifClasses
-
 from io_scene_niftools.modules.nif_import.property.material import Material
 from io_scene_niftools.modules.nif_import.property.shader import BSShader
 from io_scene_niftools.modules.nif_import.property.texture.types.bsshadertexture import BSShaderTexture
+from nifgen.formats.nif import classes as NifClasses
 
 
 class BSShaderPropertyProcessor(BSShader):

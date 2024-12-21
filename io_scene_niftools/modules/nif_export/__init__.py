@@ -1,8 +1,8 @@
-"""This modules contains all modules related to exporting Netimmerse/Gamebryo nif files from Blender."""
+"""Module containing all submodules responsible for exporting NIF blocks from Blender objects."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2020, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without

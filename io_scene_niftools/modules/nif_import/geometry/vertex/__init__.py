@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2019, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,6 @@
 import numpy as np
 
 import bpy
-
 from io_scene_niftools.utils.singleton import NifOp
 
 
@@ -78,7 +77,7 @@ class Vertex:
             # the normals need to be pre-normalized or blender will do it inconsistely, leading to marked sharp edges
             no_array = Vertex.normalize(no_array)
             # use normals_split_custom_set_from_vertices to set the loop custom normals from the per-vertex normals
-            b_mesh.use_auto_smooth = True
+            # b_mesh.use_auto_smooth = True
             b_mesh.normals_split_custom_set_from_vertices(no_array)
 
     @staticmethod

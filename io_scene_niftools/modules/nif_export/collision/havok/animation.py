@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2019, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,11 +37,14 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from io_scene_niftools.modules.nif_export.block_registry import block_store
+
 from io_scene_niftools.utils import consts
 
+from io_scene_niftools.modules.nif_export.block_registry import block_store
+from io_scene_niftools.modules.nif_export.collision.havok import BhkCollisionCommon
 
-class HavokAnimation():
+
+class BhkBlendCollision(BhkCollisionCommon):
 
     def export_bhk_blend_collision(self, b_obj):
         n_col_obj = block_store.create_block("bhkBlendCollisionObject", b_obj)
@@ -49,7 +52,6 @@ class HavokAnimation():
         n_col_obj.unknown_float_2 = 1.0
         return n_col_obj
 
-    # TODO [collision][animation] Move out to an physic animation class.
     def export_bhk_blend_controller(self, b_obj, parent_block):
         # also add a controller for it
         n_blend_ctrl = block_store.create_block("bhkBlendController", b_obj)
@@ -59,3 +61,7 @@ class HavokAnimation():
         n_blend_ctrl.start_time = consts.FLOAT_MAX
         n_blend_ctrl.stop_time = consts.FLOAT_MIN
         parent_block.add_controller(n_blend_ctrl)
+
+""" # Oblivion skeleton export: check that all bones have a transform controller and transform interpolator
+if bpy.context.scene.niftools_scene.game == 'OBLIVION' and file_base.lower() in ('skeleton', 'skeletonbeast'):
+self.transform_anim_helper.add_dummy_controllers()"""

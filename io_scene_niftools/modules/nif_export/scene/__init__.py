@@ -1,8 +1,8 @@
-"""This script contains classes to help export nif header information."""
+"""Classes for exporting NIF header data."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2016, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,19 +38,22 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from io_scene_niftools.utils.singleton import NifOp
-from io_scene_niftools.utils.logging import NifLog
 import nifgen.formats.nif as NifFormat
+from io_scene_niftools.utils.logging import NifLog
 
-def get_version_data():
-    """ Returns NifFormat.NifFile of the correct version and user versions """
-    b_scene = bpy.context.scene.niftools_scene
-    game = b_scene.game
-    version = b_scene.nif_version
-    NifLog.info(f"Writing NIF version 0x{version:08X}")
 
-    # get user version and user version 2 for export
-    user_version = b_scene.user_version
-    user_version_2 = b_scene.user_version_2
+class Scene:
 
-    return version, NifFormat.NifFile.from_version(version, user_version, user_version_2)
+    def get_version_data(self):
+        """Returns target game, NifFormat.NifFile of the correct version, and user versions."""
+
+        b_scene = bpy.context.scene.niftools_scene
+        game = b_scene.game
+        version = b_scene.nif_version
+        NifLog.info(f"Writing NIF version 0x{version:08X}")
+
+        # Get user version and user version 2 for export
+        user_version = b_scene.user_version
+        user_version_2 = b_scene.user_version_2
+
+        return game, version, NifFormat.NifFile.from_version(version, user_version, user_version_2)

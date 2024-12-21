@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 # 
-# Copyright © 2012, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -37,23 +37,17 @@
 #
 # ***** END LICENSE BLOCK *****
 
-import os
 import numpy as np
 
 import bpy
-from bpy_extras.io_utils import orientation_helper
 import mathutils
-from nifgen.formats.nif import classes as NifClasses
-
-
-import io_scene_niftools.utils.logging
-from io_scene_niftools.modules.nif_import.object.block_registry import block_store, get_bone_name_for_blender
-from io_scene_niftools.modules.nif_export.block_registry import block_store as block_store_export
 from io_scene_niftools.modules.nif_import.animation.transform import TransformAnimation
 from io_scene_niftools.modules.nif_import.object import Object
+from io_scene_niftools.modules.nif_import.object.block_registry import block_store, get_bone_name_for_blender
 from io_scene_niftools.utils import math
 from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifOp, NifData
+from io_scene_niftools.utils.singleton import NifOp
+from nifgen.formats.nif import classes as NifClasses
 
 
 class Armature:

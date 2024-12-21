@@ -1,8 +1,8 @@
-"""This module is used to for EmmerseGeoMorph file operations"""
+"""EGM file operations for import/export."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2016, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -43,11 +43,12 @@ from io_scene_niftools.utils.logging import NifLog, NifError
 
 
 class EGMFile:
-    """Load and save a FaceGen Egm file"""
+    """Class for loading and saving FaceGen EGM files."""
 
     @staticmethod
     def load_egm(file_path):
-        """Loads an egm file from the given path"""
+        """Load an EGM file from the given path."""
+
         NifLog.info(f"Loading {file_path}")
 
         egm_file = EgmFormat.Data()
@@ -59,7 +60,7 @@ class EGMFile:
             if egm_file.version >= 0:
                 # it is valid, so read the file
                 NifLog.info(f"EGM file version: {egm_file.version:x}")
-                NifLog.info("Reading FaceGen egm file")
+                NifLog.info("Reading FaceGen EGM file")
                 egm_file.read(egm_stream)
             elif egm_file.version == -1:
                 raise NifError("Unsupported EGM version.")

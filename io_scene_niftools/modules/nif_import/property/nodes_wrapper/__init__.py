@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2020, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,13 +38,11 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from nifgen.formats.nif import classes as NifClasses
-
-from io_scene_niftools.modules.nif_import.geometry.vertex import Vertex
 from io_scene_niftools.modules.nif_import.property.texture.loader import TextureLoader
+from io_scene_niftools.utils.consts import TEX_SLOTS
 from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.nodes import nodes_iterate
-from io_scene_niftools.utils.consts import TEX_SLOTS
+from nifgen.formats.nif import classes as NifClasses
 
 """Names (ordered by default index) of shader texture slots for Sid Meier's Railroads and similar games."""
 EXTRA_SHADER_TEXTURES = [

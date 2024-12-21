@@ -1,8 +1,8 @@
-"""This script imports Netimmerse/Gamebryo nif files to Blender."""
+"""Main NIF -> Blender import script."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2007, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -70,9 +70,11 @@ class NifImport(NifCommon):
         NifCommon.__init__(self, operator, context)
 
     def execute(self):
-        """Main import function."""
-        self.load_files()  # needs to be first to provide version info.
+        """Main NIF import function."""
 
+        self.load_files()  # Needs to be first to provide version info
+
+        # Helper systems
         self.armaturehelper = Armature()
         self.boundhelper = Bound()
         self.bhkhelper = BhkCollision()

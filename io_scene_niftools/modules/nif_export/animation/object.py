@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2019, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,10 +38,9 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from nifgen.formats.nif import classes as NifClasses
-
 from io_scene_niftools.modules.nif_export.animation import Animation
 from io_scene_niftools.modules.nif_export.block_registry import block_store
+from nifgen.formats.nif import classes as NifClasses
 
 
 class ObjectAnimation(Animation):

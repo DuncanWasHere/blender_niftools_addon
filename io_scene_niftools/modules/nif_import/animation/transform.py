@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2019, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,19 +37,17 @@
 #
 # ***** END LICENSE BLOCK *****
 
+from bisect import bisect_left
+from functools import singledispatch
+
 import bpy
 import mathutils
-import time
-
-from functools import singledispatch
-from bisect import bisect_left
-from nifgen.formats.nif import classes as NifClasses
-
 from io_scene_niftools.modules.nif_import.animation import Animation
 from io_scene_niftools.modules.nif_import.object import block_registry
 from io_scene_niftools.utils import math
-from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.consts import QUAT, EULER, LOC, SCALE
+from io_scene_niftools.utils.logging import NifLog
+from nifgen.formats.nif import classes as NifClasses
 
 
 def as_b_quat(n_val):

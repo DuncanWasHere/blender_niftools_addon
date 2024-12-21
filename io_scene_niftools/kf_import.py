@@ -1,8 +1,8 @@
-"""This script imports Netimmerse/Gamebryo nif files to Blender."""
+"""Main KF -> Blender import script."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2019, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -56,7 +56,7 @@ class KfImport(NifCommon):
         self.transform_anim = TransformAnimation()
 
     def execute(self):
-        """Main import function."""
+        """Main KF import function."""
 
         try:
             dirname = os.path.dirname(NifOp.props.filepath)

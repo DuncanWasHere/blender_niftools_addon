@@ -1,7 +1,7 @@
 """This module contains helper methods to export skin partitions from pyffi"""
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2019, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -36,12 +36,13 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from itertools import repeat
 import logging
+from itertools import repeat
 
-from nifgen.utils.meshopt_stripify import stripify as meshopt_stripify
-from nifgen.utils.vertex_cache import get_cache_optimized_triangles, stable_stripify
 from nifgen.formats.nif import classes as NifClasses
+from nifgen.utils.meshopt_stripify import stripify as meshopt_stripify
+from nifgen.utils.vertex_cache import get_cache_optimized_triangles
+
 
 def update_skin_partition(self,
                         maxbonesperpartition=4, maxbonespervertex=4,

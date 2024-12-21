@@ -1,13 +1,8 @@
-"""This script contains classes to export collision objects."""
-import bpy
-from io_scene_niftools import NifLog
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from nifgen.formats.nif import classes as NifClasses
-
+"""Classes for exporting NIF collision blocks."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2012, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -43,29 +38,73 @@ from nifgen.formats.nif import classes as NifClasses
 # ***** END LICENSE BLOCK *****
 
 
+import bpy
+
+from nifgen.formats.nif import classes as NifClasses
+
+from io_scene_niftools import NifLog
+
+from io_scene_niftools.modules.nif_export.object import DICT_NAMES
+from io_scene_niftools.modules.nif_export.collision.bound import Bound, NiCollision
+from io_scene_niftools.modules.nif_export.collision.havok import BhkCollision
+from io_scene_niftools.modules.nif_export.collision.havok.animation import BhkBlendCollision
+
+
 class Collision:
+    """Main class for exporting NIF collision blocks."""
 
-    @staticmethod
-    def calculate_largest_value(box_extends):
-        return ((box_extends[0][1] - box_extends[0][0]) * 0.5,
-                (box_extends[1][1] - box_extends[1][0]) * 0.5,
-                (box_extends[2][1] - box_extends[2][0]) * 0.5)
+    def __init__(self):
+        self.bhk_collision_helper = BhkCollision()
+        self.bhk_blend_collision_helper = BhkBlendCollision()
+        self.bound_helper = Bound()
+        self.ni_collision_helper = NiCollision()
+        self.target_game = None
 
-    @staticmethod
-    def calculate_box_extents(b_obj):
-        # calculate bounding box extents
-        b_vertlist = [vert.co for vert in b_obj.data.vertices]
-        minx = min([b_vert[0] for b_vert in b_vertlist])
-        maxx = max([b_vert[0] for b_vert in b_vertlist])
-        maxy = max([b_vert[1] for b_vert in b_vertlist])
-        miny = min([b_vert[1] for b_vert in b_vertlist])
-        minz = min([b_vert[2] for b_vert in b_vertlist])
-        maxz = max([b_vert[2] for b_vert in b_vertlist])
-        return [[minx, maxx], [miny, maxy], [minz, maxz]]
+    def export_collision(self, b_collision_objects, target_game):
+        """
+        Main function for adding collision object b_obj to a node.
+        """
 
-    @staticmethod
-    def update_rigid_body(b_col_obj, n_bhk_rigid_body):
-        if bpy.context.scene.niftools_scene.is_bs():
-            # Update rigid body center of mass and inertia
-            # Mass value should be set manually as it is not necessarily physically accurate
-            n_bhk_rigid_body.update_mass_center_inertia(mass=n_bhk_rigid_body.rigid_body_info.mass, solid=b_col_obj.nifcollision.solid)
+        if not b_collision_objects:
+            return
+
+        self.target_game = target_game
+
+        for b_col_obj in b_collision_objects:
+
+            # Skip bhkListShape sub-shapes for now
+            if b_col_obj.parent.rigid_body:
+                continue
+
+            # Get parent node from object dictionary
+            if b_col_obj.parent:
+                n_parent_node = DICT_NAMES[b_col_obj.parent.name]
+            else:
+                n_parent_node = DICT_NAMES[b_col_obj.name]
+
+            if "bound" in b_col_obj.name.lower():
+                # Export bounding boxes
+                if self.target_game == 'MORROWIND':
+                    # Export Morrowind NiNode bounding box
+                    self.bound_helper.export_bounds(b_col_obj, n_parent_node, bsbound=False)
+                else:
+                    # Export BSBound
+                    self.bound_helper.export_bounds(b_col_obj, n_parent_node, bsbound=True)
+                continue
+
+            if bpy.context.scene.niftools_scene.is_bs():
+                # Export Bethesda/Havok collision objects
+                layer = int(b_col_obj.nifcollision.collision_layer)
+
+                if target_game == 'OBLIVION':
+                    if NifClasses.OblivionLayer.from_value(layer) == 'OL_BIPED':
+                        self.bhk_blend_collision_helper.export_bhk_blend_collision(b_col_obj)
+                elif target_game in ('FALLOUT_3', 'Fallout_NV'):
+                    if NifClasses.Fallout3Layer.from_value(layer) == 'FOL_BIPED':
+                        self.bhk_blend_collision_helper.export_bhk_blend_collision(b_col_obj)
+                self.bhk_collision_helper.export_bhk_collision(b_col_obj, n_parent_node, layer, target_game)
+            elif self.target_game in ('ZOO_TYCOON_2',):
+                self.ni_collision_helper.export_nicollisiondata(b_col_obj, n_parent_node)
+            else:
+                NifLog.warn(f"Collisions not supported for game '{self.target_game}', "
+                            f"skipped collision object '{b_col_obj.name}'")

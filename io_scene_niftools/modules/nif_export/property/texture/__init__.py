@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 # 
-# Copyright © 2013, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -38,12 +38,11 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-
 from io_scene_niftools.modules.nif_export.animation.texture import TextureAnimation
 from io_scene_niftools.modules.nif_export.property import texture
 from io_scene_niftools.modules.nif_export.property.texture.writer import TextureWriter
-from io_scene_niftools.utils.logging import NifLog, NifError
 from io_scene_niftools.utils.consts import TEX_SLOTS
+from io_scene_niftools.utils.logging import NifLog, NifError
 
 
 class TextureSlotManager:

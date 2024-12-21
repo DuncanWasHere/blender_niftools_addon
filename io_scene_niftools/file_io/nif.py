@@ -1,8 +1,8 @@
-"""This module is used to for Nif file operations"""
-
+"""NIF file operations for import/export."""
+import os
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2016, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,27 +39,30 @@
 
 import os.path as path
 
+import bpy
 import nifgen.formats.nif as NifFormat
 
 from io_scene_niftools.utils.logging import NifLog, NifError
+from io_scene_niftools.utils.singleton import EGMData
 
 
 class NifFile:
-    """Class to load and save a NifFile"""
+    """Class for loading and saving NIF files."""
 
     @staticmethod
     def load_nif(file_path):
-        """Loads a nif from the given file path"""
+        """Load a NIF from the given file path."""
+
         NifLog.info(f"Importing {file_path}")
 
         file_ext = path.splitext(file_path)[1]
 
-        # open file for binary reading
+        # Open file for binary reading
         with open(file_path, "rb") as nif_stream:
-            # check if nif file is valid
+            # Check if nif file is valid
             modification, (version, user_version, bs_version) = NifFormat.NifFile.inspect_version_only(nif_stream)
             if version >= 0:
-                # it is valid, so read the file
+                # It is valid, so read the file
                 NifLog.info(f"NIF file version: {version:x}")
                 NifLog.info(f"Reading {file_ext} file")
                 data = NifFormat.NifFile.from_stream(nif_stream)
@@ -69,3 +72,44 @@ class NifFile:
                 raise NifError("Not a NIF file.")
 
         return data
+
+    @staticmethod
+    def write_nif(n_data, directory, file_base, file_ext):
+        # export nif file:
+        if bpy.context.scene.niftools_scene.game == 'EMPIRE_EARTH_II':
+            ext = ".nifcache"
+        else:
+            ext = ".nif"
+        NifLog.info(f"Writing {ext} file")
+
+        # Ensure file extension is correct
+        if file_ext.lower() != ext:
+            NifLog.warn(f"Changing output file extension from {file_ext} to {ext}")
+
+        # Assemble full file path and add 'x' prefix for Morrowind
+        prefix = "x" if bpy.context.scene.niftools_scene.game in ('MORROWIND',) else ""
+        niffile = os.path.join(directory, prefix + file_base + ext)
+
+        # todo [export] I believe this is redundant and setting modification only is the current way?
+        n_data.neosteam = (bpy.context.scene.niftools_scene.game == 'NEOSTEAM')
+        if bpy.context.scene.niftools_scene.game == 'NEOSTEAM':
+            n_data.modification = "neosteam"
+        elif bpy.context.scene.niftools_scene.game == 'ATLANTICA':
+            n_data.modification = "ndoors"
+        elif bpy.context.scene.niftools_scene.game == 'HOWLING_SWORD':
+            n_data.modification = "jmihs1"
+
+        NifLog.info(f"Validating.")
+        n_data.validate()
+        with open(niffile, "wb") as stream:
+            n_data.write(stream)
+
+        # export egm file:
+        # -----------------
+        if EGMData.data:
+            ext = ".egm"
+            NifLog.info(f"Writing {ext} file")
+
+            egmfile = os.path.join(directory, file_base + ext)
+            with open(egmfile, "wb") as stream:
+                EGMData.data.write(stream)

@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2019, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,14 +37,14 @@
 #
 # ***** END LICENSE BLOCK *****
 
-import numpy as np
 from itertools import chain
 
-from nifgen.formats.nif import classes as NifClasses
-from nifgen.formats.nif.nimesh.structs.DisplayList import DisplayList
+import numpy as np
 
 from io_scene_niftools.modules.nif_import.object.block_registry import block_store, get_bone_name_for_blender
 from io_scene_niftools.utils.logging import NifLog
+from nifgen.formats.nif import classes as NifClasses
+from nifgen.formats.nif.nimesh.structs.DisplayList import DisplayList
 
 
 class VertexGroup:

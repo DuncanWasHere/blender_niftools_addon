@@ -1,8 +1,10 @@
 """This script contains classes to import collision objects."""
 
+from io_scene_niftools.modules.nif_import.collision import Collision
+from io_scene_niftools.modules.nif_import.object import Object
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2020, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,9 +39,6 @@
 #
 # ***** END LICENSE BLOCK *****
 from nifgen.formats.nif import classes as NifClasses
-
-from io_scene_niftools.modules.nif_import.collision import Collision
-from io_scene_niftools.modules.nif_import.object import Object
 
 
 class Bound(Collision):
@@ -94,7 +93,7 @@ class Bound(Collision):
         else:
             for n_extra in n_block.get_extra_datas():
                 # TODO [extra][data] Move to property processor
-                if isinstance(n_extra, NifClasses.BSBound):
+                if isinstance(n_extra, NifClasses.Bound):
                     b_name = 'BSBound'
                     center = n_extra.center
                     dims = n_extra.dimensions

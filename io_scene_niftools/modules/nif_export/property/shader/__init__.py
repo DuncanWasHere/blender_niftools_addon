@@ -1,8 +1,12 @@
 """This script contains helper methods to export shader property data."""
 
+import io_scene_niftools.utils.logging
+from io_scene_niftools.modules.nif_export.property.texture.types.bsshadertexture import BSShaderTexture
+from io_scene_niftools.utils.consts import FLOAT_MAX
+from io_scene_niftools.utils.singleton import NifData
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2019, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,12 +41,6 @@
 #
 # ***** END LICENSE BLOCK *****
 from nifgen.formats.nif import classes as NifClasses
-
-import io_scene_niftools.utils.logging
-from io_scene_niftools.modules.nif_export.property.texture.types.bsshadertexture import BSShaderTexture
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.consts import FLOAT_MAX
-from io_scene_niftools.utils.singleton import NifData
 
 
 class BSShaderProperty:

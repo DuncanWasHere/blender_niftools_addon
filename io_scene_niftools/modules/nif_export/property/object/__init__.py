@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2013, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,18 +38,16 @@
 # ***** END LICENSE BLOCK *****
 
 
+from math import pi
+
 import bpy
-
-from nifgen.formats.nif import classes as NifClasses
-
+from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.property.material import MaterialProp
 from io_scene_niftools.modules.nif_export.property.shader import BSShaderProperty
 from io_scene_niftools.modules.nif_export.property.texture.types.nitextureprop import NiTextureProp
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.utils.consts import UPB_DEFAULT
-from io_scene_niftools.utils.singleton import NifOp
 from io_scene_niftools.utils.logging import NifLog, NifError
-from math import pi
+from io_scene_niftools.utils.singleton import NifOp
+from nifgen.formats.nif import classes as NifClasses
 
 
 class ObjectProperty:

@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2013, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,11 +39,11 @@
 from abc import ABC
 
 import bpy
+from io_scene_niftools.modules.nif_export.block_registry import block_store
+from io_scene_niftools.utils.logging import NifLog, NifError
+from io_scene_niftools.utils.singleton import NifOp, NifData
 from nifgen.formats.nif import classes as NifClasses
 
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.utils.singleton import NifOp, NifData
-from io_scene_niftools.utils.logging import NifLog, NifError
 
 class NiControllerManager:
 
@@ -65,6 +65,36 @@ class NiControllerManager:
         # self.particle_animation_helper =
 
     def export_nif_animations(self, n_root_node):
+
+        NifLog.info(f"Exporting animations")
+
+        if bpy.context.scene.niftools_scene.game == 'MORROWIND':
+            # animations without keyframe animations crash the TESCS
+            # if we are in that situation, add a trivial keyframe animation
+            has_keyframecontrollers = False
+            for block in block_store.block_to_obj:
+                if isinstance(block, NifClasses.NiKeyframeController):
+                    has_keyframecontrollers = True
+                    break
+            if (not has_keyframecontrollers) and (not NifOp.props.bs_animation_node):
+                NifLog.info("Defining dummy keyframe controller")
+                # add a trivial keyframe controller on the scene root
+                self.transform_anim_helper.create_controller(n_root_node, n_root_node.name)
+
+            if NifOp.props.bs_animation_node:
+                for block in block_store.block_to_obj:
+                    if isinstance(block, NifClasses.NiNode):
+                        # if any of the shape children has a controller or if the ninode has a controller convert its type
+                        if block.controller or any(child.controller for child in block.children if
+                                                   isinstance(child, NifClasses.NiGeometry)):
+                            new_block = NifClasses.NiBSAnimationNode(NifData.n_data).deepcopy(block)
+                            # have to change flags to 42 to make it work
+                            new_block.flags = 42
+                            n_root_node.replace_global_node(block, new_block)
+                            if n_root_node is block:
+                                n_root_node = new_block
+
+
         # Collect NLA tracks by name
         # All NLA tracks with the same name = one NiControllerSequence
         # Sequence name = dict key

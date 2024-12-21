@@ -1,8 +1,8 @@
-"""This module contains helper methods to block_store objects between nif and blender objects."""
+"""Class methods to block_store objects between nif and blender objects."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2019, NIF File Format Library and Tools contributors.
+# Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,10 +37,8 @@
 #
 # ***** END LICENSE BLOCK *****
 
-import nifgen.formats.nif as NifFormat
-
 import io_scene_niftools.utils.logging
-from io_scene_niftools.utils import math
+import nifgen.formats.nif as NifFormat
 from io_scene_niftools.utils.consts import BIP_01, B_L_SUFFIX, BIP01_L, B_R_SUFFIX, BIP01_R, NPC_SUFFIX, B_L_POSTFIX, \
     NPC_L, B_R_POSTFIX, BRACE_L, BRACE_R, NPC_R, OPEN_BRACKET, CLOSE_BRACKET
 from io_scene_niftools.utils.logging import NifLog
@@ -81,28 +79,35 @@ class ExportBlockRegistry:
         return block
 
     def create_block(self, block_type, b_obj=None):
-        """Helper function to create a new block, register it in the list of
-        exported blocks, and associate it with a Blender object.
+        """
+        Helper function to create a new block,
+        register it in the list of exported blocks,
+        and associate it with a Blender object.
 
         @param block_type: The nif block type (for instance "NiNode").
         @type block_type: C{str}
         @param b_obj: The Blender object.
-        @return: The newly created block."""
+        @return: The newly created block.
+        """
+
         try:
             block = NifFormat.niobject_map[block_type](NifData.data)
         except AttributeError:
-            raise io_scene_niftools.utils.logging.NifError(f"'{block_type}': Unknown block type (this is probably a bug).")
+            raise io_scene_niftools.NifError(f"'{block_type}': Unknown block type (this is probably a bug).")
         return self.register_block(block, b_obj)
 
     @staticmethod
     def get_bone_name_for_nif(name):
-        """Convert a bone name to a name that can be used by the nif file: turns 'Bip01 xxx.R' into 'Bip01 R xxx', and similar for L.
+        """
+        Convert a bone name to one that can be used by the NIF file.
+        Turns 'Bip01 xxx.R' into 'Bip01 R xxx', and similar for 'L'.
 
-        :param name: The bone name as in Blender.
+        :param name: Name of Blender bone.
         :type name: :class:`str`
-        :return: Bone name in nif convention.
+        :return: Name of bone in NIF naming convention.
         :rtype: :class:`str`
         """
+
         if isinstance(name, bytes):
             name = name.decode()
         if name.startswith(BIP_01):
@@ -118,26 +123,29 @@ class ExportBlockRegistry:
 
     @staticmethod
     def _get_unique_name(b_name):
-        """Returns an unique name for use in the NIF file, from the name of a
-        Blender object.
-
-        :param b_name: Name of object as in blender.
-        :type b_name: :class:`str`
-
-        .. todo:: Refactor and simplify this code.
         """
+        Returns a unique name for use in the NIF file,
+        from the name of a Blender object.
+
+        :param b_name: Name of Blender object.
+        :type b_name: :class:`str`
+        """
+        # TODO: Refactor and simplify this code
+
         unique_name = "unnamed"
         if b_name:
             unique_name = b_name
-        # blender bone naming -> nif bone naming
+        # Blender bone naming -> NIF bone naming
         unique_name = block_store.get_bone_name_for_nif(unique_name)
         return unique_name
 
     @staticmethod
     def get_full_name(b_obj):
-        """Returns the original imported name if present, or the name by which
-        the object was exported already.
         """
+        Returns the original imported name if present,
+        or the name which the object was already exported with.
+        """
+
         longname = ""
         if b_obj:
             try:
