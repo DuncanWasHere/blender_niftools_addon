@@ -1,13 +1,13 @@
-import bpy
-import gpu
-from gpu_extras.batch import batch_for_shader
-
+from math import pow
 from random import random
 from random import randrange
-from .face_layers_collection import checkFLayersCollExist
-from bpy_extras import view3d_utils
-from math import pow
+
 import bmesh
+import bpy
+import gpu
+from bpy_extras import view3d_utils
+from gpu_extras.batch import batch_for_shader
+from .face_layers_collection import checkFLayersCollExist
 
 """Face layers"""
 

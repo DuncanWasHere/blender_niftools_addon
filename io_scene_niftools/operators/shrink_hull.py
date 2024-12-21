@@ -1,7 +1,6 @@
-import bpy
 import bmesh
+import bpy
 from bpy.types import Operator
-from bpy.props import FloatProperty
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 
 

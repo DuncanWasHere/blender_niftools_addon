@@ -38,10 +38,11 @@
 # ***** END LICENSE BLOCK *****
 import os
 import sys
+
 from io_scene_niftools import addon_updater_ops, face_layers
 from io_scene_niftools.utils import logging, debugging
-from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.decorators import register_modules, unregister_modules
+from io_scene_niftools.utils.logging import NifLog
 
 # Blender addon info.
 bl_info = {

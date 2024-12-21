@@ -38,8 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from bpy.props import (PointerProperty,
-                       FloatProperty,
+from bpy.props import (FloatProperty,
                        )
 from bpy.types import PropertyGroup
 

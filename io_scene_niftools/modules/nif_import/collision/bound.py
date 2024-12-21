@@ -1,5 +1,6 @@
 """This script contains classes to import collision objects."""
 
+
 from io_scene_niftools.modules.nif_import.collision import Collision
 from io_scene_niftools.modules.nif_import.object import Object
 # ***** BEGIN LICENSE BLOCK *****
@@ -93,7 +94,7 @@ class Bound(Collision):
         else:
             for n_extra in n_block.get_extra_datas():
                 # TODO [extra][data] Move to property processor
-                if isinstance(n_extra, NifClasses.Bound):
+                if isinstance(n_extra, NifClasses.BSBound):
                     b_name = 'BSBound'
                     center = n_extra.center
                     dims = n_extra.dimensions

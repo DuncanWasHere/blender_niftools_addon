@@ -39,15 +39,12 @@
 
 
 import bpy
-
-from nifgen.formats.nif import classes as NifClasses
-
 from io_scene_niftools import NifLog
-
-from io_scene_niftools.modules.nif_export.object import DICT_NAMES
 from io_scene_niftools.modules.nif_export.collision.bound import Bound, NiCollision
 from io_scene_niftools.modules.nif_export.collision.havok import BhkCollision
 from io_scene_niftools.modules.nif_export.collision.havok.animation import BhkBlendCollision
+from io_scene_niftools.modules.nif_export.object import DICT_NAMES
+from nifgen.formats.nif import classes as NifClasses
 
 
 class Collision:
@@ -61,9 +58,7 @@ class Collision:
         self.target_game = None
 
     def export_collision(self, b_collision_objects, target_game):
-        """
-        Main function for adding collision object b_obj to a node.
-        """
+        """Main function for handling collision export."""
 
         if not b_collision_objects:
             return

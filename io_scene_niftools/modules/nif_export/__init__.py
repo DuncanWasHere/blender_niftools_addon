@@ -1,4 +1,4 @@
-"""Module containing all submodules responsible for exporting NIF blocks from Blender objects."""
+"""Modules responsible for exporting NIF blocks from Blender objects."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #

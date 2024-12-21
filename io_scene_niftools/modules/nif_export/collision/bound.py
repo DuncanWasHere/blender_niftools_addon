@@ -1,4 +1,4 @@
-"""Script to export collision bounds."""
+"""Main module for exporting collision bounds."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -37,6 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import mathutils
 from io_scene_niftools.modules.nif_export import types
 from io_scene_niftools.modules.nif_export.block_registry import block_store
@@ -46,14 +47,15 @@ from io_scene_niftools.utils import math
 
 class Bound(CollisionCommon):
 
-    def export_bounds(self, b_obj, block_parent, bsbound=False):
+    def export_bounds(self, b_obj, n_parent_node, bsbound=False):
         """Export a Morrowind or Oblivion bounding box."""
-        if bsbound:
-            self.export_bsbound(b_obj, block_parent)
-        else:
-            self.export_bounding_box(b_obj, block_parent)
 
-    # TODO [object][data] Stored as object property
+        if bsbound:
+            self.export_bsbound(b_obj, n_parent_node)
+        else:
+            self.export_bounding_box(b_obj, n_parent_node)
+
+    # TODO [object][data]: Stored as object property
     def export_bsbound(self, b_obj, block_parent):
         box_extends = self.calculate_box_extents(b_obj)
         n_bbox = block_store.create_block("BSBound")
@@ -101,11 +103,11 @@ class Bound(CollisionCommon):
         radius.y = largest[1]
         radius.z = largest[2]
 
-
 class NiCollision(CollisionCommon):
 
     def export_nicollisiondata(self, b_obj, n_parent):
-        """ Export b_obj as a NiCollisionData """
+        """Export b_obj as a NiCollisionData."""
+
         n_coll_data = block_store.create_block("NiCollisionData", b_obj)
         n_coll_data.use_abv = 1
         n_coll_data.target = n_parent
@@ -120,7 +122,7 @@ class NiCollision(CollisionCommon):
             self.export_capsulebv(b_obj, n_bv)
 
     def export_spherebv(self, b_obj, n_bv):
-        """ Export b_obj as a NiCollisionData's bounding_volume sphere """
+        """Export b_obj as a NiCollisionData's bounding_volume sphere."""
 
         n_bv.collision_type = 0
         matrix = math.get_object_bind(b_obj)
@@ -132,7 +134,7 @@ class NiCollision(CollisionCommon):
         sphere_center.z = center.z
 
     def export_boxbv(self, b_obj, n_bv):
-        """ Export b_obj as a NiCollisionData's bounding_volume box """
+        """Export b_obj as a NiCollisionData's bounding_volume box."""
 
         n_bv.collision_type = 1
         matrix = math.get_object_bind(b_obj)
@@ -158,7 +160,7 @@ class NiCollision(CollisionCommon):
         box_extent[2] = extent.z
 
     def export_capsulebv(self, b_obj, n_bv):
-        """ Export b_obj as a NiCollisionData's bounding_volume capsule """
+        """Export b_obj as a NiCollisionData's bounding_volume capsule."""
 
         n_bv.collision_type = 2
         matrix = math.get_object_bind(b_obj)
@@ -181,6 +183,6 @@ class NiCollision(CollisionCommon):
         origin.y = v_dir.y
         origin.z = v_dir.z
 
-        # TODO [collision] nb properly named in newer nif.xmls
+        # TODO [collision]: Note - properly named in newer nif.xmls
         capsule.unknown_float_1 = extent
         capsule.unknown_float_2 = radius

@@ -54,7 +54,7 @@ class ConstraintCommon:
         n_entity_b.constraints.append(n_bhk_constraint)
 
     def calculate_pivot(self, b_constr, b_constr_obj):
-        
+        return
 
     def calculate_plane(self, b_constr, b_constr_obj, n_bhk_constraint):
         return (n_plane_a, n_plane_b)

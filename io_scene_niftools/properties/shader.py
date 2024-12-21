@@ -38,15 +38,12 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from bpy.props import (PointerProperty,
-                       BoolProperty,
+from bpy.props import (BoolProperty,
                        EnumProperty,
                        )
 from bpy.types import PropertyGroup
-
-from nifgen.formats.nif import classes as NifClasses
-
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+from nifgen.formats.nif import classes as NifClasses
 
 
 class ShaderProps(PropertyGroup):

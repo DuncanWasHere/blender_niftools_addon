@@ -37,6 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import io_scene_niftools.utils.logging
 import nifgen.formats.nif as NifFormat
 from io_scene_niftools.utils.consts import BIP_01, B_L_SUFFIX, BIP01_L, B_R_SUFFIX, BIP01_R, NPC_SUFFIX, B_L_POSTFIX, \

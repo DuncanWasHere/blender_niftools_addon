@@ -1,4 +1,4 @@
-"""This modules contains helper methods to export specific texture block types."""
+"""Classes for exporting specific texture block types."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #

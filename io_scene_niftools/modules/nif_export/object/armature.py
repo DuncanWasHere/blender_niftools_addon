@@ -1,4 +1,4 @@
-"""Script to import/export all the skeleton related objects."""
+"""Main module for exporting skeleton related objects."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -36,6 +36,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
+
+
 import bpy
 from io_scene_niftools.modules.nif_export import types
 from io_scene_niftools.modules.nif_export.animation.transform import TransformAnimation
@@ -44,6 +46,7 @@ from io_scene_niftools.utils import math
 
 
 class Armature:
+    """Main class for exporting skeleton related objects."""
 
     def __init__(self):
         self.transform_anim = TransformAnimation()
@@ -51,6 +54,7 @@ class Armature:
 
     def export_bones(self, b_obj, n_root_node):
         """Export all bones of an armature."""
+
         assert (b_obj.type == 'ARMATURE')
 
         self.b_action = self.transform_anim.get_active_action(b_obj)
@@ -84,7 +88,11 @@ class Armature:
             self.export_bone(b_obj, b_child, n_node, n_root_node)
 
     def export_bone_flags(self, b_bone, n_node):
-        """Exports or sets the flags according to the custom data in b_bone or the game version if none was set"""
+        """
+        Export bone flags according to the bone properties
+        or the game version if none was set.
+        """
+
         if b_bone.niftools.flags != 0:
             n_node.flags = b_bone.niftools.flags
         else:

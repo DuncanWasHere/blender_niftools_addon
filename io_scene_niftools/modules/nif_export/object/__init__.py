@@ -37,23 +37,20 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import bpy
 from io_scene_niftools.modules.nif_export import types
 from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.geometry.mesh import Mesh
+from io_scene_niftools.modules.nif_export.geometry import Mesh
 from io_scene_niftools.modules.nif_export.object.armature import Armature
 from io_scene_niftools.modules.nif_export.property.object import ObjectDataProperty
 from io_scene_niftools.utils import math
 from io_scene_niftools.utils.logging import NifLog
 
-# Dictionary of names, to map NIF blocks to correct Blender names
-DICT_NAMES = {}
-
-# Keeps track of names of exported blocks, to make sure they are unique
-BLOCK_NAMES_LIST = []
-
+DICT_NAMES = {} # Dictionary to map Blender object names to NIF blocks
 
 class Object:
+    """Main class for exporting basic NIF blocks."""
 
     export_types = ('EMPTY', 'MESH', 'ARMATURE')
 
@@ -69,8 +66,7 @@ class Object:
     def export_objects(self, b_root_objects, target_game, file_base):
         """
         Export the root node and all valid child objects into the NIF.
-        Use Blender root object if there is only one,
-        otherwise create a meta root.
+        Use Blender root object if there is only one, otherwise create a meta root.
         """
 
         self.target_game = target_game
@@ -88,7 +84,6 @@ class Object:
             for b_obj in b_root_objects:
                 self.export_object_hierarchy(b_obj, self.n_root_node)
 
-        # TODO: Move to property export class
         # Export extra data
         object_property = ObjectDataProperty()
         object_property.export_bs_x_flags(self.n_root_node, b_root_objects)
@@ -100,7 +95,7 @@ class Object:
 
     def export_object_hierarchy(self, b_obj, n_parent_node, n_node_type=None):
         """
-        Export a mesh/armature/empty object as a child of n_parent_node.
+        Export a mesh/armature/empty object as a child of the given parent node.
         Export also all children of the object.
 
         :param n_parent_node:
@@ -175,9 +170,7 @@ class Object:
     def get_export_objects(self):
         """
         Get all exportable objects.
-        Separate into lists for root nodes,
-        collision objects, constraints,
-        and particle systems.
+        Separate into lists for root nodes, collision objects, constraints, and particle systems.
         """
 
         # Only export empties, meshes, and armatures

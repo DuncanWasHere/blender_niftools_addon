@@ -1,4 +1,4 @@
-"""Script to import/export constraints."""
+"""Script to import constraints."""
 
 # ***** BEGIN LICENSE BLOCK *****
 # 

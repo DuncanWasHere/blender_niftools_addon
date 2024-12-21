@@ -38,10 +38,9 @@
 # ***** END LICENSE BLOCK *****
 
 
-from io_scene_niftools.utils import consts
-
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.collision.havok import BhkCollisionCommon
+from io_scene_niftools.utils import consts
 
 
 class BhkBlendCollision(BhkCollisionCommon):

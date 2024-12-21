@@ -10,8 +10,8 @@ bl_info = {
     "category": "Face Layers",
 }
 
-import sys
 import importlib
+import sys
 
 modulesNames = ["face_data_op", "face_layers_collection", "face_layers_globals", "face_layers_op", "face_layers_settings", "mesh_errors_op", "UI"]
 

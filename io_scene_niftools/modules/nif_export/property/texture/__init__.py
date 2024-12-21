@@ -1,4 +1,4 @@
-"""This script contains helper methods to export textures."""
+"""Classes for exporting texture properties."""
 
 # ***** BEGIN LICENSE BLOCK *****
 # 
@@ -36,6 +36,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
+
 
 import bpy
 from io_scene_niftools.modules.nif_export.animation.texture import TextureAnimation

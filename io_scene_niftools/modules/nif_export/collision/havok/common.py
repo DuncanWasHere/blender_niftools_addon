@@ -1,4 +1,4 @@
-"""Common attributes shared between Havok collision export classes."""
+"""Common functions shared between Havok collision export classes."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -38,12 +38,10 @@
 # ***** END LICENSE BLOCK *****
 
 
-from nifgen.formats.nif import classes as NifClasses
-
-from io_scene_niftools.utils.singleton import NifData
-from io_scene_niftools.utils.logging import NifLog
-
 from io_scene_niftools.modules.nif_export.collision.common import CollisionCommon
+from io_scene_niftools.utils.logging import NifLog
+from io_scene_niftools.utils.singleton import NifData
+from nifgen.formats.nif import classes as NifClasses
 
 
 class BhkCollisionCommon(CollisionCommon):

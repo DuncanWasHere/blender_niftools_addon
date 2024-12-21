@@ -45,12 +45,9 @@ from bpy.props import (PointerProperty,
                        CollectionProperty,
                        FloatProperty
                        )
-from bpy.types import PropertyGroup, Object
-
-from nifgen.formats.nif import classes as NifClasses
-
+from bpy.types import PropertyGroup
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
-
+from nifgen.formats.nif import classes as NifClasses
 
 prn_map = {"OBLIVION":   [("SideWeapon", ""),
                           ("BackWeapon", ""),

@@ -38,8 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from bpy.props import (PointerProperty,
-                       FloatVectorProperty,
+from bpy.props import (FloatVectorProperty,
                        IntProperty,
                        BoolProperty,
                        FloatProperty,

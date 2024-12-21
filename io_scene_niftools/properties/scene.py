@@ -38,14 +38,13 @@
 # ***** END LICENSE BLOCK *****
 
 
-import bpy
-from bpy.props import PointerProperty, IntProperty, EnumProperty, StringProperty, FloatProperty, CollectionProperty
-from bpy.types import PropertyGroup
 from itertools import chain
 
-from nifgen.formats.nif.versions import available_versions, set_game
-
+import bpy
+from bpy.props import IntProperty
+from bpy.types import PropertyGroup
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+from nifgen.formats.nif.versions import available_versions, set_game
 
 
 class DummyClass: pass

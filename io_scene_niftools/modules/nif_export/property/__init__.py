@@ -1,4 +1,4 @@
-"""This script contains classes to help export properties."""
+"""Classes for exporting NIF property blocks."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -36,7 +36,3 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
-
-class Property:
-    def export_property(self):
-        return

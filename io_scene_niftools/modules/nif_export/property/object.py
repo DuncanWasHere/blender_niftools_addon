@@ -1,4 +1,4 @@
-"""This script contains helper methods to export object data properties."""
+"""Main module for exporting object properties."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #

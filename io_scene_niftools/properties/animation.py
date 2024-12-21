@@ -40,10 +40,8 @@
 import bpy
 from bpy.props import EnumProperty, FloatProperty
 from bpy.types import PropertyGroup
-
-from nifgen.formats.nif import classes as NifClasses
-
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+from nifgen.formats.nif import classes as NifClasses
 
 
 class AnimationProperty(PropertyGroup):

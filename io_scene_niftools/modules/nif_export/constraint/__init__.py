@@ -45,17 +45,14 @@ from io_scene_niftools.utils.singleton import NifData
 
 
 class Constraint:
+    """Main class for exporting NIF constraint blocks."""
 
     def __init__(self):
         self.bhk_constraint_helper = BhkConstraint()
         self.target_game = None
 
     def export_constraints(self, b_constraint_objects, n_root_node, target_game):
-        """
-        Export the constraints of an object.
-        @param b_constr_obj: The object whose constraints to export.
-        @param root_block: The root of the nif tree (required for update_a_b).
-        """
+        """Main function for handling constraint export."""
 
         if not b_constraint_objects:
             return

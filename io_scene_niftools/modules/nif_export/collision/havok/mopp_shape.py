@@ -37,13 +37,11 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from io_scene_niftools.utils.singleton import NifData
-
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.logging import NifLog
-
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.collision.havok import BhkCollisionCommon
+from io_scene_niftools.utils import math
+from io_scene_niftools.utils.logging import NifLog
+from io_scene_niftools.utils.singleton import NifData
 
 
 class BhkMOPPShape(BhkCollisionCommon):

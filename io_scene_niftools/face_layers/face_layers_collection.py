@@ -1,5 +1,5 @@
-import bpy
 import bmesh
+import bpy
 
 
 # Face layers collection data

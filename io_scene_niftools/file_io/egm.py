@@ -38,8 +38,8 @@
 # ***** END LICENSE BLOCK *****
 
 
-from pyffi.formats.egm import EgmFormat
 from io_scene_niftools.utils.logging import NifLog, NifError
+from pyffi.formats.egm import EgmFormat
 
 
 class EGMFile:

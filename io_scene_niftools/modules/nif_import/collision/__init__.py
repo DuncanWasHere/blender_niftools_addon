@@ -67,27 +67,26 @@ class Collision:
 
     @staticmethod
     def set_b_collider(b_obj, radius, n_obj=None, bounds_type='BOX', display_type='BOX'):
-        """Helper function to set up b_obj so it becomes recognizable as a collision object"""
-        # set bounds type
+        """Helper function to set up b_obj so it becomes recognizable as a collision object."""
+        # Set bounds type
         b_obj.show_bounds = True
         b_obj.display_type = 'BOUNDS'
         b_obj.display_bounds_type = display_type
 
-        override = bpy.context.copy()
-        override['selected_objects'] = b_obj
-        bpy.ops.rigidbody.object_add(override)
-        # viable alternative:
-        # bpy.context.view_layer.objects.active = b_col_obj
-        # bpy.ops.rigidbody.object_add(type='PASSIVE')
+        # Override context and add rigid body
+        with bpy.context.temp_override(selected_objects=[b_obj]):
+            bpy.ops.rigidbody.object_add()
 
+        # Configure rigid body properties
         b_r_body = b_obj.rigid_body
         b_r_body.enabled = True
         b_r_body.use_margin = True
         b_r_body.collision_margin = radius
         b_r_body.collision_shape = bounds_type
-        # if they are set to active they explode once you play back an anim
+        # Ensure rigid body is passive
         b_r_body.type = "PASSIVE"
 
+        # Assign material if applicable
         b_me = b_obj.data
         if n_obj:
             havok_material = getattr(n_obj, 'material', None)
@@ -95,5 +94,5 @@ class Collision:
                 if hasattr(havok_material, "material"):
                     mat_enum = havok_material.material
                     mat_name = mat_enum.name
-                b_mat = get_material(mat_name)
-                b_me.materials.append(b_mat)
+                    b_mat = get_material(mat_name)
+                    b_me.materials.append(b_mat)

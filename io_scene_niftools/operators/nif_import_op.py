@@ -38,7 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from bpy.types import Operator, Panel
+from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper, orientation_helper
 
 from io_scene_niftools.nif_import import NifImport

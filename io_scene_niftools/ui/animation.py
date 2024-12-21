@@ -1,5 +1,4 @@
 """Nif User Interface, connect custom animation properties from properties.py into Blenders UI"""
-import bpy
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.
@@ -38,7 +37,6 @@ import bpy
 # ***** END LICENSE BLOCK *****
 
 from bpy.types import Panel
-from io_scene_niftools.operators.shrink_hull import OperatorShrinkHull
 
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 

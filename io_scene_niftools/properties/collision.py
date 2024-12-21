@@ -38,17 +38,14 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from bpy.props import (PointerProperty,
-                       IntProperty,
+from bpy.props import (IntProperty,
                        BoolProperty,
                        EnumProperty,
                        FloatProperty, FloatVectorProperty,
                        )
 from bpy.types import PropertyGroup
-
-from nifgen.formats.nif import classes as NifClasses
-
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+from nifgen.formats.nif import classes as NifClasses
 
 
 def game_specific_col_layer_items(self, context):

@@ -38,14 +38,14 @@
 # ***** END LICENSE BLOCK *****
 
 import os
-import bpy
 
+import bpy
+from io_scene_niftools.modules.nif_export import scene
 from io_scene_niftools.modules.nif_export.animation.transform import TransformAnimation
 from io_scene_niftools.nif_common import NifCommon
 from io_scene_niftools.utils import math
-from io_scene_niftools.utils.singleton import NifOp, NifData
 from io_scene_niftools.utils.logging import NifLog, NifError
-from io_scene_niftools.modules.nif_export import scene
+from io_scene_niftools.utils.singleton import NifOp, NifData
 
 
 class KfExport(NifCommon):

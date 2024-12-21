@@ -37,12 +37,14 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import bpy
 from io_scene_niftools.modules.nif_import.property.texture.loader import TextureLoader
 from io_scene_niftools.utils.consts import TEX_SLOTS
 from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.nodes import nodes_iterate
 from nifgen.formats.nif import classes as NifClasses
+
 
 """Names (ordered by default index) of shader texture slots for Sid Meier's Railroads and similar games."""
 EXTRA_SHADER_TEXTURES = [
@@ -284,59 +286,78 @@ class NodesWrapper:
 
     def link_normal_node(self, b_texture_node):
         b_texture_node.label = TEX_SLOTS.NORMAL
-        # set to non-color data
+        # Set to non-color data
         b_texture_node.image.colorspace_settings.name = 'Non-Color'
-        # create Y-invert node (because nif normal maps are +X -Y +Z)
+
+        # Create Y-invert node (because NIF normal maps are +X -Y +Z)
         nodes = self.tree.nodes
         links = self.tree.links
         group_name = "InvertY"
+
         if group_name in bpy.data.node_groups:
             node_group = bpy.data.node_groups[group_name]
         else:
-            # the InvertY node group does not yet exist, create it
+            # The InvertY node group does not yet exist, create it
             node_group = bpy.data.node_groups.new(group_name, "ShaderNodeTree")
             group_nodes = node_group.nodes
-            # add the in/output nodes
+
+            # Add the input and output nodes
             input_node = group_nodes.new('NodeGroupInput')
-            node_group.inputs.new('NodeSocketColor', "Input")
-            output_node = group_nodes.new('NodeGroupOutput')
-            node_group.outputs.new('NodeSocketColor', "Output")
-            # create the converting nodes
+            input_node.location = (-300, 0)
+            group_output = group_nodes.new('NodeGroupOutput')
+            group_output.location = (300, 0)
+
+            # Define the inputs and outputs for the node group using the new API
+            interface = node_group.interface
+            input_socket = interface.new_socket(
+                name="Input",
+                socket_type='NodeSocketColor',
+                in_out='INPUT',
+                description="Input color for the group"
+            )
+            output_socket = interface.new_socket(
+                name="Output",
+                socket_type='NodeSocketColor',
+                in_out='OUTPUT',
+                description="Output color from the group"
+            )
+
+            # Set up the node group internals
             separate_node = group_nodes.new("ShaderNodeSeparateRGB")
+            separate_node.location = (-150, 100)
+
             invert_node = group_nodes.new("ShaderNodeInvert")
+            invert_node.location = (0, 100)
+
             combine_node = group_nodes.new("ShaderNodeCombineRGB")
-            # link the converting nodes to each other
+            combine_node.location = (150, 100)
+
+            # Link the nodes within the group
             group_links = node_group.links
-            group_links.new(combine_node.inputs[0], separate_node.outputs[0])
-            group_links.new(invert_node.inputs[1], separate_node.outputs[1])
-            group_links.new(combine_node.inputs[1], invert_node.outputs[0])
-            group_links.new(combine_node.inputs[2], separate_node.outputs[2])
-            # link the converting nodes to the input/output
-            group_links.new(separate_node.inputs[0], input_node.outputs[0])
-            group_links.new(output_node.inputs[0], combine_node.outputs[0])
-            nodes_iterate(node_group, output_node)
-        # add the group node to the main node tree and link it
+            group_links.new(separate_node.outputs['R'], combine_node.inputs['R'])  # Red
+            group_links.new(separate_node.outputs['G'], invert_node.inputs['Color'])  # Green (invert)
+            group_links.new(invert_node.outputs['Color'], combine_node.inputs['G'])  # Green (inverted)
+            group_links.new(separate_node.outputs['B'], combine_node.inputs['B'])  # Blue
+
+            # Link the input and output nodes to the group sockets
+            group_links.new(input_node.outputs[input_socket.name], separate_node.inputs['Image'])
+            group_links.new(combine_node.outputs['Image'], group_output.inputs[output_socket.name])
+
+        # Add the group node to the main node tree and link it
         group_node = nodes.new('ShaderNodeGroup')
         group_node.node_tree = node_group
-        links.new(group_node.inputs[0], b_texture_node.outputs[0])
+        group_node.location = (-300, 300)
+
+        links.new(group_node.inputs['Input'], b_texture_node.outputs['Color'])
+
         if self.b_mat.niftools_shader.model_space_normals:
-            self.tree.links.new(self.diffuse_shader.inputs[2], group_node.outputs[0])
+            links.new(self.diffuse_shader.inputs[2], group_node.outputs['Output'])
         else:
-            # create tangent normal map converter and link to it
+            # Create tangent normal map converter and link to it
             tangent_converter = nodes.new("ShaderNodeNormalMap")
-            self.tree.links.new(tangent_converter.inputs[1], group_node.outputs[0])
-            self.tree.links.new(self.diffuse_shader.inputs[2], tangent_converter.outputs[0])
-        # # Influence mapping
-        # b_texture_node.texture.use_normal_map = True  # causes artifacts otherwise.
-        #
-        # # Influence
-        # # TODO [property][texture][flag][alpha] Figure out if this texture has alpha
-        # # if self.nif_import.ni_alpha_prop:
-        # #     b_texture_node.use_map_alpha = True
-        #
-        # b_texture_node.use_map_color_diffuse = False
-        # b_texture_node.use_map_normal = True
-        # b_texture_node.use_map_alpha = False
+            tangent_converter.location = (0, 300)
+            links.new(tangent_converter.inputs['Color'], group_node.outputs['Output'])
+            links.new(self.diffuse_shader.inputs[2], tangent_converter.outputs['Normal'])
 
     def link_glow_node(self, b_texture_node):
         b_texture_node.label = TEX_SLOTS.GLOW

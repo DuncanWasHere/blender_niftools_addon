@@ -1,5 +1,5 @@
-import bpy
 import bmesh
+import bpy
 from .face_layers_collection import checkFLayersCollExist
 
 

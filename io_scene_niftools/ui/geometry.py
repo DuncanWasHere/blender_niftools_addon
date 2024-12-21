@@ -1,5 +1,4 @@
 """ Nif User Interface, connect custom properties from properties.py into Blenders UI"""
-import bpy
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.

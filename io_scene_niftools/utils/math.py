@@ -39,12 +39,10 @@
 
 
 import bpy
-from bpy_extras.io_utils import axis_conversion
 import mathutils
-from nifgen.formats.nif import classes as NifClasses
-
+from bpy_extras.io_utils import axis_conversion
 from io_scene_niftools.utils.logging import NifLog
-
+from nifgen.formats.nif import classes as NifClasses
 
 THETA_THRESHOLD_NEGY = 1.0e-9
 THETA_THRESHOLD_NEGY_CLOSE = 1.0e-5

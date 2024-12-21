@@ -1,5 +1,13 @@
 """NIF file operations for import/export."""
 import os
+import os.path as path
+
+import bpy
+import nifgen.formats.nif as NifFormat
+from io_scene_niftools.utils.logging import NifLog, NifError
+from io_scene_niftools.utils.singleton import EGMData
+
+
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.
@@ -36,14 +44,6 @@ import os
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
-
-import os.path as path
-
-import bpy
-import nifgen.formats.nif as NifFormat
-
-from io_scene_niftools.utils.logging import NifLog, NifError
-from io_scene_niftools.utils.singleton import EGMData
 
 
 class NifFile:

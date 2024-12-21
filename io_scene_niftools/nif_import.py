@@ -39,12 +39,18 @@
 
 
 import bpy
-import nifgen.spells.nif.fix
+
 from nifgen.formats.nif import classes as NifClasses
+import nifgen.spells.nif.fix
+
+from io_scene_niftools.file_io.nif import NifFile
 
 import io_scene_niftools.utils.logging
-from io_scene_niftools.file_io.nif import NifFile
-from io_scene_niftools.modules.nif_import.animation import Animation
+from io_scene_niftools.utils import math
+from io_scene_niftools.utils.singleton import NifOp, NifData
+from io_scene_niftools.utils.logging import NifLog, NifError
+
+from io_scene_niftools.modules.nif_import import scene
 from io_scene_niftools.modules.nif_import.animation.object import ObjectAnimation
 from io_scene_niftools.modules.nif_import.animation.transform import TransformAnimation
 from io_scene_niftools.modules.nif_import.armature import Armature
@@ -52,16 +58,12 @@ from io_scene_niftools.modules.nif_import.collision.bound import Bound
 from io_scene_niftools.modules.nif_import.collision.havok import BhkCollision
 from io_scene_niftools.modules.nif_import.constraint import Constraint
 from io_scene_niftools.modules.nif_import.geometry.vertex.groups import VertexGroup
-from io_scene_niftools.modules.nif_import.object.block_registry import block_store
 from io_scene_niftools.modules.nif_import.object import Object
+from io_scene_niftools.modules.nif_import.object.block_registry import block_store
 from io_scene_niftools.modules.nif_import.object.types import NiTypes
-from io_scene_niftools.modules.nif_import import scene
 from io_scene_niftools.modules.nif_import.property.object import ObjectProperty
 
 from io_scene_niftools.nif_common import NifCommon
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.singleton import NifOp, NifData
-from io_scene_niftools.utils.logging import NifLog, NifError
 
 
 class NifImport(NifCommon):
@@ -264,7 +266,7 @@ class NifImport(NifCommon):
 
                 # import object level animations (non-skeletal)
                 if NifOp.props.animation:
-                    # todo [anim] fetch the action if it exists
+                    # TODO [anim]: Fetch the action if it exists
                     # self.transform_anim.import_text_keys(n_block, b_action)
                     self.transform_anim.import_transforms(n_block, b_obj)
                     self.object_anim.import_visibility(n_block, b_obj)

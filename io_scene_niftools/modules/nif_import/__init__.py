@@ -1,4 +1,4 @@
-"""This modules contains all modules related to importing Netimmerse/Gamebryo nif files to Blender."""
+"""Modules responsible for importing Blender objects from NIF blocks."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #

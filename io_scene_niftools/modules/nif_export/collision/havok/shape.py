@@ -39,14 +39,11 @@
 
 
 import mathutils
-
-from io_scene_niftools.utils.singleton import NifOp, NifData
-
-from io_scene_niftools.utils import math, consts
-from io_scene_niftools.utils.logging import NifLog, NifError
-
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.collision.havok import BhkCollisionCommon
+from io_scene_niftools.utils import math, consts
+from io_scene_niftools.utils.logging import NifLog, NifError
+from io_scene_niftools.utils.singleton import NifData
 
 
 class BhkShape(BhkCollisionCommon):

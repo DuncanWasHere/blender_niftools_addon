@@ -1,4 +1,4 @@
-"""This script contains helper methods to export materials."""
+"""Main module for exporting material properties."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -44,6 +44,7 @@ from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
+
 
 EXPORT_OPTIMIZE_MATERIALS = True
 

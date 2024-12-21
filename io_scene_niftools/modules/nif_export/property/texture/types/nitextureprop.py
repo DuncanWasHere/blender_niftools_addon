@@ -1,4 +1,4 @@
-"""This modules contains helper methods to export nitextureproperty type nodes"""
+"""Main module for exporting NetImmerse texture properties."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -36,6 +36,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
+
+
 import bpy
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.property.texture import TextureSlotManager, TextureWriter

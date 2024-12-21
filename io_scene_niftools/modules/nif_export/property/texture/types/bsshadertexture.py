@@ -1,8 +1,5 @@
-"""This script contains helper methods to export shader property data."""
+"""Main module for exporting Bethesda shader textures."""
 
-from io_scene_niftools.modules.nif_export.property.texture import TextureWriter, TextureSlotManager
-from io_scene_niftools.utils.consts import TEX_SLOTS
-from io_scene_niftools.utils.singleton import NifData
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.
@@ -39,6 +36,10 @@ from io_scene_niftools.utils.singleton import NifData
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
+
+from io_scene_niftools.modules.nif_export.property.texture import TextureWriter, TextureSlotManager
+from io_scene_niftools.utils.consts import TEX_SLOTS
+from io_scene_niftools.utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
 
 

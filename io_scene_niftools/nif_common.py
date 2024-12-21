@@ -39,12 +39,11 @@
 
 import bpy
 import nifgen.formats.nif as NifFormat
+from io_scene_niftools.utils import debugging
+from io_scene_niftools.utils.logging import NifLog
+from io_scene_niftools.utils.singleton import NifOp
 from nifgen.spells.nif import NifToaster
 from nifgen.spells.nif.fix import SpellScale
-
-from io_scene_niftools.utils import debugging
-from io_scene_niftools.utils.singleton import NifOp
-from io_scene_niftools.utils.logging import NifLog
 
 
 class NifCommon:

@@ -1,4 +1,4 @@
-"""Script for exporting Havok constraint blocks."""
+"""Main module for exporting Havok constraint blocks."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -111,8 +111,7 @@ class BhkConstraint(ConstraintCommon):
         ConstraintCommon.attach_constraint(n_bhk_ball_and_socket_constraint, n_entity_a, n_entity_b)
 
         (n_bhk_ball_and_socket_constraint.constraint.pivot_a,
-         n_bhk_ball_and_socket_constraint.constraint.pivot_b) = self.calculate_pivot(b_constr, b_constr_obj,
-                                                                                     n_entity_a, n_entity_b)
+         n_bhk_ball_and_socket_constraint.constraint.pivot_b) = self.calculate_pivot(b_constr, b_constr_obj)
 
         return n_bhk_ball_and_socket_constraint
 
@@ -126,26 +125,25 @@ class BhkConstraint(ConstraintCommon):
 
         (n_bhk_ragdoll_constraint.constraint.plane_a,
          n_bhk_ragdoll_constraint.constraint.plane_b) = self.calculate_plane(b_constr, b_constr_obj,
-                                                                             n_entity_a, n_entity_b)
+                                                                             n_entity_a)
 
         (n_bhk_ragdoll_constraint.constraint.motor_a,
          n_bhk_ragdoll_constraint.constraint.motor_b) = self.calculate_motor(b_constr, b_constr_obj,
-                                                                             n_entity_a, n_entity_b)
+                                                                             n_entity_a)
 
         (n_bhk_ragdoll_constraint.constraint.pivot_a,
-         n_bhk_ragdoll_constraint.constraint.pivot_b) = self.calculate_pivot(b_constr, b_constr_obj,
-                                                                             n_entity_a, n_entity_b)
+         n_bhk_ragdoll_constraint.constraint.pivot_b) = self.calculate_pivot(b_constr, b_constr_obj)
 
         (n_bhk_ragdoll_constraint.constraint.cone_max_angle) = self.calculate_cone_angle(b_constr, b_constr_obj,
-                                                                                         n_entity_a, n_entity_b)
+                                                                                         n_entity_a)
 
         (n_bhk_ragdoll_constraint.constraint.plane_min_angle,
          n_bhk_ragdoll_constraint.constraint.plane_max_angle) = self.calculate_plane_angle(b_constr, b_constr_obj,
-                                                                                           n_entity_a, n_entity_b)
+                                                                                           n_entity_a)
 
         (n_bhk_ragdoll_constraint.constraint.twist_min_angle,
          n_bhk_ragdoll_constraint.constraint.twist_max_angle) = self.calculate_twist_angle(b_constr, b_constr_obj,
-                                                                                           n_entity_a, n_entity_b)
+                                                                                           n_entity_a)
 
         return n_bhk_ragdoll_constraint
 

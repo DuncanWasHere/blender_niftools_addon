@@ -38,12 +38,11 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-
 from io_scene_niftools.file_io.egm import EGMFile
 from io_scene_niftools.modules.nif_import.animation.morph import MorphAnimation
 from io_scene_niftools.nif_common import NifCommon
-from io_scene_niftools.utils.singleton import NifOp, EGMData
 from io_scene_niftools.utils.logging import NifError, NifLog
+from io_scene_niftools.utils.singleton import NifOp, EGMData
 
 
 class EgmImport(NifCommon):

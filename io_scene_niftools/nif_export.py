@@ -41,23 +41,19 @@
 import os.path
 
 import bpy
-
-from nifgen.formats.nif import classes as NifClasses
-
 from io_scene_niftools.file_io import File
-from io_scene_niftools.nif_common import NifCommon
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.singleton import NifOp, EGMData, NifData
-from io_scene_niftools.utils.logging import NifLog, NifError
-
+from io_scene_niftools.modules.nif_export.animation import Animation
 from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.scene import Scene
-from io_scene_niftools.modules.nif_export.object import Object
 from io_scene_niftools.modules.nif_export.collision import Collision
 from io_scene_niftools.modules.nif_export.constraint import Constraint
+from io_scene_niftools.modules.nif_export.object import Object
 from io_scene_niftools.modules.nif_export.particle import Particle
-from io_scene_niftools.modules.nif_export.property import Property
-from io_scene_niftools.modules.nif_export.animation import Animation
+from io_scene_niftools.modules.nif_export.scene import Scene
+from io_scene_niftools.nif_common import NifCommon
+from io_scene_niftools.utils import math
+from io_scene_niftools.utils.logging import NifLog, NifError
+from io_scene_niftools.utils.singleton import NifOp, EGMData, NifData
+from nifgen.formats.nif import classes as NifClasses
 
 
 class NifExport(NifCommon):
@@ -72,7 +68,6 @@ class NifExport(NifCommon):
         self.collision_helper = Collision() # Exports collision blocks
         self.constraint_helper = Constraint() # Exports constraint blocks
         self.particle_helper = Particle() # Exports particle blocks
-        self.property_helper = Property() # Exports property blocks
         self.animation_helper = Animation() # Exports animation blocks
 
         # Blender objects to be exported
@@ -122,7 +117,6 @@ class NifExport(NifCommon):
             # Root node is exported as a meta root if multiple root objects are present
             # The name is fixed later to avoid confusing the exporter with duplicate names
             # Specialized objects not in b_exportable_objects are skipped for now
-            # TODO: Handle all property block exports in Property class
             n_root_node = self.object_helper.export_objects(self.b_root_objects, self.target_game, file_base)
 
             # Export remaining block type categories
@@ -130,8 +124,7 @@ class NifExport(NifCommon):
             self.collision_helper.export_collision(self.b_collision_objects, self.target_game) # Export collision
             self.constraint_helper.export_constraints(self.b_constraint_objects, n_root_node, self.target_game) # Export constraints
             self.particle_helper.export_particles(n_root_node, self.target_game) # Export particles
-            # self.property_helper.export_properties(n_root_node, self.target_game) # Export properties
-            # self.animation_helper.export_nif_animations(n_root_node, self.target_game) # Export animations
+            # self.animation_helper.export_animations(n_root_node, self.target_game) # Export animations
 
             self.correct_scale(n_data, n_root_node) # Correct scale for NIF units
             self.generate_mopp_data() # Generate MOPP data

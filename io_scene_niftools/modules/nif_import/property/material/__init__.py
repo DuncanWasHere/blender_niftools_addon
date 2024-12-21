@@ -37,6 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 from io_scene_niftools.modules.nif_import.object.block_registry import block_store
 from io_scene_niftools.utils.logging import NifLog
 
@@ -56,20 +57,8 @@ class Material:
         # flags is a bitfield
         blend_enable = 1 & n_alpha_prop.flags
         test_enable = (1 << 9) & n_alpha_prop.flags
-        if blend_enable and test_enable:
-            b_mat.blend_method = "HASHED"
-            b_mat.shadow_method = "HASHED"
-        elif blend_enable:
-            b_mat.blend_method = "BLEND"
-            b_mat.shadow_method = "HASHED"
-        elif test_enable:
-            b_mat.blend_method = "CLIP"
-            b_mat.shadow_method = "CLIP"
-        else:
-            b_mat.blend_method = "OPAQUE"
-            b_mat.shadow_method = "OPAQUE"
 
-        b_mat.alpha_threshold = n_alpha_prop.threshold / 255  # transparency threshold
+
         b_mat.niftools_alpha.alphaflag = n_alpha_prop.flags
 
         return b_mat
