@@ -130,8 +130,8 @@ class VertexGroup:
         """Import a NiSkinInstance and its contents as vertex groups"""
         bone_weights_map = cls.get_bone_weights(ni_block)
         cls.set_bone_weights(bone_weights_map, b_obj)
-        face_maps = cls.get_face_maps(ni_block)
-        cls.set_face_maps(face_maps, b_obj)
+        face_groups = cls.get_face_groups(ni_block)
+        cls.set_face_groups(face_groups, b_obj)
 
     @staticmethod
     def get_bone_weights(ni_block):
@@ -272,63 +272,61 @@ class VertexGroup:
                 v_group.add([int(v_index)], weight, 'REPLACE')
 
     @staticmethod
-    def get_face_maps(ni_block):
-        """Retrieve the triangle indices per body part
+    def get_face_groups(ni_block):
+        """
+        The triangle indices per body part
 
         :param ni_block: NiObject from which to take the face body parts
         :type ni_block: NifClasses.NiAVObject
         :return: dictionary mapping body part name to triangle indices
         :rtype: dict(str, list(int))
-
         """
-        face_maps = {}
-        if hasattr(ni_block, 'skin_instance'):
-            skininst = ni_block.skin_instance
-            if isinstance(skininst, NifClasses.BSDismemberSkinInstance):
-                for bodypart in skininst.partitions:
-                    group_name = bodypart.body_part.name
 
-                    # create face map if it did not exist yet
-                    if group_name not in face_maps:
-                        face_maps[group_name] = []
-                triangles, bodyparts = skininst.get_dismember_partitions()
-                for i, bodypart in enumerate(bodyparts):
-                    face_maps[bodypart.name].append(i)
-        return face_maps
+        face_groups = {}
+
+        if hasattr(ni_block, 'skin_instance'):
+            n_ni_skin_instance = ni_block.skin_instance
+            if isinstance(n_ni_skin_instance, NifClasses.BSDismemberSkinInstance):
+                for body_part in n_ni_skin_instance.partitions:
+                    group_name = body_part.body_part.name
+
+                    # Create face group if it does not exist yet
+                    if group_name not in face_groups:
+                        face_groups[group_name] = []
+                triangles, body_parts = n_ni_skin_instance.get_dismember_partitions()
+                for i, body_part in enumerate(body_parts):
+                    face_groups[body_part.name].append(i)
+        return face_groups
 
     @staticmethod
-    def set_face_maps(face_maps, b_obj):
+    def set_face_groups(face_groups, b_obj):
         """
-        Assigns face groups as boolean attributes to a Blender object.
+        Assign face groups as boolean attributes of a Blender object.
 
-        :param face_maps: Dictionary mapping body part name to triangle indices.
-        :type face_maps: dict(str, list(int))
+        :param face_groups: Dictionary mapping body part name to triangle indices.
+        :type face_groups: dict(str, list(int))
         :param b_obj: Blender object to which to add the body parts.
         :type b_obj: bpy.types.Object
         :return: None
         :rtype: NoneType
         """
-        # Ensure the object has a mesh
-        if b_obj.type != 'MESH':
-            raise ValueError("The object must be a mesh to use this function.")
+        b_mesh = b_obj.data  # Work directly with the original mesh
 
-        # Get or create the evaluated mesh
-        depsgraph = bpy.context.evaluated_depsgraph_get()
-        evaluated_obj = b_obj.evaluated_get(depsgraph)
-        mesh = evaluated_obj.to_mesh()
+        for group_name, tri_indices in face_groups.items():
+            NifLog.warn(f"Adding face group: {group_name}.")
 
-        for group_name, tri_indices in face_maps.items():
             # Create or retrieve the attribute
-            if group_name not in mesh.attributes:
-                attr = mesh.attributes.new(name=group_name, type='BOOLEAN', domain='FACE')
+            if group_name not in b_mesh.attributes:
+                b_attribute = b_mesh.attributes.new(name=group_name, type='BOOLEAN', domain='FACE')
             else:
-                attr = mesh.attributes[group_name]
+                b_attribute = b_mesh.attributes[group_name]
 
             # Assign values to the attribute
-            data = attr.data
+            tri_indices_set = set(tri_indices)  # Use a set for faster membership testing
+            data = b_attribute.data
             for i in range(len(data)):
-                data[i].value = i in tri_indices
+                data[i].value = i in tri_indices_set
 
-        # Update the original mesh
+        # Update the mesh to ensure changes are reflected
         b_obj.data.update()
-        evaluated_obj.to_mesh_clear()
+

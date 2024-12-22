@@ -661,45 +661,87 @@ class Mesh:
         # set triangles stitch strips for civ4
         n_geom.data.set_triangles(triangles, stitchstrips=True)
 
-    def export_skin_partition(self, b_obj, bodypartfacemap, triangles, n_geom):
+    def export_skin_partition(self, b_obj, body_part_face_map, triangles, n_geom):
         """Attaches a skin partition to n_geom if needed"""
 
         game = bpy.context.scene.niftools_scene.game
         if NifData.data.version >= 0x04020100 and NifOp.props.skin_partition:
             NifLog.info("Creating skin partition")
 
-            # warn on bad config settings
-            if game == 'OBLIVION':
-                if NifOp.props.pad_bones:
-                    NifLog.warn(
-                        "Using padbones on Oblivion export. Disable the pad bones option to get higher quality skin partitions.")
+            # Warn on bad config settings
+            if game == 'OBLIVION' and NifOp.props.pad_bones:
+                NifLog.warn(
+                    "Using padbones on Oblivion export. Disable the pad bones option to get higher quality skin partitions."
+                )
 
             # Skyrim Special Edition has a limit of 80 bones per partition, but export is not yet supported
-            bones_per_partition_lut = {"OBLIVION": 18, "FALLOUT_3": 18, 'FALLOUT_NV': 18, "SKYRIM": 24}
+            bones_per_partition_lut = {
+                "OBLIVION": 18,
+                "FALLOUT_3": 18,
+                "FALLOUT_NV": 18,
+                "SKYRIM": 24,
+            }
             rec_bones = bones_per_partition_lut.get(game, None)
             if rec_bones is not None:
                 if NifOp.props.max_bones_per_partition < rec_bones:
-                    NifLog.warn(f"Using less than {rec_bones} bones per partition on {game} export."
-                                f"Set it to {rec_bones} to get higher quality skin partitions.")
+                    NifLog.warn(
+                        f"Using less than {rec_bones} bones per partition on {game} export. "
+                        f"Set it to {rec_bones} to get higher quality skin partitions."
+                    )
                 elif NifOp.props.max_bones_per_partition > rec_bones:
-                    NifLog.warn(f"Using more than {rec_bones} bones per partition on {game} export."
-                                f"This may cause issues in-game.")
+                    NifLog.warn(
+                        f"Using more than {rec_bones} bones per partition on {game} export. "
+                        f"This may cause issues in-game."
+                    )
 
-            part_order = [NifClasses.BSDismemberBodyPartType[face_map.name] for face_map in
-                          b_obj.face_maps if face_map.name in NifClasses.BSDismemberBodyPartType.__members__]
+            # Determine part_order using mesh attributes instead of face maps
+            part_order = [
+                NifClasses.BSDismemberBodyPartType[attr.name]
+                for attr in b_obj.data.attributes
+                if attr.name in NifClasses.BSDismemberBodyPartType.__members__
+            ]
+
+            # Build the trianglepartmap using mesh attributes
+            default_part = NifClasses.BSDismemberBodyPartType["BP_TORSO"]  # Fallback part
+            trianglepartmap = [default_part] * len(triangles)  # Initialize with default part
+
+            valid_triangles = []
+            for tri in triangles:
+                # Validate that all vertex indices are within bounds
+                if all(vert_idx < len(b_obj.data.vertices) for vert_idx in tri):
+                    valid_triangles.append(tri)
+                else:
+                    NifLog.warn(
+                        f"Skipping invalid triangle {tri} in mesh '{b_obj.name}'"
+                    )
+
+            for attr in b_obj.data.attributes:
+                if attr.name in NifClasses.BSDismemberBodyPartType.__members__:
+                    part_type = NifClasses.BSDismemberBodyPartType[attr.name]
+                    for tri_idx, tri in enumerate(valid_triangles):
+                        # Ensure indices are within the range of attr.data
+                        if all(vert_idx < len(attr.data) and attr.data[vert_idx].value for vert_idx in tri):
+                            trianglepartmap[tri_idx] = part_type
+                        else:
+                            NifLog.warn(
+                                f"Skipping triangle {tri} for attribute '{attr.name}' in mesh '{b_obj.name}' due to missing data."
+                            )
+
             lostweight = n_geom.update_skin_partition(
                 maxbonesperpartition=NifOp.props.max_bones_per_partition,
                 maxbonespervertex=NifOp.props.max_bones_per_vertex,
                 stripify=NifOp.props.stripify,
                 padbones=NifOp.props.pad_bones,
-                triangles=triangles,
-                trianglepartmap=bodypartfacemap,
-                maximize_bone_sharing=(game in ('FALLOUT_3', 'FALLOUT_NV', 'SKYRIM')),
-                part_sort_order=part_order)
+                triangles=valid_triangles,  # Use only valid triangles
+                trianglepartmap=trianglepartmap,
+                maximize_bone_sharing=(game in ("FALLOUT_3", "FALLOUT_NV", "SKYRIM")),
+                part_sort_order=part_order,
+            )
 
             if lostweight > NifOp.props.epsilon:
                 NifLog.warn(
-                    f"Lost {lostweight:f} in vertex weights while creating a skin partition for Blender object '{b_obj.name}' (nif block '{n_geom.name}')")
+                    f"Lost {lostweight:f} in vertex weights while creating a skin partition for Blender object '{b_obj.name}' (nif block '{n_geom.name}')"
+                )
 
     def update_bind_position(self, n_geom, n_root, b_obj_armature):
         """
@@ -753,25 +795,21 @@ class Mesh:
         raise NifError(f"Bone '{b_bone.name}' not found.")
 
     def get_polygon_parts(self, b_obj, b_mesh):
-        """
-        Return the body part indices of the mesh polygons.
-        -1 is either not assigned to a face map or not a valid body part.
-        """
-
-        index_group_map = {-1: -1}
-        for body_part_group_name in [member.name for member in NifClasses.BSDismemberBodyPartType]:
+        index_group_map = {-1: NifClasses.BSDismemberBodyPartType["BP_TORSO"]}
+        for body_part_group_name in NifClasses.BSDismemberBodyPartType.__members__.keys():
             if body_part_group_name in b_mesh.attributes:
-                b_body_part_group = b_mesh.attributes[body_part_group_name]
-                index_group_map[b_body_part_group.index] = NifClasses.BSDismemberBodyPartType[body_part_group_name]
-        if len(index_group_map) <= 1:
-            # there were no valid face maps
-            return np.array([])
-        bm = bmesh.new()
-        bm.from_mesh(b_mesh)
-        bm.faces.ensure_lookup_table()
-        fm = bm.faces.layers.face_map.verify()
-        polygon_parts = np.array([index_group_map.get(face[fm], -1) for face in bm.faces], dtype=int)
-        bm.free()
+                index_group_map[body_part_group_name] = NifClasses.BSDismemberBodyPartType[body_part_group_name]
+
+        polygon_parts = np.full(len(b_mesh.polygons), -1, dtype=int)
+        for body_part_group_name, nif_body_part in index_group_map.items():
+            if body_part_group_name in b_mesh.attributes:
+                attribute = b_mesh.attributes[body_part_group_name]
+                for face_idx, data in enumerate(attribute.data):
+                    if data.value:  # Attribute is True
+                        polygon_parts[face_idx] = nif_body_part
+
+        # Fallback for unassigned polygons
+        polygon_parts = np.where(polygon_parts == -1, NifClasses.BSDismemberBodyPartType["BP_TORSO"], polygon_parts)
         return polygon_parts
 
     def create_skin_inst_data(self, b_obj, b_obj_armature, polygon_parts):

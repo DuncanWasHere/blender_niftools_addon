@@ -39,7 +39,7 @@
 import os
 import sys
 
-from io_scene_niftools import addon_updater_ops, face_layers
+from io_scene_niftools import addon_updater_ops
 from io_scene_niftools.utils import logging, debugging
 from io_scene_niftools.utils.decorators import register_modules, unregister_modules
 from io_scene_niftools.utils.logging import NifLog
@@ -93,7 +93,6 @@ def register():
     # so that users can revert back to a working version
     NifLog.debug("Starting registration")
     configure_autoupdater()
-    face_layers.register()
 
     register_modules(MODS, __name__)
 
