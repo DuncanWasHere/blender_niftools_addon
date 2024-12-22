@@ -50,13 +50,18 @@ from io_scene_niftools.utils.logging import NifLog
 DICT_NAMES = {} # Dictionary to map Blender object names to NIF blocks
 
 class Object:
-    """Main class for exporting basic NIF blocks."""
+    """
+    Main interface class for exporting basic NIF blocks
+    (i.e., NiNode and subclasses).
+    Geometry is handled by a helper class.
+    """
 
     export_types = ('EMPTY', 'MESH', 'ARMATURE')
 
     def __init__(self):
         self.armature_helper = Armature()
         self.mesh_helper = Mesh()
+        self.object_property_helper = ObjectDataProperty()
 
         self.b_exportable_objects = []
 
@@ -78,17 +83,16 @@ class Object:
             self.export_object_hierarchy(b_obj,None, n_node_type=b_obj.niftools.nodetype)
         else:
             # There is more than one root object, so create a meta root
-            NifLog.info(f"Created meta root because Blender scene had {len(b_root_objects)} root objects")
+            NifLog.info(f"Created meta root because Blender scene had {len(b_root_objects)} root objects.")
             self.n_root_node = types.create_ninode()
             self.n_root_node.name = "Scene Root"
             for b_obj in b_root_objects:
                 self.export_object_hierarchy(b_obj, self.n_root_node)
 
         # Export extra data
-        object_property = ObjectDataProperty()
-        object_property.export_bs_x_flags(self.n_root_node, b_root_objects)
-        object_property.export_inventory_marker(self.n_root_node, b_obj)
-        object_property.export_weapon_location(self.n_root_node, b_obj)
+        self.object_property_helper.export_bs_x_flags(self.n_root_node, b_root_objects)
+        self.object_property_helper.export_inventory_marker(self.n_root_node, b_obj)
+        self.object_property_helper.export_weapon_location(self.n_root_node, b_obj)
         types.export_furniture_marker(self.n_root_node, file_base)
 
         return self.n_root_node
@@ -110,8 +114,8 @@ class Object:
             # Export a geometry block
 
             # If this mesh has children or more than one material it gets wrapped in a purpose-made NiNode
-            is_multimaterial = len(set([f.material_index for f in b_obj.data.polygons])) > 1
-            if not (b_obj.children or is_multimaterial):
+            is_multi_material = len(set([f.material_index for f in b_obj.data.polygons])) > 1
+            if not (b_obj.children or is_multi_material):
                 mesh = self.mesh_helper.export_tri_shapes(b_obj, n_parent_node, self.n_root_node, b_obj.name)
                 if not self.n_root_node:
                     self.n_root_node = mesh
@@ -138,8 +142,7 @@ class Object:
         self.set_object_flags(b_obj, n_node) # Object Flags
         math.set_object_matrix(b_obj, n_node) # Transforms
 
-        # TODO: Move to properties exporter
-        self.export_upb(n_node, b_obj) # Extra Data
+        self.object_property_helper.export_upb(n_node, b_obj) # Extra Data
 
         if b_obj.type == 'MESH':
             # If b_obj is a multi-material mesh, export the geometries as children of this node
@@ -230,13 +233,4 @@ class Object:
             elif self.target_game == 'DIVINITY_2':
                 n_node.flags = 0x0310
             else:
-                n_node.flags = 0x000C  # Morrowind
-
-    def export_upb(self, n_node, b_obj):
-        # Export UPB NiStringExtraData if not optimizer junk
-        if b_obj.niftools.upb:
-            if 'BSBoneLOD' in b_obj.niftools.upb or 'Bip' in b_obj.niftools.upb:
-                upb = block_store.create_block("NiStringExtraData")
-                upb.name = 'UPB'
-                upb.string_data = b_obj.niftools.upb
-                n_node.add_extra_data(upb)
+                n_node.flags = 0x000C # Morrowind

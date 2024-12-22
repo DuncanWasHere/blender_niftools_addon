@@ -83,7 +83,7 @@ class BhkShape(BhkCollisionCommon):
         # Export all children as collision objects and attach each to the bhkListShape
         for b_sub_col_obj in b_col_obj.children:
             if b_sub_col_obj.type == 'MESH' and b_sub_col_obj.rigid_body:
-                n_sub_hav_mat = self.get_havok_material_list(b_sub_col_obj)
+                n_sub_hav_mat = self.get_havok_material_list(b_sub_col_obj)[0]
                 n_bhk_shape = self.__export_bhk_shape(b_sub_col_obj, n_sub_hav_mat)
                 if n_bhk_shape:
                     n_bhk_list_shape.add_shape(n_bhk_shape)

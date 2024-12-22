@@ -38,9 +38,10 @@
 # ***** END LICENSE BLOCK *****
 
 
+from io_scene_niftools.modules.nif_export.animation.object import ObjectAnimation
+
 import bpy
 from io_scene_niftools.modules.nif_export import types
-from io_scene_niftools.modules.nif_export.animation.transform import TransformAnimation
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.utils import math
 
@@ -49,7 +50,7 @@ class Armature:
     """Main class for exporting skeleton related objects."""
 
     def __init__(self):
-        self.transform_anim = TransformAnimation()
+        self.transform_anim = ObjectAnimation()
         self.b_action = None
 
     def export_bones(self, b_obj, n_root_node):
@@ -82,7 +83,7 @@ class Armature:
         math.set_b_matrix_to_n_block(p_mat, n_node)
 
         # per-bone animation
-        self.transform_anim.export_transforms(n_node, b_obj, self.b_action, b_bone)
+        self.transform_anim.export_ni_transform_controller(n_node, b_obj, self.b_action, b_bone)
         # continue down the bone tree
         for b_child in b_bone.children:
             self.export_bone(b_obj, b_child, n_node, n_root_node)

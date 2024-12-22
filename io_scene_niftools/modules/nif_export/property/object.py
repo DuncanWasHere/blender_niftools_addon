@@ -1,4 +1,4 @@
-"""Main module for exporting object properties."""
+"""Main module for exporting NIF object property blocks."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -38,23 +38,27 @@
 # ***** END LICENSE BLOCK *****
 
 
+import bpy
+
 from math import pi
 
-import bpy
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.property.material import MaterialProp
-from io_scene_niftools.modules.nif_export.property.shader import BSShaderProperty
-from io_scene_niftools.modules.nif_export.property.texture.types.nitextureprop import NiTextureProp
-from io_scene_niftools.utils.logging import NifLog, NifError
-from io_scene_niftools.utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
+
+from io_scene_niftools.utils.singleton import NifOp
+from io_scene_niftools.utils.logging import NifLog, NifError
+
+from io_scene_niftools.modules.nif_export.block_registry import block_store
+from io_scene_niftools.modules.nif_export.property.bethesda.shader import BSShaderProperty
+from io_scene_niftools.modules.nif_export.property.texture.nitextureprop import NiTextureProp
+from io_scene_niftools.modules.nif_export.property.material import MaterialProperty
+
 
 
 class ObjectProperty:
     def __init__(self):
-        self.material_property = MaterialProp()
-        self.texture_helper = NiTextureProp.get()
-        self.bss_helper = BSShaderProperty()
+        self.material_property_helper = MaterialProperty()
+        self.texture_property_helper = NiTextureProp.get()
+        self.bs_shader_property_helper = BSShaderProperty()
 
     def export_properties(self, b_obj, b_mat, n_block):
         """This is the main property processor that attaches
@@ -66,7 +70,7 @@ class ObjectProperty:
                          self.export_wireframe_property(b_obj),
                          self.export_stencil_property(b_mat),
                          self.export_specular_property(b_mat),
-                         self.material_property.export_material_property(b_mat)
+                         self.material_property_helper.export_material_property(b_mat)
                          ):
                 if prop is not None:
                     n_block.add_property(prop)
@@ -74,26 +78,20 @@ class ObjectProperty:
             # todo [property] refactor this
             # add textures
             if bpy.context.scene.niftools_scene.is_fo3():
-                bsshader = self.bss_helper.export_bs_shader_property(b_mat)
+                self.bs_shader_property_helper.export_bs_shader_property(n_block, b_mat)
 
-                block_store.register_block(bsshader)
-                n_block.add_property(bsshader)
             elif bpy.context.scene.niftools_scene.is_skyrim():
-                bsshader = self.bss_helper.export_bs_shader_property(b_mat)
-
-                block_store.register_block(bsshader)
-                # TODO [pyffi] Add helper function to allow adding bs_property / general list addition
-                n_block.shader_property = bsshader
+                self.bs_shader_property_helper.export_bs_shader_property(n_block, b_mat)
 
             else:
-                if bpy.context.scene.niftools_scene.game in self.texture_helper.USED_EXTRA_SHADER_TEXTURES:
+                if bpy.context.scene.niftools_scene.game in self.texture_property_helper.USED_EXTRA_SHADER_TEXTURES:
                     # sid meier's railroad and civ4: set shader slots in extra data
-                    self.texture_helper.add_shader_integer_extra_datas(n_block)
+                    self.texture_property_helper.add_shader_integer_extra_datas(n_block)
 
-                n_nitextureprop = self.texture_helper.export_texturing_property(
+                n_nitextureprop = self.texture_property_helper.export_texturing_property(
                     flags=0x0001,  # standard
                     # TODO [object][texture][material] Move out and break dependency
-                    applymode=self.texture_helper.get_n_apply_mode_from_b_blend_type('MIX'),
+                    applymode=self.texture_property_helper.get_n_apply_mode_from_b_blend_type('MIX'),
                     b_mat=b_mat)
 
                 block_store.register_block(n_nitextureprop)
@@ -180,7 +178,7 @@ class ObjectProperty:
             # add NiTriShape's specular property
             # but NOT for sid meier's railroads and other extra shader
             # games (they use specularity even without this property)
-            if bpy.context.scene.niftools_scene.game in self.texture_helper.USED_EXTRA_SHADER_TEXTURES:
+            if bpy.context.scene.niftools_scene.game in self.texture_property_helper.USED_EXTRA_SHADER_TEXTURES:
                 return
             eps = NifOp.props.epsilon
             if (b_mat.specular_color.r > eps) or (b_mat.specular_color.g > eps) or (b_mat.specular_color.b > eps):
@@ -275,7 +273,7 @@ class ObjectDataProperty:
             for b_root_object in b_root_objects:
                 if b_root_object.niftools.nodetype == 'BSFadeNode':
                     if found_bsx:
-                        raise NifError("Multiple objects have BSXFlags. Only one object may contain this data")
+                        raise NifError("Multiple objects have BSXFlags. Only one object may contain this data!")
                     else:
                         found_bxs = True
                         bsx.integer_data = b_root_object.niftools.bsxflags
@@ -303,3 +301,12 @@ class ObjectDataProperty:
                 bsx.integer_data |= 0x20
             else:
                 bsx.integer_data &= ~0x20
+
+    def export_upb(self, n_node, b_obj):
+        # Export UPB NiStringExtraData if not optimizer junk
+        if b_obj.niftools.upb:
+            if 'BSBoneLOD' in b_obj.niftools.upb or 'Bip' in b_obj.niftools.upb:
+                upb = block_store.create_block("NiStringExtraData")
+                upb.name = 'UPB'
+                upb.string_data = b_obj.niftools.upb
+                n_node.add_extra_data(upb)

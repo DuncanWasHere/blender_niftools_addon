@@ -1,4 +1,4 @@
-"""Common attributes shared between collision export classes."""
+"""Common functions shared between collision export classes."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -38,11 +38,8 @@
 # ***** END LICENSE BLOCK *****
 
 
-import bpy
-
-
 class CollisionCommon:
-    """Common attributes shared between collision export classes."""
+    """Abstract base class containing functions and attributes shared between collision export classes."""
 
     def __init__(self):
         self.target_game = None
@@ -55,23 +52,12 @@ class CollisionCommon:
 
     @staticmethod
     def calculate_box_extents(b_obj):
-
-        # Transform vertices by the object's local transformation matrix
-        b_vertlist = [b_obj.matrix_world @ vert.co for vert in b_obj.data.vertices]
-
-        # Calculate bounding box extents
+        # calculate bounding box extents
+        b_vertlist = [vert.co for vert in b_obj.data.vertices]
         minx = min([b_vert[0] for b_vert in b_vertlist])
         maxx = max([b_vert[0] for b_vert in b_vertlist])
-        miny = min([b_vert[1] for b_vert in b_vertlist])
         maxy = max([b_vert[1] for b_vert in b_vertlist])
+        miny = min([b_vert[1] for b_vert in b_vertlist])
         minz = min([b_vert[2] for b_vert in b_vertlist])
         maxz = max([b_vert[2] for b_vert in b_vertlist])
-
         return [[minx, maxx], [miny, maxy], [minz, maxz]]
-
-    @staticmethod
-    def update_rigid_body(b_col_obj, n_bhk_rigid_body):
-        if bpy.context.scene.niftools_scene.is_bs():
-            # Update rigid body center of mass and inertia
-            # Mass value should be set manually as it is not necessarily physically accurate
-            n_bhk_rigid_body.update_mass_center_inertia(mass=n_bhk_rigid_body.rigid_body_info.mass, solid=b_col_obj.nifcollision.solid)

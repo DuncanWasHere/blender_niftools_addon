@@ -1,4 +1,4 @@
-"""This script contains classes to help export material animations."""
+"""Main module for exporting material animation blocks."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -37,32 +37,27 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from io_scene_niftools.modules.nif_export.animation import Animation
+
+from io_scene_niftools.modules.nif_export.animation.common import AnimationCommon
 from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifOp, NifData
+from io_scene_niftools.utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
 
 
-class MaterialAnimation(Animation):
+class MaterialAnimation(AnimationCommon):
 
     def __init__(self):
         super().__init__()
 
-    def export_material(self, b_material, n_mat_prop):
+    def export_material_animations(self, b_material, n_mat_prop):
         """Export material animations for given geometry."""
 
-        if NifOp.props.animation == 'GEOM_NIF':
-            # geometry only: don't write controllers
-            return
 
-        # check if the material holds an animation
-        if not self.get_active_action(b_material):
-            return
+
+
         
         self.export_material_controllers(b_material, n_mat_prop)
-        # todo [material][animation] needs upgrade to new node api, also needs n_geom
-        # self.export_uv_controller(b_material, n_geom)
+
 
     def export_material_controllers(self, b_material, n_mat_prop):
         """Export material animation data for given geometry."""
@@ -127,47 +122,4 @@ class MaterialAnimation(Animation):
             # attach block to material property
             n_mat_prop.add_controller(n_mat_ctrl)
 
-    def export_uv_controller(self, b_material, n_geom):
-        """Export the material UV controller data."""
 
-        # get fcurves - a bit more elaborate here so we can zip with the NiUVData later
-        # nb. these are actually specific to the texture slot in blender
-        # here we don't care and just take the first fcurve that matches
-        fcurves = []
-        for dp, ind in (("offset", 0), ("offset", 1), ("scale", 0), ("scale", 1)):
-            for fcu in b_material.animation_data.action.fcurves:
-                if dp in fcu.data_path and fcu.array_index == ind:
-                    fcurves.append(fcu)
-                    break
-            else:
-                fcurves.append(None)
-
-        # continue if at least one fcurve exists
-        if not any(fcurves):
-            return
-
-        # get the uv curves and translate them into nif data
-        n_uv_data = NifClasses.NiUVData(NifData.data)
-        for fcu, n_uv_group in zip(fcurves, n_uv_data.uv_groups):
-            if fcu:
-                NifLog.debug(f"Exporting {fcu} as NiUVData")
-                n_uv_group.num_keys = len(fcu.keyframe_points)
-                n_uv_group.interpolation = NifClasses.KeyType.LINEAR_KEY
-                n_uv_group.reset_field("keys")
-                for b_point, n_key in zip(fcu.keyframe_points, n_uv_group.keys):
-                    # add each point of the curve
-                    b_frame, b_value = b_point.co
-                    if "offset" in fcu.data_path:
-                        # offsets are negated in blender
-                        b_value = -b_value
-                    n_key.arg = n_uv_group.interpolation
-                    n_key.time = b_frame / self.fps
-                    n_key.value = b_value
-
-        # if uv data is present then add the controller so it is exported
-        if fcurves[0].keyframe_points:
-            n_uv_ctrl = NifClasses.NiUVController(NifData.data)
-            self.set_flags_and_timing(n_uv_ctrl, fcurves)
-            n_uv_ctrl.data = n_uv_data
-            # attach block to geometry
-            n_geom.add_controller(n_uv_ctrl)

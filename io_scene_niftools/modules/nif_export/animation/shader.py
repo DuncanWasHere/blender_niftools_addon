@@ -1,4 +1,4 @@
-"""This script contains classes to help export shader based animations."""
+"""Main module for exporting shader animation blocks."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -37,21 +37,22 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from io_scene_niftools.modules.nif_export.animation import Animation
+
+from io_scene_niftools.modules.nif_export.animation.common import AnimationCommon
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 
 
-class ShaderAnimation(Animation):
+class ShaderAnimation(AnimationCommon):
 
     def __init__(self):
         super().__init__()
 
-    def export_bs_effect_shader(self, b_mat, bsshader, b_slot):
+    def export_bs_effect_shader_property(self, b_mat, n_bs_effect_shader_property, b_slot):
 
         # TODO [shader][animation] Do some form of check to ensure that we actually have data
-        effect_control = block_store.create_block("BSEffectShaderPropertyFloatController", bsshader)
+        effect_control = block_store.create_block("BSEffectShaderPropertyFloatController", n_bs_effect_shader_property)
         effect_control.flags = b_mat.niftools_alpha.textureflag
         effect_control.frequency = b_slot.texture.image.fps
         effect_control.start_time = b_slot.texture.image.frame_start
         effect_control.stop_time = b_slot.texture.image.frame_end
-        bsshader.add_controller(effect_control)
+        n_bs_effect_shader_property.add_controller(effect_control)

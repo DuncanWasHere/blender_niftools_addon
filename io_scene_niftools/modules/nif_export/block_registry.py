@@ -73,9 +73,9 @@ class ExportBlockRegistry:
         @param b_obj: The Blender object.
         @return: C{block}"""
         if b_obj is None:
-            NifLog.info(f"Exporting {block.__class__.__name__} block")
+            NifLog.info(f"Exporting {block.__class__.__name__} block.")
         else:
-            NifLog.info(f"Exporting {b_obj} as {block.__class__.__name__} block")
+            NifLog.info(f"Exporting {b_obj.name} as {block.__class__.__name__} block.")
         self._block_to_obj[block] = b_obj
         return block
 

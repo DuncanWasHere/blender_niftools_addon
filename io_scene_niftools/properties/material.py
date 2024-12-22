@@ -37,6 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import bpy
 from bpy.props import (FloatVectorProperty,
                        IntProperty,
@@ -81,7 +82,9 @@ class AlphaFlags(PropertyGroup):
 
     alphaflag: IntProperty(
         name='Alpha Flag',
-        default=0
+        default=0,
+        min=0,
+        max=100
     )
 
     textureflag: IntProperty(

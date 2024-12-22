@@ -41,7 +41,17 @@
 import os.path
 
 import bpy
+
+from nifgen.formats.nif import classes as NifClasses
+
 from io_scene_niftools.file_io import File
+
+from io_scene_niftools.utils.singleton import NifOp, EGMData, NifData
+from io_scene_niftools.utils import math
+from io_scene_niftools.utils.logging import NifLog, NifError
+
+from io_scene_niftools.nif_common import NifCommon
+
 from io_scene_niftools.modules.nif_export.animation import Animation
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.collision import Collision
@@ -49,11 +59,6 @@ from io_scene_niftools.modules.nif_export.constraint import Constraint
 from io_scene_niftools.modules.nif_export.object import Object
 from io_scene_niftools.modules.nif_export.particle import Particle
 from io_scene_niftools.modules.nif_export.scene import Scene
-from io_scene_niftools.nif_common import NifCommon
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.logging import NifLog, NifError
-from io_scene_niftools.utils.singleton import NifOp, EGMData, NifData
-from nifgen.formats.nif import classes as NifClasses
 
 
 class NifExport(NifCommon):
@@ -91,7 +96,7 @@ class NifExport(NifCommon):
         if bpy.context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-        NifLog.info(f"Exporting {NifOp.props.filepath}")
+        NifLog.info(f"Preparing to write file at {NifOp.props.filepath}")
 
         # Extract directory, base name, extension
         directory = os.path.dirname(NifOp.props.filepath)
@@ -107,11 +112,7 @@ class NifExport(NifCommon):
 
             self.fix_bone_orientations()
 
-            NifLog.info("Exporting")
-            if NifOp.props.animation == 'ALL_NIF':
-                NifLog.info("Exporting geometry and animation")
-            elif NifOp.props.animation == 'GEOM_NIF':
-                NifLog.info("Exporting geometry only")
+            NifLog.info("Exporting...")
 
             # Export the actual root node and its children as nodes and geometry blocks
             # Root node is exported as a meta root if multiple root objects are present
@@ -121,10 +122,10 @@ class NifExport(NifCommon):
 
             # Export remaining block type categories
             # TODO: Rewrite the following modules to fully encapsulate each block type
-            self.collision_helper.export_collision(self.b_collision_objects, self.target_game) # Export collision
-            self.constraint_helper.export_constraints(self.b_constraint_objects, n_root_node, self.target_game) # Export constraints
-            self.particle_helper.export_particles(n_root_node, self.target_game) # Export particles
-            # self.animation_helper.export_animations(n_root_node, self.target_game) # Export animations
+            self.collision_helper.export_collision(self.b_collision_objects, self.target_game)
+            self.constraint_helper.export_constraints(self.b_constraint_objects, n_root_node, self.target_game)
+            self.particle_helper.export_particles(self.b_particle_objects, n_root_node, self.target_game)
+            self.animation_helper.export_animations(self.b_exportable_objects, n_root_node)
 
             self.correct_scale(n_data, n_root_node) # Correct scale for NIF units
             self.generate_mopp_data() # Generate MOPP data
@@ -139,7 +140,7 @@ class NifExport(NifCommon):
         except NifError:
             return {'CANCELLED'}
 
-        NifLog.info("Finished")
+        NifLog.info("Finished.")
         return {'FINISHED'}
 
     def validate_nif_version(self):
@@ -201,7 +202,7 @@ class NifExport(NifCommon):
             b_scale = b_obj.scale
             if abs(b_scale.x - b_scale.y) > NifOp.props.epsilon or abs(b_scale.y - b_scale.z) > NifOp.props.epsilon:
                 NifLog.warn(f"Non-uniform scaling is currently not supported.\n"
-                            f"Workaround: apply size and rotation (CTRL-A) on '{b_obj.name}'")
+                            f"Workaround: apply size and rotation (CTRL-A) on '{b_obj.name}.'")
 
     def fix_bone_orientations(self):
         """Correct bone orientations if the scene has an armature."""
@@ -260,7 +261,7 @@ class NifExport(NifCommon):
         if bpy.context.scene.niftools_scene.is_bs():
             for block in block_store.block_to_obj:
                 if isinstance(block, NifClasses.BhkMoppBvTreeShape):
-                    NifLog.info("Generating mopp..")
+                    NifLog.info("Generating mopp...")
                     block.update_mopp()
                     # NifLog.debug(f"=== DEBUG: MOPP TREE ===")
                     # block.parse_mopp(verbose = True)
@@ -269,4 +270,4 @@ class NifExport(NifCommon):
                     if any(sub_shape.layer != 1 for sub_shape in block.shape.sub_shapes):
                         NifLog.warn(
                             "MOPP for non-static objects may not function correctly in-game. "
-                            "You may wish to use list shapes for collision")
+                            "You may wish to use list shapes for collision.")

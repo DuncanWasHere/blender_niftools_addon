@@ -37,6 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.collision.havok import BhkCollisionCommon
 from io_scene_niftools.utils import math
@@ -45,7 +46,8 @@ from io_scene_niftools.utils.singleton import NifData
 
 
 class BhkMOPPShape(BhkCollisionCommon):
-    """Class for exporting Havok MOPP collision blocks."""
+    """
+    Class for exporting Havok MOPP collision blocks."""
 
     def export_bhk_mopp_shape(self, b_col_obj, n_bhk_rigid_body, layer, n_hav_mat_list):
         """
@@ -101,8 +103,8 @@ class BhkMOPPShape(BhkCollisionCommon):
         n_bhk_packed_ni_tri_strips_shape.scale_copy = scale
 
         if b_rigid_body.use_margin:
-            n_bhk_packed_ni_tri_strips_shape.radius = b_col_obj.rigid_body.rigid_body.collision_margin
-            n_bhk_packed_ni_tri_strips_shape.radius_copy = b_col_obj.rigid_body.rigid_body.collision_margin
+            n_bhk_packed_ni_tri_strips_shape.radius = b_col_obj.rigid_body.collision_margin
+            n_bhk_packed_ni_tri_strips_shape.radius_copy = b_col_obj.rigid_body.collision_margin
         else:
             n_bhk_packed_ni_tri_strips_shape.radius = 0.1
             n_bhk_packed_ni_tri_strips_shape.radius_copy = 0.1

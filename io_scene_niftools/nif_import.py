@@ -39,17 +39,9 @@
 
 
 import bpy
-
-from nifgen.formats.nif import classes as NifClasses
-import nifgen.spells.nif.fix
-
-from io_scene_niftools.file_io.nif import NifFile
-
 import io_scene_niftools.utils.logging
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.singleton import NifOp, NifData
-from io_scene_niftools.utils.logging import NifLog, NifError
-
+import nifgen.spells.nif.fix
+from io_scene_niftools.file_io.nif import NifFile
 from io_scene_niftools.modules.nif_import import scene
 from io_scene_niftools.modules.nif_import.animation.object import ObjectAnimation
 from io_scene_niftools.modules.nif_import.animation.transform import TransformAnimation
@@ -62,8 +54,11 @@ from io_scene_niftools.modules.nif_import.object import Object
 from io_scene_niftools.modules.nif_import.object.block_registry import block_store
 from io_scene_niftools.modules.nif_import.object.types import NiTypes
 from io_scene_niftools.modules.nif_import.property.object import ObjectProperty
-
 from io_scene_niftools.nif_common import NifCommon
+from io_scene_niftools.utils import math
+from io_scene_niftools.utils.logging import NifLog, NifError
+from io_scene_niftools.utils.singleton import NifOp, NifData
+from nifgen.formats.nif import classes as NifClasses
 
 
 class NifImport(NifCommon):

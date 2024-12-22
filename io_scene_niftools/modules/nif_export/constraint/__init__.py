@@ -37,6 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import bpy
 from io_scene_niftools.modules.nif_export.constraint.havok import BhkConstraint
 
@@ -45,7 +46,7 @@ from io_scene_niftools.utils.singleton import NifData
 
 
 class Constraint:
-    """Main class for exporting NIF constraint blocks."""
+    """Main interface class for exporting NIF constraint blocks."""
 
     def __init__(self):
         self.bhk_constraint_helper = BhkConstraint()

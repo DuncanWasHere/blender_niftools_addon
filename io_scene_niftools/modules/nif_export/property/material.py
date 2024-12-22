@@ -1,4 +1,4 @@
-"""Main module for exporting material properties."""
+"""Main module for exporting NIF material property blocks."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -49,7 +49,11 @@ from nifgen.formats.nif import classes as NifClasses
 EXPORT_OPTIMIZE_MATERIALS = True
 
 
-class MaterialProp:
+class MaterialProperty:
+    """
+    Main interface class for exporting NIF material property blocks
+    (i.e., NiMaterialProperty)
+    """
 
     def __init__(self):
         self.material_anim = MaterialAnimation()
@@ -126,6 +130,6 @@ class MaterialProp:
 
         block_store.register_block(n_mat_prop)
         # material animation
-        self.material_anim.export_material(b_mat, n_mat_prop)
+        self.material_anim.export_material_animations(b_mat, n_mat_prop)
         # no material property with given settings found, so use and register the new one
         return n_mat_prop

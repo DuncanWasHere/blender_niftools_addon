@@ -39,16 +39,16 @@
 
 
 import bpy
-from io_scene_niftools import NifLog
 from io_scene_niftools.modules.nif_export.collision.bound import Bound, NiCollision
 from io_scene_niftools.modules.nif_export.collision.havok import BhkCollision
 from io_scene_niftools.modules.nif_export.collision.havok.animation import BhkBlendCollision
 from io_scene_niftools.modules.nif_export.object import DICT_NAMES
+from io_scene_niftools.utils.logging import NifLog
 from nifgen.formats.nif import classes as NifClasses
 
 
 class Collision:
-    """Main class for exporting NIF collision blocks."""
+    """Main interface class for exporting NIF collision blocks."""
 
     def __init__(self):
         self.bhk_collision_helper = BhkCollision()
@@ -60,10 +60,12 @@ class Collision:
     def export_collision(self, b_collision_objects, target_game):
         """Main function for handling collision export."""
 
-        if not b_collision_objects:
-            return
-
         self.target_game = target_game
+
+        NifLog.info(f"Exporting collision...")
+
+        if not b_collision_objects:
+            return # No collision data in the scene
 
         for b_col_obj in b_collision_objects:
 
@@ -101,5 +103,5 @@ class Collision:
             elif self.target_game in ('ZOO_TYCOON_2',):
                 self.ni_collision_helper.export_nicollisiondata(b_col_obj, n_parent_node)
             else:
-                NifLog.warn(f"Collisions not supported for game '{self.target_game}', "
+                NifLog.warn(f"Collision not supported for game '{self.target_game}', "
                             f"skipped collision object '{b_col_obj.name}'")

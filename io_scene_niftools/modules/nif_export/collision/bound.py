@@ -1,4 +1,4 @@
-"""Main module for exporting collision bounds."""
+"""Main module for exporting collision bound blocks."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -46,6 +46,10 @@ from io_scene_niftools.utils import math
 
 
 class Bound(CollisionCommon):
+    """
+    Main interface class for exporting collision bounds blocks
+    (i.e., BSBound, NiNode with bounding volume data).
+    """
 
     def export_bounds(self, b_obj, n_parent_node, bsbound=False):
         """Export a Morrowind or Oblivion bounding box."""

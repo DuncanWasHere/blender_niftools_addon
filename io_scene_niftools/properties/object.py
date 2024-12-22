@@ -37,6 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import bpy
 from bpy.props import (PointerProperty,
                        StringProperty,
@@ -48,6 +49,7 @@ from bpy.props import (PointerProperty,
 from bpy.types import PropertyGroup
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 from nifgen.formats.nif import classes as NifClasses
+
 
 prn_map = {"OBLIVION":   [("SideWeapon", ""),
                           ("BackWeapon", ""),
@@ -75,29 +77,6 @@ prn_map = {"OBLIVION":   [("SideWeapon", ""),
 prn_map["FALLOUT_NV"] = prn_map["FALLOUT_3"]
 prn_map["SKYRIM_SE"] = prn_map["SKYRIM"]
 
-
-class ExtraData(PropertyGroup):
-    name: StringProperty()
-    data: StringProperty()
-    sub_class: StringProperty()
-
-
-class BSXFlags:
-    # type = NifFormat.BSXFlags()
-    #     data = {}
-
-    def __init__(self):
-        self.name = "BSXFlag"
-
-
-class ExtraDataStore(PropertyGroup):
-
-    extra_data_index: IntProperty()
-    extra_data: CollectionProperty(
-        name="Extra Data",
-        description="Used to store all the Extra data",
-        type=ExtraData
-    )
 
 class BsInventoryMarker(PropertyGroup):
     name: StringProperty(
@@ -163,10 +142,6 @@ class ObjectProperty(PropertyGroup):
         **prn_versioned_arguments,
     )
 
-    longname: StringProperty(
-        name='Nif Long Name'
-    )
-
     consistency_flags: EnumProperty(
         name='Consistency Flag',
         description='Controls animation type',
@@ -177,25 +152,21 @@ class ObjectProperty(PropertyGroup):
     flags: IntProperty(
         name='Object Flags',
         description='Controls animation and collision',
-        default=524302
+        default=524302,
+        min=0
     )
 
     bsxflags: IntProperty(
         name='BSX Flags',
         description='Controls animation and collision',
-        default=0  # 2 = Bit 1, enable collision
+        default=0,  # 2 = Bit 1, enable collision
+        min=0
     )
 
     upb: StringProperty(
         name='UPB',
         description='Rarely used for backpacks and bone LOD (rest is optimizer junk)',
         default=''
-    )
-
-    extra_data_store: PointerProperty(
-        name="Extra Data",
-        description="Used to store all the extra data",
-        type=ExtraDataStore,
     )
 
     skeleton_root: StringProperty(
@@ -208,8 +179,6 @@ class ObjectProperty(PropertyGroup):
 
 CLASSES = [
     BsInventoryMarker,
-    ExtraData,
-    ExtraDataStore,
     ObjectProperty,
 ]
 

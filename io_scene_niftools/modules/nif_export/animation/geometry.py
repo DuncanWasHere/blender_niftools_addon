@@ -1,4 +1,4 @@
-"""This script contains classes to help import n_morph animations."""
+"""Main module for exporting geometry morph animation blocks."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -37,22 +37,25 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from io_scene_niftools.modules.nif_export.animation import Animation
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import EGMData
-from io_scene_niftools.utils.singleton import NifOp
+
 from nifgen.formats.nif import classes as NifClasses
+
 from pyffi.formats.egm import EgmFormat
 
+from io_scene_niftools.utils.singleton import NifOp, EGMData
+from io_scene_niftools.utils.logging import NifLog
 
-class MorphAnimation(Animation):
+from io_scene_niftools.modules.nif_export.block_registry import block_store
+from io_scene_niftools.modules.nif_export.animation.common import AnimationCommon
+
+
+class GeometryAnimation(AnimationCommon):
 
     def __init__(self):
         super().__init__()
         EGMData.data = None
 
-    def export_morph(self, b_mesh, n_trishape, vertmap):
+    def export_geometry_animations(self, b_mesh, n_trishape, vertmap):
         NifLog.debug(f"Checking {b_mesh.name} for shape keys")
         # shape keys are only present on non-evaluated meshes!
         b_key = b_mesh.shape_keys
@@ -64,26 +67,9 @@ class MorphAnimation(Animation):
                 # egm export!
                 self.export_egm(b_key.key_blocks)
             elif b_key.animation_data:
-                self.export_morph_animation(b_mesh, b_key, n_trishape, vertmap)
+                self.export_ni_geom_morpher_controller(b_mesh, b_key, n_trishape, vertmap)
 
-    def export_egm(self, key_blocks):
-        EGMData.data = EgmFormat.Data(num_vertices=len(key_blocks[0].data))
-        for key_block in key_blocks:
-            if key_block.name.startswith("EGM SYM"):
-                morph = EGMData.data.add_sym_morph()
-            elif key_block.name.startswith("EGM ASYM"):
-                morph = EGMData.data.add_asym_morph()
-            else:
-                continue
-            NifLog.info(f"Exporting morph {key_block.name} to egm")
-            relative_vertices = []
-
-            # note: key_blocks[0] is base b_key
-            for base_vert, key_vert in zip(key_blocks[0].data, key_block.data):
-                relative_vertices.append(key_vert.co - base_vert.co)
-            morph.set_relative_vertices(relative_vertices)
-
-    def export_morph_animation(self, b_mesh, b_key, n_trishape, vertmap):
+    def export_ni_geom_morpher_controller(self, b_mesh, b_key, n_trishape, vertmap):
         
         # regular morph_data export
         b_shape_action = self.get_active_action(b_key)
@@ -176,3 +162,20 @@ class MorphAnimation(Animation):
                         n_data.keys[i].value = value
                         # n_data.keys[i].forwardTangent = 0.0 # ?
                         # n_data.keys[i].backwardTangent = 0.0 # ?
+
+    def export_egm(self, key_blocks):
+        EGMData.data = EgmFormat.Data(num_vertices=len(key_blocks[0].data))
+        for key_block in key_blocks:
+            if key_block.name.startswith("EGM SYM"):
+                morph = EGMData.data.add_sym_morph()
+            elif key_block.name.startswith("EGM ASYM"):
+                morph = EGMData.data.add_asym_morph()
+            else:
+                continue
+            NifLog.info(f"Exporting morph {key_block.name} to egm")
+            relative_vertices = []
+
+            # note: key_blocks[0] is base b_key
+            for base_vert, key_vert in zip(key_blocks[0].data, key_block.data):
+                relative_vertices.append(key_vert.co - base_vert.co)
+            morph.set_relative_vertices(relative_vertices)

@@ -1,4 +1,5 @@
 """Classes for exporting NIF geometry objects."""
+# TODO: Refactor packages into smaller classes and modules. Separate geomorph animations. Fix facemaps.
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -37,14 +38,15 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import numpy as np
+from io_scene_niftools.modules.nif_export.property.texture.nitextureprop import NiTextureProp
 
 import bmesh
 import bpy
-from io_scene_niftools.modules.nif_export.animation.morph import MorphAnimation
+from io_scene_niftools.modules.nif_export.animation.geometry import GeometryAnimation
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.property.object import ObjectProperty
-from io_scene_niftools.modules.nif_export.property.texture.types.nitextureprop import NiTextureProp
 from io_scene_niftools.utils import math
 from io_scene_niftools.utils.logging import NifLog, NifError
 from io_scene_niftools.utils.singleton import NifOp, NifData
@@ -52,11 +54,17 @@ from nifgen.formats.nif import classes as NifClasses
 
 
 class Mesh:
+    """
+    Main interface class for exporting NIF geometry blocks
+    (i.e., NiTriShape, NiTriStrips, BSTriShape, NiSkinInstance and subclasses,
+    NiTriStripsData, NiTriShapeData, NiSkinData, NiSkinPartition).
+    shader and texture properties are handled by helper classes.
+    """
 
     def __init__(self):
-        self.texture_helper = NiTextureProp.get()
-        self.object_property = ObjectProperty()
-        self.morph_anim = MorphAnimation()
+        self.texture_property_helper = NiTextureProp.get()
+        self.object_property_helper = ObjectProperty()
+        self.geometry_animation_helper = GeometryAnimation()
 
     def export_tri_shapes(self, b_obj, n_parent, n_root, trishape_name=None):
         """
@@ -69,7 +77,8 @@ class Mesh:
         The parameter trishape_name passes on the name for meshes that
         should be exported as a single mesh.
         """
-        NifLog.info(f"Exporting {b_obj}")
+
+        NifLog.info(f"Exporting {b_obj.name}.")
 
         assert (b_obj.type == 'MESH')
 
@@ -82,7 +91,8 @@ class Mesh:
         # so quickly catch this (rare!) case
         if not eval_mesh.vertices:
             # do not export anything
-            NifLog.warn(f"{b_obj} has no vertices, skipped.")
+            NifLog.warn(f"Mesh object {b_obj} has no vertices. "
+                        f"It will not be exported.")
             return
 
         # get the mesh's materials, this updates the mesh material list
@@ -166,7 +176,7 @@ class Mesh:
                 # refer to this mesh in the parent's children list
                 n_parent.add_child(n_geom)
 
-            self.object_property.export_properties(b_obj, b_mat, n_geom)
+            self.object_property_helper.export_properties(b_obj, b_mat, n_geom)
 
             b_uv_layers = eval_mesh.uv_layers
             # for each face in triangles, a body part index
@@ -183,7 +193,7 @@ class Mesh:
             if b_uv_layers and mesh_hasnormals:
                 default_use_tangents = ('BULLY_SE',
                                         )
-                if game in default_use_tangents or nif_scene.is_bs() or (game in self.texture_helper.USED_EXTRA_SHADER_TEXTURES):
+                if game in default_use_tangents or nif_scene.is_bs() or (game in self.texture_property_helper.USED_EXTRA_SHADER_TEXTURES):
                     use_tangents = True
 
             if nif_scene.is_fo3() or nif_scene.is_skyrim():
@@ -323,7 +333,7 @@ class Mesh:
 
             # export EGM or NiGeomMorpherController animation
             # shape keys are only present on the raw, unevaluated mesh
-            self.morph_anim.export_morph(b_mesh, n_geom, vertex_map)
+            self.geometry_animation_helper.export_geometry_animations(b_mesh, n_geom, vertex_map)
         return n_geom
 
     def get_geom_data(self, b_mesh, color, normal, uv, tangent, b_mat_index):
@@ -903,7 +913,7 @@ class Mesh:
             extra_node.scale = 1.0
             extra_node.flags = 0x000C  # morrowind
             # create texture effect block and parent the texture effect and n_geom to it
-            texeff = self.texture_helper.export_texture_effect(ref_mtex)
+            texeff = self.texture_property_helper.export_texture_effect(ref_mtex)
             extra_node.add_child(texeff)
             extra_node.add_effect(texeff)
             return extra_node

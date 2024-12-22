@@ -1,4 +1,4 @@
-"""This script contains classes to help import bhk animations."""
+"""Module for exporting Havok blend collision blocks."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -44,6 +44,7 @@ from io_scene_niftools.utils import consts
 
 
 class BhkBlendCollision(BhkCollisionCommon):
+    """Class for exporting Havok blend collision blocks."""
 
     def export_bhk_blend_collision(self, b_obj):
         n_col_obj = block_store.create_block("bhkBlendCollisionObject", b_obj)

@@ -80,11 +80,11 @@ class NifFile:
             ext = ".nifcache"
         else:
             ext = ".nif"
-        NifLog.info(f"Writing {ext} file")
+        NifLog.info(f"Writing {ext} file.")
 
         # Ensure file extension is correct
         if file_ext.lower() != ext:
-            NifLog.warn(f"Changing output file extension from {file_ext} to {ext}")
+            NifLog.warn(f"Changing output file extension from {file_ext} to {ext}.")
 
         # Assemble full file path and add 'x' prefix for Morrowind
         prefix = "x" if bpy.context.scene.niftools_scene.game in ('MORROWIND',) else ""
@@ -108,7 +108,7 @@ class NifFile:
         # -----------------
         if EGMData.data:
             ext = ".egm"
-            NifLog.info(f"Writing {ext} file")
+            NifLog.info(f"Writing {ext} file.")
 
             egmfile = os.path.join(directory, file_base + ext)
             with open(egmfile, "wb") as stream:

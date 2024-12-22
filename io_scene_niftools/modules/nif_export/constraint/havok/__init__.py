@@ -39,13 +39,18 @@
 
 
 from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.constraint.common import ConstraintCommon
+from io_scene_niftools.modules.nif_export.constraint.havok.common import ConstraintCommon
 from io_scene_niftools.modules.nif_export.object import DICT_NAMES
 from io_scene_niftools.utils.logging import NifLog
 from nifgen.formats.nif import classes as NifClasses
 
 
 class BhkConstraint(ConstraintCommon):
+    """
+    Main interface class for exporting Havok constraint blocks
+    (i.e., bhkConstraint subclasses).
+    For Bethesda games (except Morrowind) ONLY!
+    """
 
     def export_bhk_constraint(self, b_constr, b_constr_obj, ):
 

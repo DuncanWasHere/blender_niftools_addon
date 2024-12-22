@@ -37,6 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import bpy
 
 import io_scene_niftools.utils.logging
@@ -44,7 +45,7 @@ from io_scene_niftools.modules.nif_export.block_registry import block_store
 
 
 def create_ninode(b_obj=None, n_node_type=None):
-    """Essentially a wrapper around create_block() that creates nodes of the right type"""
+    """Essentially a wrapper around create_block() that creates nodes of the right type."""
     # when no b_obj is passed, use the passed n_node_type
     if not b_obj:
         if n_node_type is None:
@@ -73,7 +74,7 @@ def create_ninode(b_obj=None, n_node_type=None):
 
 
 def has_track(b_obj):
-    """ Determine if this b_obj has a track_to constraint """
+    """Determine if this b_obj has a track_to constraint."""
     # bones do not have constraints
     if not isinstance(b_obj, bpy.types.Bone):
         for constr in b_obj.constraints:
@@ -82,7 +83,8 @@ def has_track(b_obj):
 
 
 def export_range_lod_data(n_node, b_obj):
-    """Export range lod data for for the children of b_obj, as a
+    """
+    Export range lod data for the children of b_obj, as a
     NiRangeLODData block on n_node.
     """
     # create range lod data object
@@ -122,11 +124,5 @@ def export_furniture_marker(n_root, filebase):
         furnmark.positions[0].position_ref_1 = furniturenumber
         furnmark.positions[0].position_ref_2 = furniturenumber
 
-        # create extra string data sgoKeep
-        sgokeep = block_store.create_block("NiStringExtraData")
-        sgokeep.name = "UPB"  # user property buffer
-        sgokeep.string_data = "sgoKeep=1 ExportSel = Yes"  # Unyielding = 0, sgoKeep=1ExportSel = Yes
-
         # add extra blocks
         n_root.add_extra_data(furnmark)
-        n_root.add_extra_data(sgokeep)

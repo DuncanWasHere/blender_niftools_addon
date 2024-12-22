@@ -77,73 +77,10 @@ class ObjectPanel(ObjectButtonsPanel):
             # consistency flags only exist for NiGeometry
             row.prop(nif_obj_props, "consistency_flags")
         row.prop(nif_obj_props, "flags")
-        row.prop(nif_obj_props, "longname")
 
         parent = b_obj.parent
         if parent and parent.type == 'ARMATURE':
             row.prop_search(nif_obj_props, "skeleton_root", parent.data, "bones")
-
-
-class ObjectExtraData(ObjectButtonsPanel):
-    bl_label = "Niftools Object Extra Data"
-    bl_idname = "NIFTOOLS_PT_ObjectExtraDataPanel"
-
-    # noinspection PyUnusedLocal
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def draw(self, context):
-        b_obj = context.object
-        extra_data_store = b_obj.niftools.extra_data_store
-        has_extra_data = len(extra_data_store.extra_data) > 0
-
-        layout = self.layout
-
-        row = layout.row()
-        row.template_list("NIFTOOLS_UL_ExtraData", "", extra_data_store, "extra_data", extra_data_store,
-                          "extra_data_index")
-
-        # Add/Remove operators
-        col = row.column(align=True)
-        col.menu("NIFTOOLS_MT_ExtraDataType", icon='ZOOM_IN', text="")
-
-        if has_extra_data:
-            col.operator("object.niftools_extradata_remove", icon='ZOOM_OUT', text="")
-
-        if has_extra_data:
-            layout.row()
-            box = layout.box()
-
-            selected_extra_data = extra_data_store.extra_data[extra_data_store.extra_data_index]
-            box.prop(selected_extra_data, "name")
-            box.prop(selected_extra_data, "data")
-            box.prop(selected_extra_data, "sub_class")
-
-
-class ObjectExtraDataType(Menu):
-    bl_label = "Niftools Extra Data Types"
-    bl_idname = "NIFTOOLS_MT_ExtraDataType"
-
-    # noinspection PyUnusedLocal
-    def draw(self, context):
-        layout = self.layout
-        layout.operator("object.niftools_extradata_bsx_add")
-        layout.operator("object.niftools_extradata_upb_add")
-        layout.operator("object.niftools_extradata_sample_add")
-        layout.operator("object.niftools_extradata_sample_add")
-
-
-class ObjectExtraDataList(UIList):
-    bl_label = "Niftools Extra Data List"
-    bl_idname = "NIFTOOLS_UL_ExtraData"
-
-    # noinspection PyUnusedLocal
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        split = layout.split(factor=0.2)
-        split.label(text=str(item.name))
-        split.prop(item, "data", text="", emboss=False, translate=False, icon='BORDERMOVE')
-
 
 class ObjectBSInvMarkerPanel(ObjectButtonsPanel):
     bl_label = "Niftools BS Inv Marker"
@@ -172,9 +109,6 @@ class ObjectBSInvMarkerPanel(ObjectButtonsPanel):
 
 
 classes = [
-    ObjectExtraDataList,
-    ObjectExtraDataType,
-    ObjectExtraData,
     ObjectPanel,
     ObjectBSInvMarkerPanel,
 ]

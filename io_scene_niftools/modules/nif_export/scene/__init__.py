@@ -37,12 +37,16 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import bpy
+
 import nifgen.formats.nif as NifFormat
+
 from io_scene_niftools.utils.logging import NifLog
 
 
 class Scene:
+    """Main interface class for exporting NIF header data."""
 
     def get_version_data(self):
         """Returns target game, NifFormat.NifFile of the correct version, and user versions."""

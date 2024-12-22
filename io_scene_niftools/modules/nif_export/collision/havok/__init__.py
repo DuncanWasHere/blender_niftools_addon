@@ -49,10 +49,10 @@ from nifgen.formats.nif import classes as NifClasses
 
 class BhkCollision(BhkCollisionCommon):
     """
-    Main class for exporting Havok collision blocks
-    (i.e., bhkCollisionObject, bhkRigidBody, bhkShape).
+    Main interface class for exporting Havok collision blocks
+    (i.e., bhkCollisionObject, bhkRigidBody(T), bhkShape subclasses).
     For Bethesda games (except Morrowind) ONLY!
-    Constraints are handled in a separate package.
+    Constraints are handled elsewhere.
     """
 
     def __init__(self):

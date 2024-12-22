@@ -38,7 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 class ConstraintCommon:
-    """Common functions shared between constraint export classes."""
+    """Abstract base class containing functions and attributes shared between constraint export classes."""
 
     def __init__(self):
         self.n_root_node = None

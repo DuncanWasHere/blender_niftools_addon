@@ -39,9 +39,8 @@
 
 
 import bpy
-from io_scene_niftools.modules.nif_export.animation.texture import TextureAnimation
 from io_scene_niftools.modules.nif_export.property import texture
-from io_scene_niftools.modules.nif_export.property.texture.writer import TextureWriter
+from io_scene_niftools.modules.nif_export.property.texture.common import TextureWriter
 from io_scene_niftools.utils.consts import TEX_SLOTS
 from io_scene_niftools.utils.logging import NifLog, NifError
 
@@ -51,7 +50,6 @@ class TextureSlotManager:
     def __init__(self):
         self.dict_mesh_uvlayers = []
         self.texture_writer = TextureWriter()
-        self.texture_anim = TextureAnimation()
         self.b_mat = None
 
         self.slots = {}

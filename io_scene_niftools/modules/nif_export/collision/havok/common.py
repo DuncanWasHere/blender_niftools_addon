@@ -38,6 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 
+import bpy
 from io_scene_niftools.modules.nif_export.collision.common import CollisionCommon
 from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.singleton import NifData
@@ -45,7 +46,7 @@ from nifgen.formats.nif import classes as NifClasses
 
 
 class BhkCollisionCommon(CollisionCommon):
-    """Common attributes shared between Havok collision export classes."""
+    """Abstract base class containing functions and attributes shared between Havok collision export classes."""
 
     def __init__(self):
         super().__init__()
@@ -75,3 +76,10 @@ class BhkCollisionCommon(CollisionCommon):
             n_hav_mat_list.append(n_default_material)
 
         return n_hav_mat_list
+
+    @staticmethod
+    def update_rigid_body(b_col_obj, n_bhk_rigid_body):
+        if bpy.context.scene.niftools_scene.is_bs():
+            # Update rigid body center of mass and inertia
+            # Mass value should be set manually as it is not necessarily physically accurate
+            n_bhk_rigid_body.update_mass_center_inertia(mass=n_bhk_rigid_body.rigid_body_info.mass, solid=b_col_obj.nifcollision.solid)
