@@ -41,6 +41,7 @@ from itertools import chain
 
 import numpy as np
 
+import bpy
 from io_scene_niftools.modules.nif_import.object.block_registry import block_store, get_bone_name_for_blender
 from io_scene_niftools.utils.logging import NifLog
 from nifgen.formats.nif import classes as NifClasses
@@ -298,18 +299,36 @@ class VertexGroup:
     @staticmethod
     def set_face_maps(face_maps, b_obj):
         """
+        Assigns face groups as boolean attributes to a Blender object.
 
-        :param face_maps: dictionary mapping body part name to triangle indices
+        :param face_maps: Dictionary mapping body part name to triangle indices.
         :type face_maps: dict(str, list(int))
-        :param b_obj: Blender object to which to add the body parts
+        :param b_obj: Blender object to which to add the body parts.
         :type b_obj: bpy.types.Object
         :return: None
         :rtype: NoneType
-
         """
+        # Ensure the object has a mesh
+        if b_obj.type != 'MESH':
+            raise ValueError("The object must be a mesh to use this function.")
+
+        # Get or create the evaluated mesh
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        evaluated_obj = b_obj.evaluated_get(depsgraph)
+        mesh = evaluated_obj.to_mesh()
+
         for group_name, tri_indices in face_maps.items():
-            if group_name not in b_obj.face_maps:
-                f_group = b_obj.face_maps.new(name=group_name)
+            # Create or retrieve the attribute
+            if group_name not in mesh.attributes:
+                attr = mesh.attributes.new(name=group_name, type='BOOLEAN', domain='FACE')
             else:
-                f_group = b_obj.face_maps[group_name]
-            f_group.add(tri_indices)
+                attr = mesh.attributes[group_name]
+
+            # Assign values to the attribute
+            data = attr.data
+            for i in range(len(data)):
+                data[i].value = i in tri_indices
+
+        # Update the original mesh
+        b_obj.data.update()
+        evaluated_obj.to_mesh_clear()

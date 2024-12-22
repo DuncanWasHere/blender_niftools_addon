@@ -76,6 +76,9 @@ class MaterialAnimation(AnimationCommon):
         """Export the material alpha or color controller data."""
 
         # get fcurves
+        if not b_material.animation_data:
+            return
+
         fcurves = [fcu for fcu in b_material.animation_data.action.fcurves if b_dtype in fcu.data_path]
         if not fcurves:
             return

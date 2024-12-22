@@ -72,12 +72,12 @@ class ObjectAnimation(AnimationCommon):
         #                  should this be driven by version number?
         #                  we probably don't want both at the same time
         # NiVisData = old style, NiBoolData = new style
-        n_vis_data = block_store.create_block("NiVisData", fcurves)
+        n_vis_data = block_store.create_block("NiVisData")
         n_vis_data.num_keys = len(fcurves[0].keyframe_points)
         n_vis_data.reset_field("keys")
 
         # we just leave interpolation at constant
-        n_bool_data = block_store.create_block("NiBoolData", fcurves)
+        n_bool_data = block_store.create_block("NiBoolData")
         n_bool_data.data.interpolation = NifClasses.KeyType.CONST_KEY
         n_bool_data.data.num_keys = len(fcurves[0].keyframe_points)
         n_bool_data.data.reset_field("keys")
@@ -93,8 +93,8 @@ class ObjectAnimation(AnimationCommon):
 
         # if alpha data is present (check this by checking if times were added) then add the controller so it is exported
         if fcurves[0].keyframe_points:
-            n_vis_ctrl = block_store.create_block("NiVisController", fcurves)
-            n_vis_ipol = block_store.create_block("NiBoolInterpolator", fcurves)
+            n_vis_ctrl = block_store.create_block("NiVisController")
+            n_vis_ipol = block_store.create_block("NiBoolInterpolator")
             self.set_flags_and_timing(n_vis_ctrl, fcurves)
             n_vis_ctrl.interpolator = n_vis_ipol
             n_vis_ctrl.data = n_vis_data
@@ -276,7 +276,7 @@ class ObjectAnimation(AnimationCommon):
 
             if max(len(c) for c in (quat_curve, euler_curve, trans_curve, scale_curve)) > 0:
                 # number of frames is > 0, so add transform data
-                n_kfd = block_store.create_block("NiTransformData", exp_fcurves)
+                n_kfd = block_store.create_block("NiTransformData")
                 n_kfi.data = n_kfd
             else:
                 # no need to add any keys, done
@@ -284,7 +284,7 @@ class ObjectAnimation(AnimationCommon):
 
         else:
             # add the keyframe data
-            n_kfd = block_store.create_block("NiKeyframeData", exp_fcurves)
+            n_kfd = block_store.create_block("NiKeyframeData")
             n_kfc.data = n_kfd
 
         # TODO [animation] support other interpolation modes, get interpolation from blender?
@@ -330,7 +330,7 @@ class ObjectAnimation(AnimationCommon):
     def create_text_keys(self, kf_root):
         """Create the text keys before filling in the data so that the extra data hierarchy is correct"""
         # add a NiTextKeyExtraData block
-        n_text_extra = block_store.create_block("NiTextKeyExtraData", None)
+        n_text_extra = block_store.create_block("NiTextKeyExtraData")
         if isinstance(kf_root, NifClasses.NiControllerSequence):
             kf_root.text_keys = n_text_extra
         elif isinstance(kf_root, NifClasses.NiSequenceStreamHelper):

@@ -194,7 +194,7 @@ class Animation:
     def export_controlled_blocks(self, n_ni_controller_sequence, b_controlled_blocks):
         # Export a controlled block for each controller type in the action's keying set
         # self.geometry_animation_helper.export_geometry_animations(n_ni_controller_sequence, b_controlled_blocks)
-        #self.material_animation_helper.export_material_animations(n_ni_controller_sequence, b_controlled_blocks)
+        # self.material_animation_helper.export_material_animations(n_ni_controller_sequence, b_controlled_blocks)
         self.object_animation_helper.export_object_animations(n_ni_controller_sequence, b_controlled_blocks)
         self.particle_animation_helper.export_particle_animations(n_ni_controller_sequence, b_controlled_blocks)
         # self.shader_animation_helper.export_shader_animations(n_ni_controller_sequence, b_controlled_blocks)

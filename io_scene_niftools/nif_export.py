@@ -123,7 +123,7 @@ class NifExport(NifCommon):
             # Export remaining block type categories
             # TODO: Rewrite the following modules to fully encapsulate each block type
             self.collision_helper.export_collision(self.b_collision_objects, self.target_game)
-            self.constraint_helper.export_constraints(self.b_constraint_objects, n_root_node, self.target_game)
+            # self.constraint_helper.export_constraints(self.b_constraint_objects, n_root_node, self.target_game)
             self.particle_helper.export_particles(self.b_particle_objects, n_root_node, self.target_game)
             self.animation_helper.export_animations(self.b_exportable_objects, n_root_node)
 
@@ -210,7 +210,8 @@ class NifExport(NifCommon):
         b_armatures = math.get_armatures()
         if b_armatures:
             for b_armature in b_armatures:
-                math.set_bone_orientation(b_armature.n_data.niftools.axis_forward, b_armature.n_data.niftools.axis_up)
+                math.set_bone_orientation(b_armature.data.niftools.axis_forward,
+                                          b_armature.data.niftools.axis_up)
 
     def flatten_skin(self):
         """

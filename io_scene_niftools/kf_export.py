@@ -41,6 +41,7 @@
 import os
 
 import bpy
+from bpy.types import Scene
 
 from io_scene_niftools.utils.singleton import NifOp, NifData
 from io_scene_niftools.utils import math
@@ -49,7 +50,7 @@ from io_scene_niftools.utils.logging import NifLog, NifError
 from io_scene_niftools.nif_common import NifCommon
 
 from io_scene_niftools.modules.nif_export.animation.object import ObjectAnimation
-from io_scene_niftools.modules.nif_export import scene
+from io_scene_niftools.modules.nif_export.scene import Scene
 
 
 class KfExport(NifCommon):
@@ -59,6 +60,7 @@ class KfExport(NifCommon):
 
         # Helper systems
         self.transform_anim = ObjectAnimation()
+        self.scene_helper = Scene()
 
     def execute(self):
         """Main KF export function."""
@@ -69,11 +71,12 @@ class KfExport(NifCommon):
         directory = os.path.dirname(NifOp.props.filepath)
         filebase, fileext = os.path.splitext(os.path.basename(NifOp.props.filepath))
 
-        if bpy.context.scene.niftools_scene.game == 'UNKNOWN':
+        game, self.version, data = self.scene_helper.get_version_data()
+
+        if game == 'UNKNOWN':
             raise NifError("You have not selected a game. Please select a game in the scene tab.")
 
-        prefix = "x" if bpy.context.scene.niftools_scene.game in ('MORROWIND',) else ""
-        self.version, data = scene.get_version_data()
+        prefix = "x" if game in ('MORROWIND',) else ""
         # todo[anim] - change to KfData, but create_controller() [and maybe more] has to be updated first
         NifData.init(data)
 
@@ -90,7 +93,7 @@ class KfExport(NifCommon):
         NifLog.info(f"Writing {prefix}{ext} file")
 
         data.roots = [kf_root]
-        data.neosteam = (bpy.context.scene.niftools_scene.game == 'NEOSTEAM')
+        data.neosteam = (game == 'NEOSTEAM')
 
         # scale correction for the skeleton
         self.apply_scale(data, 1 / NifOp.props.scale_correction)
