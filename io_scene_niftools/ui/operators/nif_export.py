@@ -141,7 +141,6 @@ class OperatorExportOptimisePanel(OperatorSetting, Panel):
         operator = sfile.active_operator
 
         layout.prop(operator, "stripify")
-        layout.prop(operator, "stitch_strips")
         layout.prop(operator, "force_dds")
         layout.prop(operator, "optimise_materials")
         layout.prop(operator, "sep_tangent_space")

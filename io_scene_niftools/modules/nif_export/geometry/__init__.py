@@ -48,6 +48,7 @@ from io_scene_niftools.modules.nif_export.geometry.data import GeometryData
 from io_scene_niftools.modules.nif_export.geometry.skinned import SkinnedGeometry
 from io_scene_niftools.modules.nif_export.property.object import ObjectProperty
 from io_scene_niftools.modules.nif_export.property.texture.nitextureprop import NiTextureProp
+from io_scene_niftools.utils import math
 from io_scene_niftools.utils.logging import NifLog, NifError
 from io_scene_niftools.utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
@@ -163,6 +164,9 @@ class Geometry:
 
         # Export object properties
         self.object_property_helper.export_properties(b_obj, b_mat, n_ni_geometry)
+
+        # Add transforms
+        math.set_object_matrix(b_obj, n_ni_geometry)
 
         return n_ni_geometry
 

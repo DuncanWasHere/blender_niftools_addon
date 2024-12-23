@@ -125,8 +125,8 @@ class Object:
 
             # Mesh with armature parent should not have animation!
             if b_obj.parent and b_obj.parent.type == 'ARMATURE' and b_obj.animation_data.action:
-                NifLog.warn(f"Mesh {b_obj.name} is skinned but also has object animation. "
-                            f"The NIF format does not support this. Ignoring..")
+                NifLog.warn(f"Mesh {b_obj.name} is skinned but also has object animation! "
+                            f"The NIF format does not support this. Ignoring...")
 
         # Everything else (empty/armature) is a node
         n_node = types.create_ninode(b_obj, n_node_type=n_node_type)
