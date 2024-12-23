@@ -41,7 +41,7 @@
 import bpy
 from io_scene_niftools.modules.nif_export import types
 from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.geometry import Mesh
+from io_scene_niftools.modules.nif_export.geometry import Geometry
 from io_scene_niftools.modules.nif_export.object.armature import Armature
 from io_scene_niftools.modules.nif_export.property.object import ObjectDataProperty
 from io_scene_niftools.utils import math
@@ -60,7 +60,7 @@ class Object:
 
     def __init__(self):
         self.armature_helper = Armature()
-        self.mesh_helper = Mesh()
+        self.mesh_helper = Geometry()
         self.object_property_helper = ObjectDataProperty()
 
         self.b_exportable_objects = []
@@ -115,11 +115,13 @@ class Object:
 
             # If this mesh has children or more than one material it gets wrapped in a purpose-made NiNode
             is_multi_material = len(set([f.material_index for f in b_obj.data.polygons])) > 1
+
+            # Export a single NiGeometry block
             if not (b_obj.children or is_multi_material):
-                mesh = self.mesh_helper.export_tri_shapes(b_obj, n_parent_node, self.n_root_node, b_obj.name)
+                n_ni_geometry = self.mesh_helper.export_geometry(b_obj, n_parent_node, self.n_root_node)
                 if not self.n_root_node:
-                    self.n_root_node = mesh
-                return mesh
+                    self.n_root_node = n_ni_geometry
+                return n_ni_geometry
 
             # Mesh with armature parent should not have animation!
             if b_obj.parent and b_obj.parent.type == 'ARMATURE' and b_obj.animation_data.action:
@@ -129,7 +131,6 @@ class Object:
         # Everything else (empty/armature) is a node
         n_node = types.create_ninode(b_obj, n_node_type=n_node_type)
 
-        # Set parenting here so that it can be accessed
         if not self.n_root_node:
             self.n_root_node = n_node
 
@@ -146,7 +147,7 @@ class Object:
 
         if b_obj.type == 'MESH':
             # If b_obj is a multi-material mesh, export the geometries as children of this node
-            return self.mesh_helper.export_tri_shapes(b_obj, n_node, self.n_root_node)
+            n_ni_geometry = self.mesh_helper.export_geometry(b_obj, n_node, self.n_root_node)
         elif b_obj.type == 'ARMATURE':
             # If b_obj is an armature, export the bones as node children of this node
             self.armature_helper.export_bones(b_obj, n_node)
@@ -156,7 +157,7 @@ class Object:
                 if b_child.parent_bone:
                     b_obj_bone = b_obj.data.bones[b_child.parent_bone]
                     # Find the correct n_node
-                    # TODO [object]: This is essentially the same as Mesh.get_bone_block()
+                    # TODO [object]: This is essentially the same as Geometry.get_bone_block()
                     n_node = [k for k, v in block_store.block_to_obj.items() if v == b_obj_bone][0]
                     self.export_object_hierarchy(b_child, n_node)
                 # Just child of the armature itself, so attach to armature root

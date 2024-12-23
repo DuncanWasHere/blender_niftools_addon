@@ -63,7 +63,7 @@ def hull_box(ob, me, selected_only):
     maxz = max(v.co[2] for v in me.vertices if v.sel or not selected_only)
 
     # create box
-    box = Blender.Mesh.New('box')
+    box = Blender.Geometry.New('box')
     for x in [minx, maxx]:
         for y in [miny, maxy]:
             for z in [minz, maxz]:
@@ -109,7 +109,7 @@ def hull_sphere(ob, me, selected_only):
     maxz = cz+l
 
     # create sphere
-    box = Blender.Mesh.New('sphere')
+    box = Blender.Geometry.New('sphere')
     for x in [minx, maxx]:
         for y in [miny, maxy]:
             for z in [minz, maxz]:
@@ -135,7 +135,7 @@ def hull_convex(ob, me, selected_only, precision = 0.1):
         precision = precision)
 
     # create convex mesh
-    box = Blender.Mesh.New('convexpoly')
+    box = Blender.Geometry.New('convexpoly')
     for vert in vertices:
         box.vertices.extend(*vert)
     for triangle in triangles:

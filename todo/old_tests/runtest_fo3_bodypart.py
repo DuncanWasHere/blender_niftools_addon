@@ -43,7 +43,7 @@ class BodyPartTestSuite(TestSuite):
     def run(self):
         # create a mesh
         self.info("creating mesh")
-        mesh_data = Blender.Mesh.Primitives.Monkey()
+        mesh_data = Blender.Geometry.Primitives.Monkey()
         mesh_numverts = len(mesh_data.vertices)
         mesh_obj = self.context.scene.objects.new(mesh_data, "Monkey")
         # create an armature
@@ -62,13 +62,13 @@ class BodyPartTestSuite(TestSuite):
         self.info("attaching mesh to armature")
         mesh_data.addVertGroup("Bone")
         mesh_data.assignVertsToGroup("Bone", list(range(mesh_numverts)), 1,
-                                     Blender.Mesh.AssignModes.REPLACE)
+                                     Blender.Geometry.AssignModes.REPLACE)
         arm_obj.makeParentDeform([mesh_obj])
         # set body part
         self.info("creating body part vertex group")
         mesh_data.addVertGroup("BP_HEAD")
         mesh_data.assignVertsToGroup("BP_HEAD", list(range(mesh_numverts)), 1,
-                                     Blender.Mesh.AssignModes.REPLACE)
+                                     Blender.Geometry.AssignModes.REPLACE)
         # export (do not advance layer, we will export this again)
         nif_export = self.test(
             filename='test/nif/fo3/_bodypart1.nif',
@@ -114,7 +114,7 @@ class BodyPartTestSuite(TestSuite):
         mesh_data.assignVertsToGroup("BP_HEAD2",
                                      [vert.index for vert in mesh_data.vertices
                                       if vert.sel],
-                                     1, Blender.Mesh.AssignModes.REPLACE)
+                                     1, Blender.Geometry.AssignModes.REPLACE)
         # now export must succeed
         nif_export = self.test(
             filename='test/nif/fo3/_bodypart3.nif',

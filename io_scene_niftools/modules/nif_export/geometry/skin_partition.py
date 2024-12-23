@@ -46,29 +46,33 @@ from nifgen.utils.meshopt_stripify import stripify as meshopt_stripify
 from nifgen.utils.vertex_cache import get_cache_optimized_triangles
 
 
+
 def update_skin_partition(self,
                         maxbonesperpartition=4, maxbonespervertex=4,
-                        stripify=True,
+                        verbose=0, stripify=True, stitchstrips=False,
                         padbones=False,
                         triangles=None, trianglepartmap=None,
                         maximize_bone_sharing=False,
                         part_sort_order=[]):
-    """
-    Recalculate skin partition data.
+    """Recalculate skin partition data.
 
+    :deprecated: Do not use the verbose argument.
     :param maxbonesperpartition: Maximum number of bones in each partition.
         The num_bones field will not exceed this number.
     :param maxbonespervertex: Maximum number of bones per vertex.
         The num_weights_per_vertex field will be exactly equal to this number.
+    :param verbose: Ignored, and deprecated. Set pyffi's log level instead.
     :param stripify: If true, stripify the partitions, otherwise use triangles.
+    :param stitchstrips: If stripify is true, then set this to true to stitch
+        the strips.
     :param padbones: Enforces the numbones field to be equal to
         maxbonesperpartition. Also ensures that the bone indices are unique
         and sorted, per vertex. Raises an exception if maxbonespervertex
         is not equal to maxbonesperpartition (in that case bone indices cannot
-        be unique and sorted). This option is required for Freedom Force vs.
+        be unique and sorted). This options is required for Freedom Force vs.
         the 3rd Reich skin partitions.
     :param triangles: The triangles of the partition (if not specified, then
-        this defaults to C{self.data.get_triangles()}).
+        this defaults to C{self.data.get_triangles()}.
     :param trianglepartmap: Maps each triangle to a partition index. Faces with
         different indices will never appear in the same partition. If the skin
         instance is a BSDismemberSkinInstance, then these indices are used as
@@ -83,41 +87,44 @@ def update_skin_partition(self,
         and sorts the shared bone lists based on its first body part.
     """
 
-    # If trianglepartmap not specified, map everything to index 0
+    # if trianglepartmap not specified, map everything to index 0
     if trianglepartmap is None:
         trianglepartmap = repeat(0)
 
-    # Ensure there is skin data
+    # shortcuts relevant blocks
     if not self.skin_instance:
+        # no skin, nothing to do
         return
-
     self._validate_skin()
-    geometry_data = self.data
-    skin_instance = self.skin_instance
-    skin_data = skin_instance.data
+    geomdata = self.data
+    skininst = self.skin_instance
+    skindata = skininst.data
 
-    # Get skin data vertex weights
-    NifLog.debug(f"Getting vertex weights.")
+    # get skindata vertex weights
+    NifLog.debug("Getting vertex weights.")
     weights = self.get_vertex_weights()
 
-    # Count minimum and maximum number of bones per vertex
-    min_bones = min(len(weight) for weight in weights)
-    max_bones = max(len(weight) for weight in weights)
-
-    if min_bones <= 0:
-        unweighted_vertices = [v for v, weight in enumerate(weights) if not weight]
-        NifLog.warn(f"bad NiSkinData: some vertices have no weights {unweighted_vertices}")
-
-    NifLog.info(f"Counted minimum of {min_bones} and maximum of {max_bones} bones per vertex")
+    # count minimum and maximum number of bones per vertex
+    minbones = min(len(weight) for weight in weights)
+    maxbones = max(len(weight) for weight in weights)
+    if minbones <= 0:
+        noweights = [v for v, weight in enumerate(weights)
+                     if not weight]
+        #raise ValueError(
+        NifLog.warn(
+            'bad NiSkinData: some vertices have no weights %s'
+            % noweights)
+    NifLog.info("Counted minimum of %i and maximum of %i bones per vertex"
+                % (minbones, maxbones))
 
     # reduce bone influences to meet maximum number of bones per vertex
-    NifLog.info(f"Imposing maximum of {maxbonespervertex} bones per vertex.")
+    NifLog.info("Imposing maximum of %i bones per vertex." % maxbonespervertex)
     lostweight = 0.0
     for weight in weights:
         if len(weight) > maxbonespervertex:
-            # Delete bone influences with least weight
+            # delete bone influences with least weight
             weight.sort(key=lambda x: x[1], reverse=True) # sort by weight
-            # Save lost weight to return to user
+            # save lost weight to return to user
             lostweight = max(
                 lostweight, max(
                     [x[1] for x in weight[maxbonespervertex:]]))
@@ -125,16 +132,18 @@ def update_skin_partition(self,
             # normalize
             totalweight = sum([x[1] for x in weight]) # sum of all weights
             for x in weight: x[1] /= totalweight
-            max_bones = maxbonespervertex
+            maxbones = maxbonespervertex
         # sort by again by bone (relied on later when matching vertices)
         weight.sort(key=lambda x: x[0])
 
-    # Reduce bone influences to meet maximum number of bones per partition
+    # reduce bone influences to meet maximum number of bones per partition
     # (i.e. maximum number of bones per triangle)
-    NifLog.info(f"Imposing maximum of {maxbonesperpartition} bones per triangle (and hence, per partition)")
+    NifLog.info(
+        "Imposing maximum of %i bones per triangle (and hence, per partition)."
+        % maxbonesperpartition)
 
     if triangles is None:
-        triangles = geometry_data.get_triangles()
+        triangles = geomdata.get_triangles()
 
     for tri in triangles:
         while True:
@@ -195,8 +204,8 @@ def update_skin_partition(self,
                         x[1] /= totalweight
 
     # split triangles into partitions
-    NifLog.info(f"Creating partitions")
-    body_parts = []
+    NifLog.info("Creating partitions")
+    parts = []
     # keep creating partitions as long as there are triangles left
     while len(triangles) > 0:
         # create a partition
@@ -267,12 +276,12 @@ def update_skin_partition(self,
                 triangles = newtriangles
                 trianglepartmap = newtrianglepartmap
 
-        body_parts.append(part)
+        parts.append(part)
 
-    NifLog.info(f"Created {len(body_parts)} small partitions")
+    NifLog.info("Created %i small partitions." % len(parts))
 
     # merge all partitions
-    NifLog.info(f"Merging partitions")
+    NifLog.info("Merging partitions.")
     merged = True # signals success, in which case do another run
     while merged:
         merged = False
@@ -282,12 +291,12 @@ def update_skin_partition(self,
         # added to newparts
         addedparts = set()
         # try all combinations
-        for a, parta in enumerate(body_parts):
+        for a, parta in enumerate(parts):
             if a in addedparts:
                 continue
             newparts.append(parta)
             addedparts.add(a)
-            for b, partb in enumerate(body_parts):
+            for b, partb in enumerate(parts):
                 if b <= a:
                     continue
                 if b in addedparts:
@@ -301,43 +310,43 @@ def update_skin_partition(self,
                     addedparts.add(b)
                     merged = True # signal another try in merging partitions
         # update partitions to the merged partitions
-        body_parts = newparts
+        parts = newparts
 
     # write the NiSkinPartition
-    NifLog.info(f"Skin has {len(body_parts)} partitions.")
+    NifLog.info("Skin has %i partitions." % len(parts))
 
     # if skin partition already exists, use it
-    if skin_data.skin_partition is not None:
-        skinpart = skin_data.skin_partition
-        skin_instance.skin_partition = skinpart
-    elif skin_instance.skin_partition is not None:
-        skinpart = skin_instance.skin_partition
-        skin_data.skin_partition = skinpart
+    if skindata.skin_partition != None:
+        skinpart = skindata.skin_partition
+        skininst.skin_partition = skinpart
+    elif skininst.skin_partition != None:
+        skinpart = skininst.skin_partition
+        skindata.skin_partition = skinpart
     else:
     # otherwise, create a new block and link it
-        skinpart = NifClasses.NiSkinPartition(skin_data.context)
-        skin_data.skin_partition = skinpart
-        skin_instance.skin_partition = skinpart
+        skinpart = NifClasses.NiSkinPartition(skindata.context)
+        skindata.skin_partition = skinpart
+        skininst.skin_partition = skinpart
 
     # set number of partitions
-    skinpart.num_partitions = len(body_parts)
+    skinpart.num_partitions = len(parts)
     skinpart.reset_field("partitions")
 
     # maximize bone sharing, if requested
     if maximize_bone_sharing:
-        NifLog.info(f"Maximizing shared bones")
+        NifLog.info("Maximizing shared bones.")
         # new list of partitions, sorted to maximize bone sharing
         newparts = []
         # as long as there are parts to add
-        while body_parts:
+        while parts:
             # current set of partitions with shared bones
             # starts a new set of partitions with shared bones
-            sharedparts = [body_parts.pop()]
+            sharedparts = [parts.pop()]
             sharedboneset = sharedparts[0][0]
             # go over all other partitions, and try to add them with
             # shared bones
-            oldparts = body_parts[:]
-            body_parts = []
+            oldparts = parts[:]
+            parts = []
             for otherpart in oldparts:
                 # check if bones can be added
                 if len(sharedboneset | otherpart[0]) <= maxbonesperpartition:
@@ -352,12 +361,12 @@ def update_skin_partition(self,
                 else:
                     # not added to sharedparts,
                     # so we must keep it for the next iteration
-                    body_parts.append(otherpart)
+                    parts.append(otherpart)
             # update list of partitions
             newparts.extend(sharedparts)
 
         # store update
-        body_parts = newparts
+        parts = newparts
 
     # sort the parts based on the given list
     if part_sort_order:
@@ -370,8 +379,8 @@ def update_skin_partition(self,
             else:
                 body_part_order_map[body_part_number] = sorted_index
                 sorted_index += 1
-        # assign a sorted index to any number that was missed
-        for part in body_parts:
+        # assign an sorted index to any number that was missed
+        for part in parts:
             if part[2] in body_part_order_map:
                 continue
             else:
@@ -383,22 +392,22 @@ def update_skin_partition(self,
             shared_boneset_start = 0
             shared_boneset_end = 1
             bone_sharing_lists = []
-            while shared_boneset_end <= len(body_parts):
+            while shared_boneset_end <= len(parts):
                 added = True
-                bones = body_parts[shared_boneset_start][0]
-                while added and shared_boneset_end < len(body_parts):
+                bones = parts[shared_boneset_start][0]
+                while added and shared_boneset_end < len(parts):
                     added = False
-                    if len(bones | body_parts[shared_boneset_end][0]) == len(bones):
+                    if len(bones | parts[shared_boneset_end][0]) == len(bones):
                         shared_boneset_end += 1
                         added = True
                     else:
                         break
-                body_parts[shared_boneset_start:shared_boneset_end] = sorted(
-                            body_parts[shared_boneset_start:shared_boneset_end],
-                            key = lambda body_part: body_part_order_map[body_part[2]])
+                parts[shared_boneset_start:shared_boneset_end] = sorted(
+                            parts[shared_boneset_start:shared_boneset_end],
+                            key = lambda part: body_part_order_map[part[2]])
                 bone_sharing_lists.append([list(range(shared_boneset_start,
                             shared_boneset_end)),
-                            body_part_order_map[body_parts[shared_boneset_start][2]]])
+                            body_part_order_map[parts[shared_boneset_start][2]]])
                 shared_boneset_start = shared_boneset_end
                 shared_boneset_end = shared_boneset_start + 1
             # then sort the bonesets based on their first entry's body part
@@ -407,17 +416,17 @@ def update_skin_partition(self,
             bone_sharing_lists = [entry[0] for entry in bone_sharing_lists]
             # flatten the indices into a list of the old indices
             new_part_indices = [index for sublist in bone_sharing_lists for index in sublist]
-            body_parts = [body_parts[i] for i in new_part_indices]
+            parts = [parts[i] for i in new_part_indices]
         else:
-            body_parts = sorted(body_parts,
-                                key = lambda body_part: body_part_order_map[body_part[2]])
+            parts = sorted(parts,
+                        key = lambda part: body_part_order_map[part[2]])
 
     # for Fallout 3, set dismember partition indices
-    if isinstance(skin_instance, NifClasses.BSDismemberSkinInstance):
-        skin_instance.num_partitions = len(body_parts)
-        skin_instance.reset_field("partitions")
+    if isinstance(skininst, NifClasses.BSDismemberSkinInstance):
+        skininst.num_partitions = len(parts)
+        skininst.reset_field("partitions")
         lastpart = None
-        for bodypart, part in zip(skin_instance.partitions, body_parts):
+        for bodypart, part in zip(skininst.partitions, parts):
             bodypart.body_part = part[2]
             if (lastpart is None) or (lastpart[0] != part[0]):
                 # start new bone set, if bones are not shared
@@ -431,14 +440,13 @@ def update_skin_partition(self,
             # store part for next iteration
             lastpart = part
 
-    for skinpartblock, part in zip(skinpart.partitions, body_parts):
+    for skinpartblock, part in zip(skinpart.partitions, parts):
         # get sorted list of bones
         bones = sorted(list(part[0]))
         triangles = part[1]
-        NifLog.info(f"Optimizing triangle ordering in partition "
-                    f"{[i for i, check_part in enumerate(body_parts) if id(check_part) == id(part)][0]}")
-
-        # Optimize triangles for vertex cache and calculate strips
+        NifLog.info("Optimizing triangle ordering in partition %i"
+                    % [i for i, check_part in enumerate(parts) if id(check_part) == id(part)][0])
+        # optimize triangles for vertex cache and calculate strips
         triangles = get_cache_optimized_triangles(
             triangles)
         num_vertices = len(set([vertex for triangle in triangles for vertex in triangle]))
