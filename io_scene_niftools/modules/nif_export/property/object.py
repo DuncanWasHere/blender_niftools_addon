@@ -38,20 +38,16 @@
 # ***** END LICENSE BLOCK *****
 
 
-import bpy
-
 from math import pi
 
-from nifgen.formats.nif import classes as NifClasses
-
-from io_scene_niftools.utils.singleton import NifOp
-from io_scene_niftools.utils.logging import NifLog, NifError
-
+import bpy
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.property.bethesda.shader import BSShaderProperty
-from io_scene_niftools.modules.nif_export.property.texture.nitextureprop import NiTextureProp
 from io_scene_niftools.modules.nif_export.property.material import MaterialProperty
-
+from io_scene_niftools.modules.nif_export.property.texture.nitextureprop import NiTextureProp
+from io_scene_niftools.utils.logging import NifLog, NifError
+from io_scene_niftools.utils.singleton import NifOp
+from nifgen.formats.nif import classes as NifClasses
 
 
 class ObjectProperty:

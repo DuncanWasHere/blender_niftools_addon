@@ -40,7 +40,6 @@
 
 from io_scene_niftools.modules.nif_export.animation.common import AnimationCommon
 from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
 
 

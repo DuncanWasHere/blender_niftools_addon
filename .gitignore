@@ -191,3 +191,4 @@ fabric.properties
 install/tmp
 .idea/mypy.xml
 .idea/MypyPlugin.xml
+.idea/material_theme_project_new.xml

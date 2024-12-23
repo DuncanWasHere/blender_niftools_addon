@@ -38,18 +38,14 @@
 # ***** END LICENSE BLOCK *****
 
 
-import mathutils
-
 import bpy
-
-from nifgen.formats.nif import classes as NifClasses
-
+import mathutils
+from io_scene_niftools.modules.nif_export.animation.common import AnimationCommon
+from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.utils import math, consts
 from io_scene_niftools.utils.consts import QUAT, EULER, LOC, SCALE
 from io_scene_niftools.utils.logging import NifError, NifLog
-
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.animation.common import AnimationCommon
+from nifgen.formats.nif import classes as NifClasses
 
 
 class ObjectAnimation(AnimationCommon):

@@ -1,5 +1,5 @@
 """Main module for exporting Bethesda shader property blocks."""
-from io_scene_niftools.modules.nif_export.block_registry import block_store
+
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.
@@ -38,12 +38,15 @@ from io_scene_niftools.modules.nif_export.block_registry import block_store
 # ***** END LICENSE BLOCK *****
 
 
-from io_scene_niftools.modules.nif_export.property.texture.bethesda import BSShaderTexture
+from nifgen.formats.nif import classes as NifClasses
 
 import io_scene_niftools.utils.logging
+from io_scene_niftools.modules.nif_export.block_registry import block_store
+from io_scene_niftools.modules.nif_export.property.texture.bethesda import BSShaderTexture
 from io_scene_niftools.modules.nif_export.property.texture.nitextureprop import NiTextureProp
 from io_scene_niftools.utils.consts import FLOAT_MAX
 from io_scene_niftools.utils.singleton import NifData
+
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.
@@ -80,7 +83,6 @@ from io_scene_niftools.utils.singleton import NifData
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
-from nifgen.formats.nif import classes as NifClasses
 
 
 class BSShaderProperty:

@@ -38,15 +38,12 @@
 # ***** END LICENSE BLOCK *****
 
 
-from nifgen.formats.nif import classes as NifClasses
-
-from pyffi.formats.egm import EgmFormat
-
-from io_scene_niftools.utils.singleton import NifOp, EGMData
-from io_scene_niftools.utils.logging import NifLog
-
-from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.animation.common import AnimationCommon
+from io_scene_niftools.modules.nif_export.block_registry import block_store
+from io_scene_niftools.utils.logging import NifLog
+from io_scene_niftools.utils.singleton import NifOp, EGMData
+from nifgen.formats.nif import classes as NifClasses
+from pyffi.formats.egm import EgmFormat
 
 
 class GeometryAnimation(AnimationCommon):

@@ -38,10 +38,9 @@
 # ***** END LICENSE BLOCK *****
 
 
-from io_scene_niftools.modules.nif_export.animation.object import ObjectAnimation
-
 import bpy
 from io_scene_niftools.modules.nif_export import types
+from io_scene_niftools.modules.nif_export.animation.object import ObjectAnimation
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.utils import math
 

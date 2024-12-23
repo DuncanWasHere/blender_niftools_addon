@@ -41,20 +41,16 @@
 import numpy as np
 
 import bpy
-
-from nifgen.formats.nif import classes as NifClasses
-
-from io_scene_niftools.utils.singleton import NifOp, NifData
-from io_scene_niftools.utils.logging import NifLog, NifError
-
+from io_scene_niftools.modules.nif_export.animation.geometry import GeometryAnimation
+from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.geometry import skin_partition
 from io_scene_niftools.modules.nif_export.geometry.data import GeometryData
 from io_scene_niftools.modules.nif_export.geometry.skinned import SkinnedGeometry
-from io_scene_niftools.modules.nif_export.property.texture.nitextureprop import NiTextureProp
-
-from io_scene_niftools.modules.nif_export.animation.geometry import GeometryAnimation
-from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.property.object import ObjectProperty
+from io_scene_niftools.modules.nif_export.property.texture.nitextureprop import NiTextureProp
+from io_scene_niftools.utils.logging import NifLog, NifError
+from io_scene_niftools.utils.singleton import NifOp
+from nifgen.formats.nif import classes as NifClasses
 
 
 class Geometry:

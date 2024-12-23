@@ -46,22 +46,19 @@ from nifgen.utils.meshopt_stripify import stripify as meshopt_stripify
 from nifgen.utils.vertex_cache import get_cache_optimized_triangles
 
 
-
 def update_skin_partition(self,
                         maxbonesperpartition=4, maxbonespervertex=4,
-                        verbose=0, stripify=True, stitchstrips=False,
+                        stripify=True, stitchstrips=False,
                         padbones=False,
                         triangles=None, trianglepartmap=None,
                         maximize_bone_sharing=False,
                         part_sort_order=[]):
     """Recalculate skin partition data.
 
-    :deprecated: Do not use the verbose argument.
     :param maxbonesperpartition: Maximum number of bones in each partition.
         The num_bones field will not exceed this number.
     :param maxbonespervertex: Maximum number of bones per vertex.
         The num_weights_per_vertex field will be exactly equal to this number.
-    :param verbose: Ignored, and deprecated. Set pyffi's log level instead.
     :param stripify: If true, stripify the partitions, otherwise use triangles.
     :param stitchstrips: If stripify is true, then set this to true to stitch
         the strips.

@@ -39,14 +39,11 @@
 
 
 import bpy
-
-from nifgen.formats.nif import classes as NifClasses
-
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifData
-
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.property.texture import TextureSlotManager, TextureWriter
+from io_scene_niftools.utils.logging import NifLog
+from io_scene_niftools.utils.singleton import NifData
+from nifgen.formats.nif import classes as NifClasses
 
 
 class NiTextureProp(TextureSlotManager):

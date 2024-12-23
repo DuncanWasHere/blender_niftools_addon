@@ -39,11 +39,9 @@
 
 
 import bpy
-from bpy.props import (PointerProperty,
-                       StringProperty,
+from bpy.props import (StringProperty,
                        IntProperty,
                        EnumProperty,
-                       CollectionProperty,
                        FloatProperty
                        )
 from bpy.types import PropertyGroup
