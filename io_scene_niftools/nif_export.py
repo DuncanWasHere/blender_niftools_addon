@@ -117,9 +117,9 @@ class NifExport(NifCommon):
 
             # Export remaining block type categories
             # TODO: Rewrite the following modules to fully encapsulate each block type
-            self.collision_helper.export_collision(self.b_collision_objects, self.target_game)
-            # self.constraint_helper.export_constraints(self.b_constraint_objects, n_root_node, self.target_game)
-            self.particle_helper.export_particles(self.b_particle_objects, n_root_node, self.target_game)
+            self.collision_helper.export_collision(self.b_collision_objects)
+            # self.constraint_helper.export_constraints(self.b_constraint_objects, n_root_node)
+            self.particle_helper.export_particles(self.b_particle_objects, n_root_node)
             self.animation_helper.export_animations(self.b_exportable_objects, n_root_node)
 
             self.correct_scale(n_data, n_root_node) # Correct scale for NIF units

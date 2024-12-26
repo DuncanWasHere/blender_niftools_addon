@@ -55,12 +55,10 @@ class Collision:
         self.bhk_blend_collision_helper = BhkBlendCollision()
         self.bound_helper = Bound()
         self.ni_collision_helper = NiCollision()
-        self.target_game = None
+        self.target_game = bpy.context.scene.niftools_scene.game
 
-    def export_collision(self, b_collision_objects, target_game):
+    def export_collision(self, b_collision_objects):
         """Main function for handling collision export."""
-
-        self.target_game = target_game
 
         NifLog.info(f"Exporting collision...")
 
@@ -93,13 +91,13 @@ class Collision:
                 # Export Bethesda/Havok collision objects
                 layer = int(b_col_obj.nifcollision.collision_layer)
 
-                if target_game == 'OBLIVION':
+                if self.target_game in ('OBLIVION', 'OBLIVION_KF'):
                     if NifClasses.OblivionLayer.from_value(layer) == 'OL_BIPED':
                         self.bhk_blend_collision_helper.export_bhk_blend_collision(b_col_obj)
-                elif target_game in ('FALLOUT_3', 'Fallout_NV'):
+                elif self.target_game in ('FALLOUT_3', 'Fallout_NV'):
                     if NifClasses.Fallout3Layer.from_value(layer) == 'FOL_BIPED':
                         self.bhk_blend_collision_helper.export_bhk_blend_collision(b_col_obj)
-                self.bhk_collision_helper.export_bhk_collision(b_col_obj, n_parent_node, layer, target_game)
+                self.bhk_collision_helper.export_bhk_collision(b_col_obj, n_parent_node, layer)
             elif self.target_game in ('ZOO_TYCOON_2',):
                 self.ni_collision_helper.export_nicollisiondata(b_col_obj, n_parent_node)
             else:

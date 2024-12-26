@@ -37,6 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import operator
 from functools import reduce, singledispatch
 
@@ -124,6 +125,7 @@ class BhkCollision(Collision):
 
     def _import_bhk_rigid_body(self, n_bhk_rigid_body, b_col_obj):
         """Import the bhkRigidBody block properties into the Blender object's rigid body."""
+
         n_rigid_body_info = n_bhk_rigid_body.rigid_body_info
         b_r_body = b_col_obj.rigid_body
 
@@ -150,24 +152,24 @@ class BhkCollision(Collision):
         b_r_body.deactivate_angular_velocity = mathutils.Vector([ang_vel.w, ang_vel.x, ang_vel.y, ang_vel.z]).magnitude
 
         # Custom NIF properties
-        b_col_obj.nifcollision.collision_layer = str(n_rigid_body_info.havok_filter.layer.value) # Collision Layer
-        b_col_obj.nifcollision.col_filter = n_bhk_rigid_body.havok_filter.flags # Havok Filter
+        b_col_obj.nifcollision.collision_layer = str(n_rigid_body_info.havok_filter.layer.value)
+        b_col_obj.nifcollision.col_filter = n_bhk_rigid_body.havok_filter.flags
 
         b_col_obj.nifcollision.inertia_tensor = (n_rigid_body_info.inertia_tensor.m_11,
                                                  n_rigid_body_info.inertia_tensor.m_22,
-                                                 n_rigid_body_info.inertia_tensor.m_33) # Inertia Tensor
+                                                 n_rigid_body_info.inertia_tensor.m_33)
 
         b_col_obj.nifcollision.center = (n_rigid_body_info.center.x,
                                          n_rigid_body_info.center.y,
-                                         n_rigid_body_info.center.z) # Center of Mass
+                                         n_rigid_body_info.center.z)
 
-        b_col_obj.nifcollision.mass = n_rigid_body_info.mass # Mass
-        b_col_obj.nifcollision.max_linear_velocity = n_rigid_body_info.max_linear_velocity # Max Linear Velocity
-        b_col_obj.nifcollision.max_angular_velocity = n_rigid_body_info.max_angular_velocity # Max Angular Velocity
-        b_col_obj.nifcollision.penetration_depth = n_rigid_body_info.penetration_depth # Penetration Depth
+        b_col_obj.nifcollision.mass = n_rigid_body_info.mass
+        b_col_obj.nifcollision.max_linear_velocity = n_rigid_body_info.max_linear_velocity
+        b_col_obj.nifcollision.max_angular_velocity = n_rigid_body_info.max_angular_velocity
+        b_col_obj.nifcollision.penetration_depth = n_rigid_body_info.penetration_depth
 
-        b_col_obj.nifcollision.motion_system = n_rigid_body_info.motion_system.name # Motion System
-        b_col_obj.nifcollision.deactivator_type = n_rigid_body_info.deactivator_type.name #
+        b_col_obj.nifcollision.motion_system = n_rigid_body_info.motion_system.name
+        b_col_obj.nifcollision.deactivator_type = n_rigid_body_info.deactivator_type.name
         b_col_obj.nifcollision.solver_deactivation = n_rigid_body_info.solver_deactivation.name
         b_col_obj.nifcollision.quality_type = n_rigid_body_info.quality_type.name
 
@@ -223,11 +225,13 @@ class BhkCollision(Collision):
         return b_col_obj
 
     def import_bhktransform(self, n_bhk_transform_shape):
-        """Imports a BhkTransformShape block and applies the transform to the collision object"""
+        """Imports a BhkTransformShape block and applies the transform to the collision object."""
+
         return self._import_bhk_transform(n_bhk_transform_shape)
 
     def import_bhk_convex_transform(self, n_bhk_convex_transform_shape):
-        """Imports a BhkConvexTransformShape block and applies the transform to the collision object"""
+        """Imports a BhkConvexTransformShape block and applies the transform to the collision object."""
+
         return self._import_bhk_transform(n_bhk_convex_transform_shape)
 
     def _import_bhk_transform(self, n_bhk_transform_shape):
@@ -245,7 +249,8 @@ class BhkCollision(Collision):
         return b_col_obj
 
     def import_bhkbox_shape(self, n_bhk_box_shape):
-        """Import a BhkBox block as a simple Box collision object"""
+        """Import a BhkBox block as a simple Box collision object."""
+
         NifLog.debug(f"Importing {n_bhk_box_shape.__class__.__name__}")
 
         # create box
@@ -273,7 +278,8 @@ class BhkCollision(Collision):
         return b_col_obj
 
     def import_bhkcapsule_shape(self, n_bhk_capsule_shape):
-        """Import a BhkCapsule block as a simple cylinder collision object"""
+        """Import a BhkCapsule block as a simple cylinder collision object."""
+
         NifLog.debug(f"Importing {n_bhk_capsule_shape.__class__.__name__}")
 
         radius = n_bhk_capsule_shape.radius * self.HAVOK_SCALE
@@ -295,7 +301,8 @@ class BhkCollision(Collision):
         return b_col_obj
 
     def import_bhkconvex_vertices_shape(self, n_bhk_convex_vertices_shape):
-        """Import a BhkConvexVertex block as a convex hull collision object"""
+        """Import a BhkConvexVertex block as a convex hull collision object."""
+
         NifLog.debug(f"Importing {n_bhk_convex_vertices_shape.__class__.__name__}")
 
         # find vertices (and fix scale)
@@ -313,7 +320,8 @@ class BhkCollision(Collision):
         return b_col_obj
 
     def import_bhkpackednitristrips_shape(self, n_bhk_packed_nitristrips_shape):
-        """Import a BhkPackedNiTriStrips block as a Triangle-Mesh collision object"""
+        """Import a BhkPackedNiTriStrips block as a Triangle-Mesh collision object."""
+
         NifLog.debug(f"Importing {n_bhk_packed_nitristrips_shape.__class__.__name__}")
 
         # Create mesh for each sub shape
@@ -378,8 +386,9 @@ class BhkCollision(Collision):
         return reduce(operator.add, (self.import_bhk_shape(strips) for strips in n_bhk_nitristrips_shape.strips_data))
 
     def import_nitristrips(self, n_nitristrips):
-        """Import a NiTriStrips block as a Triangle-Mesh collision object"""
-        # no factor 7 correction!!!
+        """Import a NiTriStrips block as a Triangle-Mesh collision object."""
+
+        # No factor 7 correction!!!
         verts = [(v.x, v.y, v.z) for v in n_nitristrips.vertices]
         faces = list(n_nitristrips.get_triangles())
         b_col_obj = Object.mesh_from_data("collision_poly", verts, faces)

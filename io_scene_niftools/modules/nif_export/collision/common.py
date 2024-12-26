@@ -38,11 +38,14 @@
 # ***** END LICENSE BLOCK *****
 
 
+import bpy
+
+
 class CollisionCommon:
     """Abstract base class containing functions and attributes shared between collision export classes."""
 
     def __init__(self):
-        self.target_game = None
+        self.target_game = bpy.context.scene.niftools_scene.game
 
     @staticmethod
     def calculate_largest_value(box_extents):

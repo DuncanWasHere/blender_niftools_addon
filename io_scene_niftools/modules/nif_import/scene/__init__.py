@@ -37,6 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import bpy
 from io_scene_niftools.utils.logging import NifLog
 from nifgen.formats.nif.versions import get_game

@@ -1,5 +1,6 @@
 """Classes for exporting NIF particle blocks."""
-
+import bpy
+from io_scene_niftools import NifLog
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.
@@ -39,22 +40,39 @@
 
 
 from io_scene_niftools.modules.nif_export.block_registry import block_store
+from io_scene_niftools.modules.nif_export.object import DICT_NAMES
 
 
 class Particle:
     """Main interface class for exporting NIF particle blocks."""
 
     def __init__(self):
-        self.target_game = None
+        self.target_game = bpy.context.scene.niftools_scene.game
 
-    def export_particles(self, b_particle_objects, n_root_node, target_game):
-        self.target_game = target_game
+    def export_particles(self, b_particle_objects, n_root_node):
+        """Export particle blocks."""
+
+        for b_p_obj in b_particle_objects:
+            if not b_p_obj.parent:
+                NifLog.warn(f"Particle object {b_p_obj.name} has no parent! "
+                            f"It will not be exported.")
+                continue
+
+            n_parent_node = DICT_NAMES[b_p_obj.parent]
+
+            n_ni_particle_system = self.export_ni_particle_system(b_p_obj, n_parent_node)
+            self.export_ni_p_sys_data(b_p_obj, n_ni_particle_system)
 
     def export_ni_particle_system(self, b_p_obj, n_parent_node):
-        n_ni_particle_system = block_store.create_block("NiParticleSystem")
-        return
+        n_ni_particle_system = block_store.create_block("NiParticleSystem", b_p_obj)
+        n_parent_node.add_child(n_ni_particle_system)
+
+        return n_ni_particle_system
 
     def export_ni_p_sys_data(self, b_p_obj, n_ni_particle_system):
+        n_ni_p_sys_data = block_store.create_block("NiPSysData", b_p_obj)
+        n_ni_particle_system.data = n_ni_p_sys_data
+
         return
 
     def export_ni_p_sys_emitter(self, b_p_obj, n_ni_particle_system):

@@ -49,7 +49,7 @@ class BhkMOPPShape(BhkCollisionCommon):
     """
     Class for exporting Havok MOPP collision blocks."""
 
-    def export_bhk_mopp_shape(self, b_col_obj, n_bhk_rigid_body, layer, n_hav_mat_list):
+    def export_bhk_mopp_shape(self, b_col_obj, n_bhk_rigid_body, n_hav_mat_list, n_hav_layer):
         """
         Export a tree of MOPP collision shape blocks and parent them to the given bhkRigidBody block.
         For each Blender object passed to this function, a new bhkMoppBvTreeShape block is created.
@@ -69,7 +69,7 @@ class BhkMOPPShape(BhkCollisionCommon):
 
         # Export the shape data block
         self.__export_hk_packed_ni_tri_strips_data(b_col_obj, n_bhk_packed_ni_tri_strips_shape,
-                                                     layer, n_hav_mat_list)
+                                                   n_hav_layer, n_hav_mat_list)
 
     def __export_bhk_mopp_bv_tree_shape(self, b_col_obj, n_bhk_rigid_body):
         """

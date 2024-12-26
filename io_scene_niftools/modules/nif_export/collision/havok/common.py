@@ -50,10 +50,11 @@ class BhkCollisionCommon(CollisionCommon):
 
     def __init__(self):
         super().__init__()
+
         self.HAVOK_SCALE = None
         self.HAVOK_MATERIALS = []
-        self.is_oblivion = False
-        self.is_fallout = False
+        self.is_oblivion = self.target_game in ('OBLIVION', 'OBLIVION_KF')
+        self.is_fallout = self.target_game in ('FALLOUT_3', 'FALLOUT_NV')
 
     def get_havok_material_list(self, b_col_obj):
         """Get the Blender object's material list as Havok materials."""

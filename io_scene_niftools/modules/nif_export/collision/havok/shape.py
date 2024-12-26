@@ -49,7 +49,7 @@ from io_scene_niftools.utils.singleton import NifData
 class BhkShape(BhkCollisionCommon):
     """Class for exporting Havok primitive, convex, and list shape blocks."""
 
-    def export_bhk_shape(self, b_col_obj, n_bhk_rigid_body, n_hav_mat, target_game):
+    def export_bhk_shape(self, b_col_obj, n_bhk_rigid_body, n_hav_mat):
         """
         Export a tree of collision shape blocks and parent them to the given bhkRigidBody block.
         For each Blender object passed to this function, a new type of bhkShape block is created.
@@ -229,44 +229,44 @@ class BhkShape(BhkCollisionCommon):
         b_scale_vec = b_transform_mat.decompose()[0]
 
         # Calculate vertices, normals, and distances
-        vertlist = [b_transform_mat @ vert.co for vert in b_mesh.vertices]
-        fnormlist = [b_rot_quat @ b_face.normal for b_face in b_mesh.polygons]
-        fdistlist = [(b_transform_mat @ (-1 * b_mesh.vertices[b_mesh.polygons[b_face.index].vertices[0]].co)).dot(b_rot_quat.to_matrix() @ b_face.normal) for b_face in b_mesh.polygons]
+        vertex_list = [b_transform_mat @ vert.co for vert in b_mesh.vertices]
+        face_normals_list = [b_rot_quat @ b_face.normal for b_face in b_mesh.polygons]
+        face_distances_list = [(b_transform_mat @ (-1 * b_mesh.vertices[b_mesh.polygons[b_face.index].vertices[0]].co)).dot(b_rot_quat.to_matrix() @ b_face.normal) for b_face in b_mesh.polygons]
 
         # Remove duplicates through dictionary
-        vertdict = {}
-        for i, vert in enumerate(vertlist):
-            vertdict[(int(vert[0] * consts.VERTEX_RESOLUTION),
+        vertex_dict = {}
+        for i, vert in enumerate(vertex_list):
+            vertex_dict[(int(vert[0] * consts.VERTEX_RESOLUTION),
                       int(vert[1] * consts.VERTEX_RESOLUTION),
                       int(vert[2] * consts.VERTEX_RESOLUTION))] = i
 
         fdict = {}
-        for i, (norm, dist) in enumerate(zip(fnormlist, fdistlist)):
+        for i, (norm, dist) in enumerate(zip(face_normals_list, face_distances_list)):
             fdict[(int(norm[0] * consts.NORMAL_RESOLUTION),
                    int(norm[1] * consts.NORMAL_RESOLUTION),
                    int(norm[2] * consts.NORMAL_RESOLUTION),
                    int(dist * consts.VERTEX_RESOLUTION))] = i
 
         # Sort vertices and normals
-        vertkeys = sorted(vertdict.keys())
+        vertkeys = sorted(vertex_dict.keys())
         fkeys = sorted(fdict.keys())
-        vertlist = [vertlist[vertdict[hsh]] for hsh in vertkeys]
-        fnormlist = [fnormlist[fdict[hsh]] for hsh in fkeys]
-        fdistlist = [fdistlist[fdict[hsh]] for hsh in fkeys]
+        vertex_list = [vertex_list[vertex_dict[hsh]] for hsh in vertkeys]
+        face_normals_list = [face_normals_list[fdict[hsh]] for hsh in fkeys]
+        face_distances_list = [face_distances_list[fdict[hsh]] for hsh in fkeys]
 
         # Vertices
-        n_bhk_convex_vertices_shape.num_vertices = len(vertlist)
+        n_bhk_convex_vertices_shape.num_vertices = len(vertex_list)
         n_bhk_convex_vertices_shape.reset_field("vertices")
-        for vhull, vert in zip(n_bhk_convex_vertices_shape.vertices, vertlist):
+        for vhull, vert in zip(n_bhk_convex_vertices_shape.vertices, vertex_list):
             vhull.x = vert[0] / self.HAVOK_SCALE
             vhull.y = vert[1] / self.HAVOK_SCALE
             vhull.z = vert[2] / self.HAVOK_SCALE
             # w component is 0
 
         # Normals
-        n_bhk_convex_vertices_shape.num_normals = len(fnormlist)
+        n_bhk_convex_vertices_shape.num_normals = len(face_normals_list)
         n_bhk_convex_vertices_shape.reset_field("normals")
-        for nhull, norm, dist in zip(n_bhk_convex_vertices_shape.normals, fnormlist, fdistlist):
+        for nhull, norm, dist in zip(n_bhk_convex_vertices_shape.normals, face_normals_list, face_distances_list):
             nhull.x = norm[0]
             nhull.y = norm[1]
             nhull.z = norm[2]

@@ -109,6 +109,7 @@ class Scene(PropertyGroup):
 
     def is_bs(self):
         return self.game in ('OBLIVION',
+                             'OBLIVION_KF',
                             'FALLOUT_3',
                             'FALLOUT_NV',
                             'SKYRIM',

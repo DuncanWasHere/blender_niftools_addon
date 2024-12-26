@@ -56,7 +56,7 @@ class SkinnedGeometry:
     def export_skinned_geometry(self, n_ni_geometry, n_root_node, b_obj, b_eval_mesh, triangles, vertex_map,
                                 t_nif_to_blend, b_face_groups, face_group_names):
 
-        if not b_obj.parent or not b_obj.parent_type == 'ARMATURE':
+        if not b_obj.parent or not b_obj.parent.type == 'ARMATURE':
             return
 
         n_face_groups = []

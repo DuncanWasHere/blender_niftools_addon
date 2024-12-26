@@ -37,17 +37,19 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import bpy
 import mathutils
 
 
-# dictionary mapping bhkRigidBody objects to objects imported in Blender;
-# we use this dictionary to set the physics constraints (ragdoll etc)
-DICT_HAVOK_OBJECTS = {}  # type: ignore
+# Dictionary mapping bhkRigidBody objects to objects imported in Blender
+# This is used to set up the rigid body constraints
+DICT_HAVOK_OBJECTS = {}
 
 
 def get_material(mat_name):
     """Returns material of mat_name, create new one if required"""
+
     if mat_name not in bpy.data.materials:
         bpy.data.materials.new(mat_name)
     return bpy.data.materials[mat_name]
@@ -59,7 +61,8 @@ class Collision:
     @staticmethod
     def center_origin_to_matrix(n_center, n_dir):
         """Helper for capsules to transform nif data into a local matrix """
-        # get the rotation that makes (1,0,0) match m_dir
+
+        # Get the rotation that makes (1,0,0) match m_dir
         m_dir = mathutils.Vector((n_dir.x, n_dir.y, n_dir.z)).normalized()
         rot = m_dir.to_track_quat("Z", "Y").to_matrix().to_4x4()
         rot.translation = (n_center.x, n_center.y, n_center.z)
@@ -68,6 +71,7 @@ class Collision:
     @staticmethod
     def set_b_collider(b_obj, radius, n_obj=None, bounds_type='BOX', display_type='BOX'):
         """Helper function to set up b_obj so it becomes recognizable as a collision object."""
+
         # Set bounds type
         b_obj.show_bounds = True
         b_obj.display_type = 'BOUNDS'

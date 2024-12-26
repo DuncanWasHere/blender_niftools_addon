@@ -61,7 +61,7 @@ class BhkCollision(BhkCollisionCommon):
         self.bhk_shape_helper = BhkShape()
         self.bhk_mopp_shape_helper = BhkMOPPShape()
 
-    def export_bhk_collision(self, b_col_obj, n_parent_node, layer, target_game):
+    def export_bhk_collision(self, b_col_obj, n_parent_node, n_hav_layer):
         """
         Export a tree of Havok collision blocks and parent it to the given node.
         For each Blender object passed to this function, a new bhkCollisionObject is created if necessary.
@@ -70,15 +70,10 @@ class BhkCollision(BhkCollisionCommon):
 
         @param b_col_obj: The object to export as collision.
         @param n_parent_node: The parent node of the collision object.
-        @param layer: The collision layer of the rigid body.
-        @param target_game: The target game of the exported file.
+        @param n_hav_layer: The collision layer of the rigid body.
         """
 
         # Load constants for this NIF version
-        self.target_game = target_game
-        self.is_oblivion = target_game == 'OBLIVION'
-        self.bhk_shape_helper.is_oblivion = self.is_oblivion
-        self.is_fallout = target_game in ('FALLOUT_3', 'FALLOUT_NV')
         self.HAVOK_SCALE = NifData.data.havok_scale
 
         # Commonly referenced properties for this object
@@ -89,7 +84,7 @@ class BhkCollision(BhkCollisionCommon):
 
         # Export a bhkCollisionObject if a bhkBlendCollisionObject wasn't already exported
         if not n_col_obj:
-            n_col_obj = self.__export_bhk_collision_object(b_col_obj, layer)
+            n_col_obj = self.__export_bhk_collision_object(b_col_obj, n_hav_layer)
             n_parent_node.collision_object = n_col_obj
             n_col_obj.target = n_parent_node
 
@@ -99,10 +94,10 @@ class BhkCollision(BhkCollisionCommon):
         # Export the collision shape(s)
         if b_col_shape == 'MESH':
             # Export MOPP collision
-            self.bhk_mopp_shape_helper.export_bhk_mopp_shape(b_col_obj, n_bhk_rigid_body, layer, n_hav_mat_list)
+            self.bhk_mopp_shape_helper.export_bhk_mopp_shape(b_col_obj, n_bhk_rigid_body, n_hav_mat_list, n_hav_layer)
         else:
             # Export normal collision
-            self.bhk_shape_helper.export_bhk_shape(b_col_obj, n_bhk_rigid_body, n_hav_mat_list[0], target_game)
+            self.bhk_shape_helper.export_bhk_shape(b_col_obj, n_bhk_rigid_body, n_hav_mat_list[0])
 
         # Recalculate inertia tensor and center of mass for bhkRigidBody(T)
         if b_col_obj.nifcollision.use_blender_properties:

@@ -50,15 +50,14 @@ class Constraint:
 
     def __init__(self):
         self.bhk_constraint_helper = BhkConstraint()
-        self.target_game = None
 
-    def export_constraints(self, b_constraint_objects, n_root_node, target_game):
+        self.target_game = bpy.context.scene.niftools_scene.game
+
+    def export_constraints(self, b_constraint_objects, n_root_node):
         """Main function for handling constraint export."""
 
         if not b_constraint_objects:
             return
-
-        self.target_game = target_game
 
         # Set Havok Scale ratio
         self.HAVOK_SCALE = NifData.data.havok_scale

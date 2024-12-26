@@ -52,7 +52,7 @@ class Bound(CollisionCommon):
     """
 
     def export_bounds(self, b_obj, n_parent_node, bsbound=False):
-        """Export a Morrowind or Oblivion bounding box."""
+        """Export a NiNode or BSBounds block."""
 
         if bsbound:
             self.export_bsbound(b_obj, n_parent_node)
@@ -96,8 +96,8 @@ class Bound(CollisionCommon):
         trans.z = (box_extends[2][0] + box_extends[2][1]) * 0.5 + b_obj.location[2]
         n_bbox.rotation.set_identity()
         n_bbox.has_bounding_box = True
-        # Ninode's(n_bbox) behaves like a seperate mesh.
-        # bounding_box center(n_bbox.bounding_box.trans) is relative to the bound_box
+        # NiNode's bounding box behaves like a separate mesh
+        # Bounding box center is relative to the bounding box
         n_bbox.bounding_box.translation.deepcopy(trans)
         n_bbox.bounding_box.rotation.set_identity()
 
