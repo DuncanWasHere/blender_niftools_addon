@@ -41,14 +41,14 @@ import nose
 
 import bpy
 
-from io_scene_niftools.modules.nif_export.property.texture import TextureSlotManager
+from io_scene_niftools.modules.nif_export.property.texture import TextureProperty
 
 
 class TestTextureSlotManager:
 
     @classmethod
     def setUpClass(cls):
-        cls.texture_helper = TextureSlotManager()
+        cls.texture_helper = TextureProperty()
 
     def setup(self):
         self.b_mat = bpy.data.materials.new("test_material")

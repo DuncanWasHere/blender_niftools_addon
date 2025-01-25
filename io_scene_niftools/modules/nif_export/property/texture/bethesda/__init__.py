@@ -37,80 +37,89 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from io_scene_niftools.modules.nif_export.property.texture import TextureWriter, TextureSlotManager
+
+from io_scene_niftools.modules.nif_export.property.texture import TextureProperty
+from io_scene_niftools.modules.nif_export.property.texture.common import TextureWriter
 from io_scene_niftools.utils.consts import TEX_SLOTS
 from io_scene_niftools.utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
 
 
-class BSShaderTexture(TextureSlotManager):
-
+class BSShaderTextureSet(TextureProperty):
     __instance = None
 
     @staticmethod
     def get():
-        """ Static access method. """
-        if BSShaderTexture.__instance is None:
-            BSShaderTexture()
-        return BSShaderTexture.__instance
+        """Static access method."""
+        if BSShaderTextureSet.__instance is None:
+            BSShaderTextureSet()
+        return BSShaderTextureSet.__instance
 
     def __init__(self):
-        """ Virtually private constructor. """
-        if BSShaderTexture.__instance is not None:
+        """Virtually private constructor."""
+        if BSShaderTextureSet.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
             super().__init__()
-            BSShaderTexture.__instance = self
+            BSShaderTextureSet.__instance = self
 
-    def export_bs_effect_shader_prop_textures(self, bsshader):
-        bsshader.texture_set = self._create_textureset()
+    def export_bs_effect_shader_property_textures(self, n_bs_effect_shader_property):
+        n_bs_effect_shader_property.texture_set = self.__export_bs_shader_texture_set()
 
         if self.slots[TEX_SLOTS.BASE]:
-            bsshader.source_texture = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.BASE])
+            n_bs_effect_shader_property.source_texture = TextureWriter.export_texture_filename(
+                self.slots[TEX_SLOTS.BASE])
         if self.slots[TEX_SLOTS.GLOW]:
-            bsshader.greyscale_texture = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.GLOW])
+            n_bs_effect_shader_property.greyscale_texture = TextureWriter.export_texture_filename(
+                self.slots[TEX_SLOTS.GLOW])
 
         # get the offset, scale and UV wrapping mode and set them
-        self.export_uv_transform(bsshader)
+        self.export_uv_transform(n_bs_effect_shader_property)
 
-    def export_bs_lighting_shader_prop_textures(self, bsshader):
-        texset = self._create_textureset()
-        bsshader.texture_set = texset
+    def export_bs_lighting_shader_property_textures(self, n_bs_lighting_shader_property):
+        n_bs_shader_texture_set = self.__export_bs_shader_texture_set()
+        n_bs_lighting_shader_property.texture_set = n_bs_shader_texture_set
 
         # Add in extra texture slots
-        texset.num_textures = 9
-        existing_textures = texset.textures[:]
-        texset.reset_field("textures")
-        texset.textures[:len(existing_textures)] = existing_textures
+        n_bs_shader_texture_set.num_textures = 9
+        existing_textures = n_bs_shader_texture_set.textures[:]
+        n_bs_shader_texture_set.reset_field("textures")
+        n_bs_shader_texture_set.textures[:len(existing_textures)] = existing_textures
 
         if self.slots[TEX_SLOTS.DECAL_0]:
-            texset.textures[6] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.DECAL_0])
+            n_bs_shader_texture_set.textures[6] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.DECAL_0])
 
         if self.slots[TEX_SLOTS.GLOSS]:
-            texset.textures[7] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.GLOSS])
+            n_bs_shader_texture_set.textures[7] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.GLOSS])
 
         # get the offset, scale and UV wrapping mode and set them
-        self.export_uv_transform(bsshader)
+        self.export_uv_transform(n_bs_lighting_shader_property)
 
-    def export_bs_shader_pp_lighting_prop_textures(self, bsshader):
-        bsshader.texture_set = self._create_textureset()
+    def export_bs_shader_pp_lighting_property_textures(self, n_bs_shader_pp_lighting_property):
+        n_bs_shader_pp_lighting_property.texture_set = self.__export_bs_shader_texture_set()
 
-    def _create_textureset(self):
-        texset = NifClasses.BSShaderTextureSet(NifData.data)
+    def __export_bs_shader_texture_set(self):
+        n_bs_shader_texture_set = NifClasses.BSShaderTextureSet(NifData.data)
 
         if self.slots[TEX_SLOTS.BASE]:
-            texset.textures[0] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.BASE])
+            n_bs_shader_texture_set.textures[0] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.BASE])
 
         if self.slots[TEX_SLOTS.NORMAL]:
-            texset.textures[1] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.NORMAL])
+            n_bs_shader_texture_set.textures[1] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.NORMAL])
 
         if self.slots[TEX_SLOTS.GLOW]:
-            texset.textures[2] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.GLOW])
+            n_bs_shader_texture_set.textures[2] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.GLOW])
 
         if self.slots[TEX_SLOTS.DETAIL]:
-            texset.textures[3] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.DETAIL])
+            n_bs_shader_texture_set.textures[3] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.DETAIL])
 
-        return texset
+        if self.slots[TEX_SLOTS.ENV_MAP]:
+            n_bs_shader_texture_set.textures[4] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.ENV_MAP])
+
+        if self.slots[TEX_SLOTS.ENV_MASK]:
+            n_bs_shader_texture_set.textures[5] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.ENV_MASK])
+
+        return n_bs_shader_texture_set
 
     def export_uv_transform(self, shader):
         # get the offset, scale and UV wrapping mode and set them

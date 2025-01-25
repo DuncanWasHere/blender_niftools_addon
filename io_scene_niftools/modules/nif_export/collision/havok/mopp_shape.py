@@ -65,7 +65,7 @@ class BhkMOPPShape(BhkCollisionCommon):
 
         # Export the shape block
         n_bhk_packed_ni_tri_strips_shape = self.__export_bhk_packed_ni_tri_strips_shape(b_col_obj,
-                                                                                     n_bhk_mopp_bv_tree_shape)
+                                                                                        n_bhk_mopp_bv_tree_shape)
 
         # Export the shape data block
         self.__export_hk_packed_ni_tri_strips_data(b_col_obj, n_bhk_packed_ni_tri_strips_shape,
@@ -135,7 +135,7 @@ class BhkMOPPShape(BhkCollisionCommon):
 
         for face in b_mesh.polygons:
             if len(face.vertices) < 3:
-                continue # Ignore degenerate polygons
+                continue  # Ignore degenerate polygons
 
             material_idx = face.material_index
 

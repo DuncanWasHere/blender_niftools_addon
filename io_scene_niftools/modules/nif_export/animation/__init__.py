@@ -71,7 +71,7 @@ class Animation:
         NifLog.info(f"Exporting animations...")
 
         if not bpy.data.actions:
-            return # No animation data in the scene
+            return  # No animation data in the scene
 
         # Group NLA strips, by track name, into lists of controller sequences
         # NLA track name = Dict key = Sequence name
@@ -150,7 +150,7 @@ class Animation:
         n_ni_default_av_object_palette.scene = n_root_node
 
     def export_ni_controller_sequence(self, n_sequence_name, b_controlled_blocks, n_accum_root_name,
-                                      n_ni_controller_manager = None):
+                                      n_ni_controller_manager=None):
         """
         Export a NiControllerSequence block.
         Controlled blocks must be a set of ordered pairs: (NLA strip, Blender object).
@@ -180,10 +180,11 @@ class Animation:
         else:
             n_ni_controller_sequence.cycle_type = NifClasses.CycleType['CYCLE_CLAMP']
 
-        n_ni_controller_sequence.start_time = min(b_controlled_blocks,
-                                                  key=lambda b_controlled_block: b_controlled_block[0].frame_start)
-        n_ni_controller_sequence.stop_time = max(b_controlled_blocks,
-                                                 key=lambda b_controlled_block: b_controlled_block[0].frame_end)
+        b_start_frames = [block[0].frame_start for block in b_controlled_blocks]
+        b_end_frames = [block[0].frame_end for block in b_controlled_blocks]
+
+        n_ni_controller_sequence.start_time = min(b_start_frames) / self.fps
+        n_ni_controller_sequence.stop_time = max(b_end_frames) / self.fps
 
         # Export the controlled blocks and text keys
         self.export_controlled_blocks(n_ni_controller_sequence, b_controlled_blocks)
@@ -195,13 +196,14 @@ class Animation:
         # Export a controlled block for each controller type in the action's keying set
         # self.geometry_animation_helper.export_geometry_animations(n_ni_controller_sequence, b_controlled_blocks)
         # self.material_animation_helper.export_material_animations(n_ni_controller_sequence, b_controlled_blocks)
-        self.object_animation_helper.export_object_animations(n_ni_controller_sequence, b_controlled_blocks)
-        self.particle_animation_helper.export_particle_animations(n_ni_controller_sequence, b_controlled_blocks)
+        # self.object_animation_helper.export_object_animations(n_ni_controller_sequence, b_controlled_blocks)
+        # self.particle_animation_helper.export_particle_animations(n_ni_controller_sequence, b_controlled_blocks)
         # self.shader_animation_helper.export_shader_animations(n_ni_controller_sequence, b_controlled_blocks)
         self.texture_animation_helper.export_texture_animations(b_controlled_blocks, n_ni_controller_sequence)
 
     def export_text_keys(self, n_ni_controller_sequence, b_controlled_blocks):
         return
+
 
 '''
         if bpy.context.scene.niftools_scene.game == 'MORROWIND':

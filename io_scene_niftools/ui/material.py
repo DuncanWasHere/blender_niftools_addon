@@ -42,9 +42,9 @@ from bpy.types import Panel
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 
 
-class MaterialFlagPanel(Panel):
-    bl_label = "Niftools Material Flags Panel"
-    bl_idname = "NIFTOOLS_PT_MaterialFlagPanel"
+class MaterialPanel(Panel):
+    bl_label = "NifTools Material"
+    bl_idname = "NIFTOOLS_PT_MaterialPanel"
 
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -56,56 +56,23 @@ class MaterialFlagPanel(Panel):
             return True
 
     def draw(self, context):
-        matalpha = context.material.niftools_alpha
+        matalpha = context.material.niftools
 
         layout = self.layout
         row = layout.column()
 
-        row.prop(matalpha, "alphaflag")
         row.prop(matalpha, "materialflag")
         row.prop(matalpha, "textureflag")
 
 
-class MaterialColorPanel(Panel):
-    bl_label = "Niftools Material Color Panel"
-    bl_idname = "NIFTOOLS_PT_MaterialColorPanel"
-
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = "material"
-
-    @classmethod
-    def poll(cls, context):
-        if context.material:
-            return True
-
-    def draw(self, context):
-        mat = context.material.niftools
-
-        layout = self.layout
-        row = layout.column()
-        col = row.column()
-        # col.prop(mat, "ambient_preview")
-        col.prop(mat, "ambient_color", text="")
-        # col.prop(mat, "emissive_preview")
-        col.prop(mat, "emissive_color", text="")
-        col.prop(mat, "emissive_alpha")
-        col.prop(mat, "lightingeffect1")
-        col.prop(mat, "lightingeffect2")
-
-
 CLASSES = [
-    MaterialColorPanel,
-    MaterialFlagPanel
+    MaterialPanel
 ]
 
 
 def register():
     register_classes(CLASSES, __name__)
-    #
-    # bpy.types.MATERIAL_PT_shading.prepend(MaterialColorPanel)
 
 
 def unregister():
-    # bpy.types.MATERIAL_PT_shading.remove(MaterialColorPanel)
     unregister_classes(CLASSES, __name__)

@@ -46,8 +46,7 @@ from io_scene_niftools.utils.decorators import register_classes, unregister_clas
 from nifgen.formats.nif import classes as NifClasses
 
 
-class ShaderProps(PropertyGroup):
-
+class ShaderProperty(PropertyGroup):
     bs_shadertype: EnumProperty(
         name='Shader Type',
         description='Type of property used to display meshes',
@@ -57,7 +56,11 @@ class ShaderProps(PropertyGroup):
             ('BSShaderPPLightingProperty', 'BS Shader PP Lighting Property', "", 2),
             ('BSLightingShaderProperty', 'BS Lighting Shader Property', "", 3),
             ('BSEffectShaderProperty', 'BS Effect Shader Property', "", 4),
-            ('BSShaderNoLightingProperty', 'BS Shader No Lighting Property', "", 5)
+            ('BSShaderNoLightingProperty', 'BS Shader No Lighting Property', "", 5),
+            ('SkyShaderProperty', 'Sky Shader Property', "", 6),
+            ('TallGrasShaderProperty', 'Tall Grass Shader Property', "", 7),
+            ('TileShaderProperty', 'Tile Shader Property', "", 8),
+            ('WaterShaderProperty', 'Water Shader Property', "", 9)
         )
     )
 
@@ -84,7 +87,7 @@ def prettify_prop_name(property_name):
     return prettified
 
 
-annotations_dict = ShaderProps.__dict__.get('__annotations__', None)
+annotations_dict = ShaderProperty.__dict__.get('__annotations__', None)
 if annotations_dict:
     for flag_field in (NifClasses.BSShaderFlags,
                        NifClasses.BSShaderFlags2,
@@ -94,16 +97,15 @@ if annotations_dict:
             if property_name not in annotations_dict:
                 annotations_dict[property_name] = BoolProperty(name=prettify_prop_name(property_name))
 
-
 CLASSES = [
-    ShaderProps
+    ShaderProperty
 ]
 
 
 def register():
     register_classes(CLASSES, __name__)
 
-    bpy.types.Material.niftools_shader = bpy.props.PointerProperty(type=ShaderProps)
+    bpy.types.Material.niftools_shader = bpy.props.PointerProperty(type=ShaderProperty)
 
 
 def unregister():

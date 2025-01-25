@@ -58,7 +58,6 @@ class Material:
         blend_enable = 1 & n_alpha_prop.flags
         test_enable = (1 << 9) & n_alpha_prop.flags
 
-
         b_mat.niftools_alpha.alphaflag = n_alpha_prop.flags
 
         return b_mat
@@ -84,7 +83,7 @@ class Material:
     def import_material_gloss(b_mat, glossiness):
         # convert glossiness, range [0,inf), with high values leading to sharp reflections, to roughness, range [0,1],
         # where low values give sharp reflections
-        b_mat.roughness = 1/(glossiness+1)
+        b_mat.roughness = 1 / (glossiness + 1)
 
     @staticmethod
     def import_material_alpha(b_mat, n_alpha):

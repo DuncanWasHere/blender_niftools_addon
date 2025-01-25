@@ -72,7 +72,7 @@ def hull_box(ob, me, selected_only):
         [[0,1,3,2],[6,7,5,4],[0,2,6,4],[3,1,5,7],[4,5,1,0],[7,6,2,3]])
 
     # link box to scene and set transform
-    scn = Blender.Scene.GetCurrent()
+    scn = Blender.SceneProperty.GetCurrent()
     boxob = scn.objects.new(box, 'box')
     boxob.setMatrix(ob.getMatrix('worldspace'))
 
@@ -118,7 +118,7 @@ def hull_sphere(ob, me, selected_only):
         [[0,1,3,2],[6,7,5,4],[0,2,6,4],[3,1,5,7],[4,5,1,0],[7,6,2,3]])
 
     # link box to scene and set transform
-    scn = Blender.Scene.GetCurrent()
+    scn = Blender.SceneProperty.GetCurrent()
     boxob = scn.objects.new(box, 'sphere')
     boxob.setMatrix(ob.getMatrix('worldspace'))
 
@@ -142,7 +142,7 @@ def hull_convex(ob, me, selected_only, precision = 0.1):
         box.faces.extend(triangle)
 
     # link mesh to scene and set transform
-    scn = Blender.Scene.GetCurrent()
+    scn = Blender.SceneProperty.GetCurrent()
     boxob = scn.objects.new(box, 'convexpoly')
     boxob.setMatrix(ob.getMatrix('worldspace'))
 

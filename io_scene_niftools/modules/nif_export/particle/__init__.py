@@ -77,5 +77,3 @@ class Particle:
 
     def export_ni_p_sys_emitter(self, b_p_obj, n_ni_particle_system):
         return
-
-

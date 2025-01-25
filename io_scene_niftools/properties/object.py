@@ -48,29 +48,28 @@ from bpy.types import PropertyGroup
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 from nifgen.formats.nif import classes as NifClasses
 
-
-prn_map = {"OBLIVION":   [("SideWeapon", ""),
-                          ("BackWeapon", ""),
-                          ("Bip01 L ForearmTwist", "Used for shields"),
-                          ("Torch", ""),
-                          ("Quiver", ""),
-                          ("Bip01 Head", "Used for helmets"),
-                          ("Bip01 R Finger1", "Used for rings")],
-           "FALLOUT_3":  [("Weapon", ""),
-                          ("Bip01 Head", "Used for helmets"),
-                          ("Bip01 R Finger1", "")],
-           "SKYRIM":     [("WeaponDagger", ""),
-                          ("WeaponBack", ""),
-                          ("WeaponBow", ""),
-                          ("WeaponMace", ""),
-                          ("SHIELD", ""),
-                          ("WeaponStaff", ""),
-                          ("WeaponSword", ""),
-                          ("WeaponAxe", ""),
-                          ("QUIVER", ""),
-                          ("SHIELD", ""),
-                          ("NPC Head [Head]", "Used for helmets"),
-                          ("NPC R Finger10 [RF10]", "Used for rings")]
+prn_map = {"OBLIVION": [("SideWeapon", ""),
+                        ("BackWeapon", ""),
+                        ("Bip01 L ForearmTwist", "Used for shields"),
+                        ("Torch", ""),
+                        ("Quiver", ""),
+                        ("Bip01 Head", "Used for helmets"),
+                        ("Bip01 R Finger1", "Used for rings")],
+           "FALLOUT_3": [("Weapon", ""),
+                         ("Bip01 Head", "Used for helmets"),
+                         ("Bip01 R Finger1", "")],
+           "SKYRIM": [("WeaponDagger", ""),
+                      ("WeaponBack", ""),
+                      ("WeaponBow", ""),
+                      ("WeaponMace", ""),
+                      ("SHIELD", ""),
+                      ("WeaponStaff", ""),
+                      ("WeaponSword", ""),
+                      ("WeaponAxe", ""),
+                      ("QUIVER", ""),
+                      ("SHIELD", ""),
+                      ("NPC Head [Head]", "Used for helmets"),
+                      ("NPC R Finger10 [RF10]", "Used for rings")]
            }
 prn_map["FALLOUT_NV"] = prn_map["FALLOUT_3"]
 prn_map["SKYRIM_SE"] = prn_map["SKYRIM"]
@@ -112,28 +111,28 @@ class BsInventoryMarker(PropertyGroup):
 
 prn_versioned_arguments = {}
 if bpy.app.version >= (3, 3, 0):
-    prn_versioned_arguments['search'] = lambda self, context, edit_text: prn_map.get(context.scene.niftools_scene.game, [])
+    prn_versioned_arguments['search'] = lambda self, context, edit_text: prn_map.get(context.scene.niftools_scene.game,
+                                                                                     [])
+
 
 class ObjectProperty(PropertyGroup):
-
     nodetype: EnumProperty(
         name='Node Type',
         description='Type of node this empty represents',
         items=(
-              ('NiNode', 'NiNode', "", 0),
-              ('BSFadeNode', 'BSFadeNode', "", 1),
-              ('NiLODNode', 'NiLODNode', "", 2),
-              ('NiBillboardNode', 'NiBillboardNode', "", 3),
-              ('BSBlastNode', 'BSBlastNode', "", 4),
-              ('BSDamageStage', 'BSDamageStage', "", 5),
-              ('BSDebrisNode', 'BSDebrisNode', "", 6),
-              ('BSMultiBoundNode', 'BSMultiBoundNode', "", 7),
-              ('BSOrderedNode', 'BSOrderedNode', "", 8),
-              ('BSValueNode', 'BSValueNode', "", 9),
-              ('BSMasterParticleSystem', 'BSMasterParticleSystem', "", 10)),
+            ('NiNode', 'NiNode', "", 0),
+            ('BSFadeNode', 'BSFadeNode', "", 1),
+            ('NiLODNode', 'NiLODNode', "", 2),
+            ('NiBillboardNode', 'NiBillboardNode', "", 3),
+            ('BSBlastNode', 'BSBlastNode', "", 4),
+            ('BSDamageStage', 'BSDamageStage', "", 5),
+            ('BSDebrisNode', 'BSDebrisNode', "", 6),
+            ('BSMultiBoundNode', 'BSMultiBoundNode', "", 7),
+            ('BSOrderedNode', 'BSOrderedNode', "", 8),
+            ('BSValueNode', 'BSValueNode', "", 9),
+            ('BSMasterParticleSystem', 'BSMasterParticleSystem', "", 10)),
         default='NiNode',
     )
-
 
     prn_location: StringProperty(
         name='Weapon Location',
@@ -192,6 +191,3 @@ def unregister():
     del bpy.types.Object.niftools
 
     unregister_classes(CLASSES, __name__)
-
-
-

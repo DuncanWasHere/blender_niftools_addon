@@ -39,15 +39,17 @@
 
 
 import bpy
+
 from io_scene_niftools.modules.nif_export import types
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.geometry import Geometry
 from io_scene_niftools.modules.nif_export.object.armature import Armature
-from io_scene_niftools.modules.nif_export.property.object import ObjectDataProperty
+from io_scene_niftools.modules.nif_export.property.object import ObjectProperty
 from io_scene_niftools.utils import math
 from io_scene_niftools.utils.logging import NifLog
 
-DICT_NAMES = {} # Dictionary to map Blender object names to NIF blocks
+DICT_NAMES = {}  # Dictionary to map Blender object names to NIF blocks
+
 
 class Object:
     """
@@ -56,31 +58,32 @@ class Object:
     Geometry is handled by a helper class.
     """
 
-    export_types = ('EMPTY', 'MESH', 'ARMATURE')
-
     def __init__(self):
         self.armature_helper = Armature()
         self.mesh_helper = Geometry()
-        self.object_property_helper = ObjectDataProperty()
+        self.object_property_helper = ObjectProperty()
 
         self.b_exportable_objects = []
 
         self.n_root_node = None
         self.target_game = None
 
-    def export_objects(self, b_root_objects, target_game, file_base):
+    def export_objects(self, b_root_objects, b_exportable_objects, target_game, file_base):
         """
         Export the root node and all valid child objects into the NIF.
         Use Blender root object if there is only one, otherwise create a meta root.
         """
 
+        self.b_exportable_objects = b_exportable_objects
         self.target_game = target_game
         self.n_root_node = None
+
+        b_obj = None
 
         if len(b_root_objects) == 1:
             # There is only one root object, so use it as the root
             b_obj = b_root_objects[0]
-            self.export_object_hierarchy(b_obj,None, n_node_type=b_obj.niftools.nodetype)
+            self.export_object_hierarchy(b_obj, None, n_node_type=b_obj.niftools.nodetype)
         else:
             # There is more than one root object, so create a meta root
             NifLog.info(f"Created meta root because Blender scene had {len(b_root_objects)} root objects.")
@@ -90,9 +93,7 @@ class Object:
                 self.export_object_hierarchy(b_obj, self.n_root_node)
 
         # Export extra data
-        self.object_property_helper.export_bs_x_flags(self.n_root_node, b_root_objects)
-        self.object_property_helper.export_inventory_marker(self.n_root_node, b_obj)
-        self.object_property_helper.export_weapon_location(self.n_root_node, b_obj)
+        self.object_property_helper.export_root_node_properties(self.n_root_node, b_obj)
         types.export_furniture_marker(self.n_root_node, file_base)
 
         return self.n_root_node
@@ -121,10 +122,11 @@ class Object:
                 n_ni_geometry = self.mesh_helper.export_geometry(b_obj, n_parent_node, self.n_root_node)
                 if not self.n_root_node:
                     self.n_root_node = n_ni_geometry
+                DICT_NAMES[b_obj.name] = n_ni_geometry
                 return n_ni_geometry
 
             # Mesh with armature parent should not have animation!
-            if b_obj.parent and b_obj.parent.type == 'ARMATURE' and b_obj.animation_data.action:
+            if b_obj.parent and b_obj.parent.type == 'ARMATURE' and b_obj.animation_data and b_obj.animation_data.action:
                 NifLog.warn(f"Mesh {b_obj.name} is skinned but also has object animation! "
                             f"The NIF format does not support this. Ignoring...")
 
@@ -139,11 +141,11 @@ class Object:
             n_parent_node.add_child(n_node)
 
         # And fill in this node's properties
-        n_node.name = block_store.get_full_name(b_obj) # Name
-        self.set_object_flags(b_obj, n_node) # Object Flags
-        math.set_object_matrix(b_obj, n_node) # Transforms
+        n_node.name = block_store.get_full_name(b_obj)  # Name
+        math.set_object_matrix(b_obj, n_node)  # Transforms
+        self.set_object_flags(b_obj, n_node)  # Object flags
 
-        self.object_property_helper.export_upb(n_node, b_obj) # Extra Data
+        self.object_property_helper.export_object_properties(b_obj, n_node)  # Object properties
 
         if b_obj.type == 'MESH':
             # If b_obj is a multi-material mesh, export the geometries as children of this node
@@ -171,53 +173,6 @@ class Object:
         DICT_NAMES[b_obj.name] = n_node
         return n_node
 
-    def get_export_objects(self):
-        """
-        Get all exportable objects.
-        Separate into lists for root nodes, collision objects, constraints, and particle systems.
-        """
-
-        # Only export empties, meshes, and armatures
-        self.b_exportable_objects = [b_obj for b_obj in bpy.context.scene.objects if b_obj.type in self.export_types]
-
-        # Find all objects that do not have a parent
-        b_root_objects = [b_obj for b_obj in self.b_exportable_objects if not b_obj.parent]
-
-        # Split collision objects into separate list
-        b_collision_objects = [b_obj for b_obj in self.b_exportable_objects if b_obj.rigid_body]
-        for b_obj in b_collision_objects:
-            if b_obj in self.b_exportable_objects:
-                self.b_exportable_objects.remove(b_obj)
-            if b_obj in b_root_objects:
-                NifLog.warn(f"Collision object {b_obj} is a root node. "
-                            f"It will be exported under a dummy parent node.")
-                b_collision_objects.remove(b_obj)
-
-        # Split constraints into separate list
-        b_constraint_objects = [b_obj for b_obj in self.b_exportable_objects if b_obj.rigid_body_constraint]
-        for b_obj in b_constraint_objects:
-            if b_obj in self.b_exportable_objects:
-                self.b_exportable_objects.remove(b_obj)
-            if b_obj in b_root_objects:
-                NifLog.warn(f"Constraint {b_obj} is a root node. "
-                            f"It will be exported under a dummy parent node.")
-                b_constraint_objects.remove(b_obj)
-                
-        # Split particle systems into separate list
-        b_particle_objects = [b_obj for b_obj in self.b_exportable_objects if b_obj.particle_systems]
-        for b_obj in b_particle_objects:
-            if b_obj in self.b_exportable_objects:
-                self.b_exportable_objects.remove(b_obj)
-            if b_obj in b_root_objects:
-                NifLog.warn(f"Particle system {b_obj} is a root node. "
-                            f"It will be exported under a dummy parent node.")
-
-        return (self.b_exportable_objects,
-                b_root_objects,
-                b_collision_objects,
-                b_constraint_objects,
-                b_particle_objects)
-
     def set_object_flags(self, b_obj, n_node):
         """Set node object flags if not already set in the properties panel."""
 
@@ -234,4 +189,4 @@ class Object:
             elif self.target_game == 'DIVINITY_2':
                 n_node.flags = 0x0310
             else:
-                n_node.flags = 0x000C # Morrowind
+                n_node.flags = 0x000C  # Morrowind

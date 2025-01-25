@@ -119,7 +119,7 @@ class SMRailroadsTestSuite(TestSuite):
     def run(self):
         nif_import = self.test(
             filename = 'test/nif/smrailroads1.nif')
-        root_block = nif_import.root_blocks[0]
+        root_block = nif_import.n_root_blocks[0]
         # this is a generic regression test of the test itself
         # the original nif MUST pass it (if not there is a bug in the
         # testing code)
@@ -144,7 +144,7 @@ class SMRailroadsTestSuite(TestSuite):
             filename = 'test/nif/_smrailroads1.nif',
             config = dict(game = 'SID_MEIER_S_RAILROADS'),
             selection = ['Test'])
-        root_block = nif_export.root_blocks[0]
+        root_block = nif_export.n_root_blocks[0]
 
         # check exported specularity
         self.info("Checking specular color export.")

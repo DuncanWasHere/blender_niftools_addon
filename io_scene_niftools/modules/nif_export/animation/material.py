@@ -51,12 +51,7 @@ class MaterialAnimation(AnimationCommon):
     def export_material_animations(self, b_material, n_mat_prop):
         """Export material animations for given geometry."""
 
-
-
-
-        
         self.export_material_controllers(b_material, n_mat_prop)
-
 
     def export_material_controllers(self, b_material, n_mat_prop):
         """Export material animation data for given geometry."""
@@ -123,5 +118,3 @@ class MaterialAnimation(AnimationCommon):
             n_mat_ipol.data = n_key_data
             # attach block to material property
             n_mat_prop.add_controller(n_mat_ctrl)
-
-

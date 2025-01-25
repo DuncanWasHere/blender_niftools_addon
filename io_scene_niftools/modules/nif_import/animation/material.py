@@ -89,7 +89,8 @@ class MaterialAnimation(Animation):
                     break
         else:
             return
-        NifLog.info(f"Importing material color controller for target color {n_target_color} into blender channel {b_channel}")
+        NifLog.info(
+            f"Importing material color controller for target color {n_target_color} into blender channel {b_channel}")
         b_mat_action = self.create_action(b_material, "MaterialAction")
         n_ctrl_data = self.get_controller_data(n_ctrl)
         interp = self.get_b_interp_from_n_interp(n_ctrl_data.interpolation)
@@ -119,7 +120,8 @@ class MaterialAnimation(Animation):
                 # UV V coordinate is inverted in blender
                 if 1 == LOC_DP and array_ind == 1:
                     keys = [-key for key in keys]
-                self.add_keys(b_mat_action, f'nodes["{transform.name}"].inputs[{data_path}].default_value', (array_ind,), n_ctrl.flags, times, keys, interp)
+                self.add_keys(b_mat_action, f'nodes["{transform.name}"].inputs[{data_path}].default_value',
+                              (array_ind,), n_ctrl.flags, times, keys, interp)
                 self.set_max_key_time()
 
     def import_tex_transform_controller(self, b_material, n_geom):
@@ -190,4 +192,3 @@ class MaterialAnimation(Animation):
             tree.links.new(from_socket, transform.inputs[0])
             tree.links.new(transform.outputs[0], to_socket)
         return b_mat_action, transform
-

@@ -140,7 +140,8 @@ class BhkCollision(BhkCollisionCommon):
         if b_col_shape in ('BOX', 'SPHERE') and not b_col_obj.matrix_world.is_identity:
             n_bhk_rigid_body = block_store.create_block("bhkRigidBodyT", b_col_obj)
             translation = b_col_obj.matrix_world.to_translation()
-            n_bhk_rigid_body.rigid_body_info.translation = NifClasses.Vector4.from_value([translation.x, translation.y, translation.z, 0.0])
+            n_bhk_rigid_body.rigid_body_info.translation = NifClasses.Vector4.from_value(
+                [translation.x, translation.y, translation.z, 0.0])
             rotation = b_col_obj.matrix_world.to_quaternion()
             n_bhk_rigid_body.rigid_body_info.rotation.x = rotation.x
             n_bhk_rigid_body.rigid_body_info.rotation.y = rotation.y
@@ -152,8 +153,8 @@ class BhkCollision(BhkCollisionCommon):
 
         n_bhk_collision_object.body = n_bhk_rigid_body
 
-        b_r_body = b_col_obj.rigid_body # Blender rigid body object
-        n_r_info = n_bhk_rigid_body.rigid_body_info # bhkRigidBody block
+        b_r_body = b_col_obj.rigid_body  # Blender rigid body object
+        n_r_info = n_bhk_rigid_body.rigid_body_info  # bhkRigidBody block
 
         n_bhk_rigid_body.havok_filter.layer = int(b_col_obj.nifcollision.collision_layer)
         n_bhk_rigid_body.havok_filter.flags = b_col_obj.nifcollision.col_filter

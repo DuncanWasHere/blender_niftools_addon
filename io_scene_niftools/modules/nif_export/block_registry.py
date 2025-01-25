@@ -58,7 +58,7 @@ class ExportBlockRegistry:
         self._block_to_obj = {}
 
     @property
-    def block_to_obj(self): 
+    def block_to_obj(self):
         return self._block_to_obj
 
     @block_to_obj.setter

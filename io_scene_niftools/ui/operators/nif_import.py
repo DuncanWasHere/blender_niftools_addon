@@ -187,6 +187,7 @@ class OperatorImportOverrideArmatureOrientationPanel(OperatorSetting, Panel):
         layout.prop(operator, "axis_forward")
         layout.prop(operator, "axis_up")
 
+
 class OperatorImportAnimationPanel(OperatorSetting, Panel):
     bl_options = {'DEFAULT_CLOSED'}
 

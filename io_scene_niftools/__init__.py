@@ -36,6 +36,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
+
+
 import os
 import sys
 
@@ -44,7 +46,8 @@ from io_scene_niftools.utils import logging, debugging
 from io_scene_niftools.utils.decorators import register_modules, unregister_modules
 from io_scene_niftools.utils.logging import NifLog
 
-# Blender addon info.
+
+# Blender addon info
 bl_info = {
     "name": "NifTools Add-on",
     "description": "Import and export files in the NetImmerse/Gamebryo formats (.nif, .kf, .egm)",
@@ -58,8 +61,8 @@ bl_info = {
     "support": "COMMUNITY",
     "category": "Import-Export"
 }
-global current_dir
 
+global current_dir
 
 def locate_dependencies():
     # Python dependencies are bundled inside the io_scene_nif/dependencies folder
@@ -72,21 +75,20 @@ def locate_dependencies():
 
     with open(os.path.join(current_dir, "VERSION.txt")) as version:
         NifLog.info(f"Loading: Blender NifTools Add-on: {version.read()}")
-        import nifgen.formats.nif as NifFormat
-        NifLog.info(f"Loading: NIF Format: {NifFormat.__xml_version__}") # TODO [generated]: update this and library to have actual versioning
 
+        import nifgen.formats.nif as NifFormat
+
+        # TODO [generated]: Update this and library to have actual versioning
+        NifLog.info(f"Loading: NIF Format: {NifFormat.__xml_version__}")
 
 locate_dependencies()
 logging.init_loggers()
-
 
 def retrieve_ordered_submodules():
     from . import properties, operators, ui, update
     return [update, properties, operators, ui]
 
-
 MODS = retrieve_ordered_submodules()
-
 
 def register():
     # Addon updater code and configurations in case of broken version, try to register the updater first
@@ -96,12 +98,10 @@ def register():
 
     register_modules(MODS, __name__)
 
-
 def unregister():
     # Addon updater unregister
     unregister_modules(MODS, __name__)
     addon_updater_ops.unregister()
-
 
 def select_zip_file(self, tag):
     """Select the latest build artifact binary."""
@@ -111,13 +111,13 @@ def select_zip_file(self, tag):
         link = tag["assets"][0]["browser_download_url"]
     return link
 
-
 def configure_autoupdater():
     NifLog.debug("Configuring auto-updater")
     addon_updater_ops.register(bl_info)
     addon_updater_ops.updater.select_link = select_zip_file
     addon_updater_ops.updater.use_releases = True
-    addon_updater_ops.updater.remove_pre_update_patterns = ["*.py", "*.pyc", "*.xml", "*.exe", "*.rst", "VERSION", "*.xsd"]
+    addon_updater_ops.updater.remove_pre_update_patterns = ["*.py", "*.pyc", "*.xml", "*.exe",
+                                                            "*.rst", "VERSION", "*.xsd"]
     addon_updater_ops.updater.user = "DuncanWasHere"
     addon_updater_ops.updater.repo = "blender_niftools_addon"
     addon_updater_ops.updater.website = "https://github.com/DuncanWasHere/blender_niftools_addon"

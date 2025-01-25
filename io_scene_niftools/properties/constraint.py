@@ -38,8 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from bpy.props import (FloatProperty,
-                       )
+from bpy.props import (FloatProperty)
 from bpy.types import PropertyGroup
 
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes

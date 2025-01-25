@@ -68,14 +68,14 @@ class ArmatureTestSuite(TestSuite):
         assert(b_lod0.modifiers[0].type == Blender.Modifier.Types.ARMATURE)
         assert(b_lod1.modifiers[0].type == Blender.Modifier.Types.ARMATURE)
         # test stuff
-        check_armature(nif_import.root_blocks[0])
+        check_armature(nif_import.n_root_blocks[0])
         # export
         nif_export = self.test(
             filename='test/nif/ee2/_lodtest-skinned.nif',
             config=dict(game = 'EMPIRE_EARTH_II'),
             selection = ['LodTestSkinned'])
         # test stuff
-        check_armature(nif_export.root_blocks[0])
+        check_armature(nif_export.n_root_blocks[0])
 
 suite = ArmatureTestSuite("armature")
 suite.run()

@@ -48,7 +48,6 @@ from nifgen.formats.nif import classes as NifClasses
 
 
 class TextureLoader:
-
     external_textures = set()
 
     @staticmethod
@@ -75,7 +74,8 @@ class TextureLoader:
         if not source:
             return None
 
-        if isinstance(source, NifClasses.NiSourceTexture) and not source.use_external and NifOp.props.use_embedded_texture:
+        if isinstance(source,
+                      NifClasses.NiSourceTexture) and not source.use_external and NifOp.props.use_embedded_texture:
             return self.import_embedded_texture_source(source)
         else:
             return self.import_external_source(source)

@@ -89,7 +89,8 @@ class NifImport(NifCommon):
             # to armature' mode
             if NifOp.props.process == "GEOMETRY_ONLY":
                 if len(self.SELECTED_OBJECTS) != 1 or self.SELECTED_OBJECTS[0].type != 'ARMATURE':
-                    raise io_scene_niftools.utils.logging.NifError("You must select exactly one armature in 'Import Geometry Only' mode.")
+                    raise io_scene_niftools.utils.logging.NifError(
+                        "You must select exactly one armature in 'Import Geometry Only' mode.")
 
             NifLog.info("Importing data")
             # calculate and set frames per second

@@ -1,5 +1,6 @@
 """Common functions shared between constraint export classes."""
 
+
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.
@@ -73,8 +74,6 @@ class ConstraintCommon:
 
     def calculate_twist_angle(self, b_constr, b_constr_obj, n_bhk_constraint):
         return (n_twist_angle_a, n_twist_angle_b)
-
-
 
 
 '''

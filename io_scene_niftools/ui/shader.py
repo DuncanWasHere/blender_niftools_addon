@@ -43,7 +43,7 @@ from nifgen.formats.nif import classes as NifClasses
 
 
 class ShaderPanel(Panel):
-    bl_label = "Niftools Shader Panel"
+    bl_label = "NifTools Shader"
     bl_idname = "NIFTOOLS_PT_ShaderPanel"
 
     bl_space_type = 'PROPERTIES'

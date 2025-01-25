@@ -47,7 +47,7 @@ from io_scene_niftools.modules.nif_export.geometry import skin_partition
 from io_scene_niftools.modules.nif_export.geometry.data import GeometryData
 from io_scene_niftools.modules.nif_export.geometry.skinned import SkinnedGeometry
 from io_scene_niftools.modules.nif_export.property.object import ObjectProperty
-from io_scene_niftools.modules.nif_export.property.texture.nitextureprop import NiTextureProp
+from io_scene_niftools.modules.nif_export.property.texture.texture import NiTexturingProperty
 from io_scene_niftools.utils import math
 from io_scene_niftools.utils.logging import NifLog, NifError
 from io_scene_niftools.utils.singleton import NifOp
@@ -63,7 +63,7 @@ class Geometry:
     """
 
     def __init__(self):
-        self.texture_property_helper = NiTextureProp.get()
+        self.texture_property_helper = NiTexturingProperty.get()
         self.object_property_helper = ObjectProperty()
         self.geometry_animation_helper = GeometryAnimation()
         self.geometry_data_helper = GeometryData()
@@ -162,11 +162,8 @@ class Geometry:
             n_ni_geometry.shader_name = "RRT_NormalMap_Spec_Env_CubeLight"
             n_ni_geometry.unknown_integer = -1
 
-        # Export object properties
-        self.object_property_helper.export_properties(b_obj, b_mat, n_ni_geometry)
-
-        # Add transforms
-        math.set_object_matrix(b_obj, n_ni_geometry)
+        math.set_object_matrix(b_obj, n_ni_geometry)  # Add transforms
+        self.object_property_helper.export_object_properties(b_obj, n_ni_geometry)  # Object properties
 
         return n_ni_geometry
 
@@ -176,8 +173,8 @@ class Geometry:
         # Create a NiGeometryData block
         n_ni_geometry_data = None
         if isinstance(n_ni_geometry, NifClasses.BSTriShape):
-                n_ni_geometry_data = n_ni_geometry
-        elif isinstance (n_ni_geometry, NifClasses.NiTriStrips):
+            n_ni_geometry_data = n_ni_geometry
+        elif isinstance(n_ni_geometry, NifClasses.NiTriStrips):
             n_ni_geometry_data = block_store.create_block("NiTriStripsData", b_obj)
             n_ni_geometry.data = n_ni_geometry_data
         else:
@@ -211,7 +208,8 @@ class Geometry:
         use_tangents = False
         if b_uv_layers and has_normals:
             default_use_tangents = 'BULLY_SE'
-            if self.target_game in default_use_tangents or self.nif_scene.is_bs() or (self.target_game in self.texture_property_helper.USED_EXTRA_SHADER_TEXTURES):
+            if self.target_game in default_use_tangents or self.nif_scene.is_bs() or (
+                    self.target_game in self.texture_property_helper.USED_EXTRA_SHADER_TEXTURES):
                 use_tangents = True
 
         # Should vertex colors be exported?
@@ -226,7 +224,7 @@ class Geometry:
                                                                                        b_mat_index=b_mat_index)
 
         if len(vertex_information['POSITION']) == 0:
-            return # Skip empty material indices
+            return  # Skip empty material indices
         if len(vertex_information['POSITION']) > 65535:
             raise NifError("Too many vertices! Decimate your mesh and try again.")
         if len(triangles) > 65535:

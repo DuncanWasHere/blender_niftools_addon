@@ -57,7 +57,7 @@ class TestSuite:
             for this test).
         @type name: C{str}
         """
-        self.context.scene = Blender.Scene.New(name) # new scene
+        self.context.scene = Blender.SceneProperty.New(name) # new scene
         self.layer = 1 # current layer
 
         # set active scene

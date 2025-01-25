@@ -62,30 +62,29 @@ class BoneProperty(PropertyGroup):
 
 
 class ArmatureProperty(PropertyGroup):
-
     axis_forward: EnumProperty(
-            name="Forward",
-            items=(('X', "X Forward", ""),
-                   ('Y', "Y Forward", ""),
-                   ('Z', "Z Forward", ""),
-                   ('-X', "-X Forward", ""),
-                   ('-Y', "-Y Forward", ""),
-                   ('-Z', "-Z Forward", ""),
-                   ),
-            default="X",
-            )
+        name="Forward",
+        items=(('X', "X Forward", ""),
+               ('Y', "Y Forward", ""),
+               ('Z', "Z Forward", ""),
+               ('-X', "-X Forward", ""),
+               ('-Y', "-Y Forward", ""),
+               ('-Z', "-Z Forward", ""),
+               ),
+        default="X",
+    )
 
     axis_up: EnumProperty(
-            name="Up",
-            items=(('X', "X Up", ""),
-                   ('Y', "Y Up", ""),
-                   ('Z', "Z Up", ""),
-                   ('-X', "-X Up", ""),
-                   ('-Y', "-Y Up", ""),
-                   ('-Z', "-Z Up", ""),
-                   ),
-            default="Y",
-            )
+        name="Up",
+        items=(('X', "X Up", ""),
+               ('Y', "Y Up", ""),
+               ('Z', "Z Up", ""),
+               ('-X', "-X Up", ""),
+               ('-Y', "-Y Up", ""),
+               ('-Z', "-Z Up", ""),
+               ),
+        default="Y",
+    )
 
 
 CLASSES = [

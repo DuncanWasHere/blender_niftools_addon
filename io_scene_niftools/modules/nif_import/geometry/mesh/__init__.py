@@ -52,7 +52,6 @@ from nifgen.formats.nif.nimesh.structs.DisplayList import DisplayList
 
 
 class Mesh:
-
     supported_mesh_types = (NifClasses.BSTriShape, NifClasses.NiMesh, NifClasses.NiTriBasedGeom)
 
     def __init__(self):
@@ -93,7 +92,8 @@ class Mesh:
             if vertex_attributes.u_vs:
                 uvs = [[vertex.uv for vertex in vertex_data]]
             if vertex_attributes.vertex_colors:
-                vertex_colors = [NifClasses.Color4.from_value(tuple(c / 255.0 for c in vertex.vertex_colors)) for vertex in vertex_data]
+                vertex_colors = [NifClasses.Color4.from_value(tuple(c / 255.0 for c in vertex.vertex_colors)) for vertex
+                                 in vertex_data]
             if vertex_attributes.normals:
                 normals = [vertex.normal for vertex in vertex_data]
         elif isinstance(n_block, NifClasses.NiMesh):
@@ -144,7 +144,7 @@ class Mesh:
         b_mesh.update()
 
         # must set faces to smooth before setting custom normals, or the normals bug out!
-        is_smooth = True if (not(normals is None) or n_block.is_skin()) else False
+        is_smooth = True if (not (normals is None) or n_block.is_skin()) else False
         self.set_face_smooth(b_mesh, is_smooth)
 
         # store additional data layers

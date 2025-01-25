@@ -104,7 +104,8 @@ class Armature:
         # improved from pyffi's send_geometries_to_bind_position & send_bones_to_bind_position
         NifLog.debug(f"Calculating bind for {n_armature.name}")
         # prioritize geometries that have most nodes in their skin instance
-        sort_function = lambda g: len(g.extra_em_data.bone_transforms) if isinstance(g, NifClasses.NiMesh) else g.skin_instance.num_bones
+        sort_function = lambda g: len(g.extra_em_data.bone_transforms) if isinstance(g,
+                                                                                     NifClasses.NiMesh) else g.skin_instance.num_bones
         geoms = sorted(self.get_skinned_geometries(n_armature), key=sort_function, reverse=True)
         NifLog.debug(f"Found {len(geoms)} skinned geometries")
         for geom in geoms:
@@ -147,7 +148,7 @@ class Armature:
                         # BSDynamicTriShape uses Vector4 to store vertices with a 0 W component, which would
                         # nullify translation when multiplied by a Matrix44. Hence, first conversion to three-component
                         # vector
-                        np_vertices = np.array(vertices, dtype=float)[:,:3]
+                        np_vertices = np.array(vertices, dtype=float)[:, :3]
                         np_vertices = np.pad(np_vertices, (0, 1), constant_values=1.0)
                         np_diff = np.array(diff.as_list())
                         np_vertices = np_vertices @ np_diff
@@ -233,7 +234,7 @@ class Armature:
         for bone_name, b_bone in b_armature_obj.data.bones.items():
             n_block = self.name_to_block.get(bone_name)
             if n_block:
-               # the property is only available from object mode!
+                # the property is only available from object mode!
                 block_store.store_longname(b_bone, n_block.name)
                 if NifOp.props.animation:
                     self.transform_anim.import_transforms(n_block, b_armature_obj, bone_name)

@@ -75,7 +75,7 @@ class MorphAnimation(Animation):
                 base_verts = morph.vectors
 
                 shape_action = self.create_action(b_obj.data.shape_keys, f"{b_obj.name}-Morphs")
-                
+
                 for morph_i in range(1, morph_data.num_morphs):
                     morph = morph_data.morphs[morph_i]
                     # get name for key
@@ -98,13 +98,15 @@ class MorphAnimation(Animation):
                             elif n_morph_ctrl.interpolator_weights:
                                 morph = n_morph_ctrl.interpolator_weights[morph_i].interpolator.data.data
                         except KeyError:
-                            NifLog.info(f"Unsupported interpolator '{type(n_morph_ctrl.interpolator_weights[morph_i].interpolator)}'")
+                            NifLog.info(
+                                f"Unsupported interpolator '{type(n_morph_ctrl.interpolator_weights[morph_i].interpolator)}'")
                             continue
-                        
+
                     # get the interpolation mode
                     interp = self.get_b_interp_from_n_interp(morph.interpolation)
                     times, keys = self.get_keys_values(morph.keys)
-                    self.add_keys(shape_action, "value", (0,), n_morph_ctrl.flags, times, keys, interp, key_name=shape_key.name)
+                    self.add_keys(shape_action, "value", (0,), n_morph_ctrl.flags, times, keys, interp,
+                                  key_name=shape_key.name)
                     self.set_max_key_time()
 
     def import_egm_morphs(self, b_obj):

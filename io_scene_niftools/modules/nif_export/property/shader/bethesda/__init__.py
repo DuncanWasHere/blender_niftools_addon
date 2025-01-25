@@ -38,58 +38,20 @@
 # ***** END LICENSE BLOCK *****
 
 
-from nifgen.formats.nif import classes as NifClasses
-
 import io_scene_niftools.utils.logging
 from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.property.texture.bethesda import BSShaderTexture
-from io_scene_niftools.modules.nif_export.property.texture.nitextureprop import NiTextureProp
+from io_scene_niftools.modules.nif_export.property.texture.bethesda import BSShaderTextureSet
+from io_scene_niftools.modules.nif_export.property.texture.texture import NiTexturingProperty
 from io_scene_niftools.utils.consts import FLOAT_MAX
 from io_scene_niftools.utils.singleton import NifData
-
-# ***** BEGIN LICENSE BLOCK *****
-#
-# Copyright © 2025 NIF File Format Library and Tools contributors.
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#    * Redistributions of source code must retain the above copyright
-#      notice, this list of conditions and the following disclaimer.
-#
-#    * Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials provided
-#      with the distribution.
-#
-#    * Neither the name of the NIF File Format Library and Tools
-#      project nor the names of its contributors may be used to endorse
-#      or promote products derived from this software without specific
-#      prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# ***** END LICENSE BLOCK *****
+from nifgen.formats.nif import classes as NifClasses
 
 
 class BSShaderProperty:
 
     def __init__(self):
-        self.bs_texture_helper = BSShaderTexture.get()
-        self.ni_texture_helper = NiTextureProp.get()
+        self.bs_shader_texture_set_helper = BSShaderTextureSet.get()
+        self.ni_texturing_property_helper = NiTexturingProperty.get()
 
     def export_bs_shader_property(self, n_ni_geometry, b_mat=None):
         """Export a BSShaderProperty block."""
@@ -99,7 +61,7 @@ class BSShaderProperty:
                                           f"'{n_ni_geometry.name}'. It will not be visible in game.")
             return
 
-        self.bs_texture_helper.determine_texture_types(b_mat)
+        self.bs_shader_texture_set_helper.determine_texture_types(b_mat)
 
         if b_mat.niftools_shader.bs_shadertype == 'BSShaderPPLightingProperty':
             self.export_bs_shader_pp_lighting_property(n_ni_geometry, b_mat)
@@ -113,12 +75,7 @@ class BSShaderProperty:
     def export_bs_effect_shader_property(self, n_ni_geometry, b_mat):
         n_bs_effect_shader_property = NifClasses.BSEffectShaderProperty(NifData.data)
 
-        self.bs_texture_helper.export_bs_effect_shader_prop_textures(n_bs_effect_shader_property)
-
-        # Alpha
-        # TODO [Shader] Alpha property
-        # if b_mat.use_transparency:
-        #     bsshader.alpha = (1 - b_mat.alpha)
+        self.bs_shader_texture_set_helper.export_bs_effect_shader_property_textures(n_bs_effect_shader_property)
 
         # Emissive
         BSShaderProperty.set_color3_property(n_bs_effect_shader_property.base_color, b_mat.niftools.emissive_color)
@@ -133,9 +90,10 @@ class BSShaderProperty:
     def export_bs_lighting_shader_property(self, n_ni_geometry, b_mat):
         n_bs_lighting_shader_property = NifClasses.BSLightingShaderProperty(NifData.data)
         b_s_type = NifClasses.BSLightingShaderType[b_mat.niftools_shader.bslsp_shaderobjtype]
-        n_bs_lighting_shader_property.skyrim_shader_type = NifClasses.BSLightingShaderType[b_mat.niftools_shader.bslsp_shaderobjtype]
+        n_bs_lighting_shader_property.skyrim_shader_type = NifClasses.BSLightingShaderType[
+            b_mat.niftools_shader.bslsp_shaderobjtype]
 
-        self.bs_texture_helper.export_bs_lighting_shader_prop_textures(n_bs_lighting_shader_property)
+        self.bs_shader_texture_set_helper.export_bs_lighting_shader_property_textures(n_bs_lighting_shader_property)
 
         # Diffuse color
         d = b_mat.diffuse_color
@@ -151,12 +109,13 @@ class BSShaderProperty:
         n_bs_lighting_shader_property.lighting_effect_2 = b_mat.niftools.lightingeffect2
 
         # Emissive
-        BSShaderProperty.set_color3_property(n_bs_lighting_shader_property.emissive_color, b_mat.niftools.emissive_color)
+        BSShaderProperty.set_color3_property(n_bs_lighting_shader_property.emissive_color,
+                                             b_mat.niftools.emissive_color)
         # TODO [shader] Expose a emission multiplier value
         # bsshader.emissive_multiple = b_mat.emit
 
         # gloss
-        n_bs_lighting_shader_property.glossiness = 1/b_mat.roughness - 1 if b_mat.roughness != 0 else FLOAT_MAX
+        n_bs_lighting_shader_property.glossiness = 1 / b_mat.roughness - 1 if b_mat.roughness != 0 else FLOAT_MAX
 
         # Specular color
         BSShaderProperty.set_color3_property(n_bs_lighting_shader_property.specular_color, b_mat.specular_color)
@@ -174,9 +133,11 @@ class BSShaderProperty:
     def export_bs_shader_pp_lighting_property(self, n_ni_geometry, b_mat):
         n_bs_shader_pp_lighting_property = block_store.create_block("BSShaderPPLightingProperty")
 
-        n_bs_shader_pp_lighting_property.shader_type = NifClasses.BSShaderType[b_mat.niftools_shader.bsspplp_shaderobjtype]
+        n_bs_shader_pp_lighting_property.shader_type = NifClasses.BSShaderType[
+            b_mat.niftools_shader.bsspplp_shaderobjtype]
 
-        self.bs_texture_helper.export_bs_shader_pp_lighting_prop_textures(n_bs_shader_pp_lighting_property)
+        self.bs_shader_texture_set_helper.export_bs_shader_pp_lighting_property_textures(
+            n_bs_shader_pp_lighting_property)
 
         BSShaderProperty.export_shader_flags(b_mat, n_bs_shader_pp_lighting_property)
 
@@ -185,9 +146,10 @@ class BSShaderProperty:
     def export_bs_shader_no_lighting_property(self, n_ni_geometry, b_mat):
         n_bs_shader_no_lighting_property = block_store.create_block("BSShaderNoLightingProperty")
 
-        n_bs_shader_no_lighting_property.shader_type = NifClasses.BSShaderType[b_mat.niftools_shader.bsspplp_shaderobjtype]
+        n_bs_shader_no_lighting_property.shader_type = NifClasses.BSShaderType[
+            b_mat.niftools_shader.bsspplp_shaderobjtype]
 
-        n_ni_texturing_property = self.ni_texture_helper.export_texturing_property(flags=0x0001, b_mat=b_mat)
+        n_ni_texturing_property = self.ni_texturing_property_helper.export_texturing_property(flags=0x0001, b_mat=b_mat)
         block_store.register_block(n_ni_texturing_property)
         n_ni_geometry.add_property(n_ni_texturing_property)
         n_bs_shader_no_lighting_property.file_name = n_ni_texturing_property.base_texture.source.file_name
@@ -195,6 +157,18 @@ class BSShaderProperty:
         BSShaderProperty.export_shader_flags(b_mat, n_bs_shader_no_lighting_property)
 
         n_ni_geometry.add_property(n_bs_shader_no_lighting_property)
+
+    def export_sky_shader_property(self, n_ni_geometry, b_mat):
+        pass
+
+    def export_tall_grass_shader_property(self, n_ni_geometry, b_mat):
+        pass
+
+    def export_tile_shader_property(self, n_ni_geometry, b_mat):
+        pass
+
+    def export_water_shader_property(self, n_ni_geometry, b_mat):
+        pass
 
     @staticmethod
     def export_shader_flags(b_mat, n_bs_shader_property):

@@ -1,4 +1,4 @@
-"""Nif User Interface for custom operator UI Menus"""
+"""Classes for exporting NIF shader property blocks."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -36,54 +36,3 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
-
-from bpy.types import Panel
-
-from io_scene_niftools.ui.operators import nif_import, nif_export
-from io_scene_niftools.utils.decorators import register_modules, unregister_modules, register_classes, \
-    unregister_classes
-
-
-class OperatorSetting:
-    bl_space_type = 'FILE_BROWSER'
-    bl_region_type = 'TOOL_PROPS'
-    bl_parent_id = "FILE_PT_operator"
-
-
-class OperatorCommonDevPanel(OperatorSetting, Panel):
-    bl_label = "Dev Options"
-    bl_idname = "NIFTOOLS_PT_common_operator_dev"
-    bl_options = {'DEFAULT_CLOSED'}
-
-    @classmethod
-    def poll(cls, context):
-        sfile = context.space_data
-        operator = sfile.active_operator
-
-        return operator.bl_idname in ("IMPORT_SCENE_OT_nif", "EXPORT_SCENE_OT_nif")  # "IMPORT_SCENE_OT_kf")
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        layout.use_property_decorate = False  # No animation.
-
-        sfile = context.space_data
-        operator = sfile.active_operator
-
-        layout.prop(operator, "pyffi_log_level")
-        layout.prop(operator, "plugin_log_level")
-        layout.prop(operator, "epsilon")
-
-
-CLASSES = [OperatorCommonDevPanel]
-MODS = [nif_import, nif_export]
-
-
-def register():
-    register_classes(CLASSES, __name__)
-    register_modules(MODS, __name__)
-
-
-def unregister():
-    unregister_modules(MODS, __name__)
-    unregister_classes(CLASSES, __name__)

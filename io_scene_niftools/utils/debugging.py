@@ -37,10 +37,12 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import os
 import sys
 
 from io_scene_niftools.utils.logging import NifLog
+
 
 CLIENT_PORT = 5678
 REMOTE_PORT = 1234

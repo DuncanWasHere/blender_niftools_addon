@@ -47,7 +47,6 @@ from nifgen.formats.nif import classes as NifClasses
 class AnimationProperty(PropertyGroup):
     """Group of Havok related properties, which gets attached to objects through a property pointer."""
 
-
     weight: FloatProperty(
         name='Weight',
         description='How the NiControllerSequence blends with other sequences at the same priority',
@@ -60,7 +59,7 @@ class AnimationProperty(PropertyGroup):
         name='Cycle Type',
         description='Playback behavior of the NiControllerSequence',
         items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.CycleType)],
-        default = 'CYCLE_LOOP'
+        default='CYCLE_LOOP'
     )
 
     frequency: FloatProperty(

@@ -87,7 +87,7 @@ class BlockRegistry:
             return ""
 
         NifLog.debug(f"Importing name for {n_block.__class__.__name__} block from {n_block.name}")
-        
+
         n_name = n_block.name
 
         # if name is empty, create something non-empty

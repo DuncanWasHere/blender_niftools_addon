@@ -44,14 +44,14 @@ class TextKeyTestSuite(TestSuite):
     def run(self):
         nif_import = self.test(
             filename = 'test/nif/mw/dance.nif')
-        textkeys_import = nif_import.root_blocks[0].find(
+        textkeys_import = nif_import.n_root_blocks[0].find(
             block_type = NifFormat.NiTextKeyExtraData)
 
         nif_export = self.test(
             filename = 'test/nif/mw/_textkeytest.nif',
             config = dict(game = 'MORROWIND'),
             selection = ['Dance'])
-        textkeys_export = nif_export.root_blocks[0].find(
+        textkeys_export = nif_export.n_root_blocks[0].find(
             block_type = NifFormat.NiTextKeyExtraData)
 
         if textkeys_import.num_text_keys != textkeys_export.num_text_keys:

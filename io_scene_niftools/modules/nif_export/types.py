@@ -107,14 +107,14 @@ def export_range_lod_data(n_node, b_obj):
 
 
 def export_furniture_marker(n_root, filebase):
-    # oblivion and Fallout 3 furniture markers
+    # Oblivion and Fallout 3 furniture markers
     if bpy.context.scene.niftools_scene.is_bs() and filebase[:15].lower() == 'furnituremarker':
         # exporting a furniture marker for Oblivion/FO3
         try:
             furniturenumber = int(filebase[15:])
         except ValueError:
             raise io_scene_niftools.utils.logging.NifError(f"Furniture marker has invalid number ({filebase[15:]}).\n"
-                                     f"Name your file 'furnituremarkerxx.nif' where xx is a number between 00 and 19.")
+                                                           f"Name your file 'furnituremarkerxx.nif' where xx is a number between 00 and 19.")
 
         # create furniture marker block
         furnmark = block_store.create_block("BSFurnitureMarker")

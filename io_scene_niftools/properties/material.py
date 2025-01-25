@@ -39,45 +39,14 @@
 
 
 import bpy
-from bpy.props import (FloatVectorProperty,
-                       IntProperty,
-                       BoolProperty,
-                       FloatProperty,
+from bpy.props import (IntProperty,
                        )
 from bpy.types import PropertyGroup
 
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 
 
-class Material(PropertyGroup):
-    """Adds custom properties to material"""
-
-    ambient_preview: BoolProperty(
-        name='Ambient Preview', description='Allows a viewport preview of the ambient property', default=False)
-
-    ambient_color: FloatVectorProperty(
-        name='Ambient', subtype='COLOR', default=[1.0, 1.0, 1.0], min=0.0, max=1.0)
-
-    emissive_preview: BoolProperty(
-        name='Emissive Preview', description='Allows a viewport preview of the emissive property', default=False)
-
-    emissive_color: FloatVectorProperty(
-        name='Emissive', subtype='COLOR', default=[0.0, 0.0, 0.0], min=0.0, max=1.0)
-
-    emissive_alpha: FloatVectorProperty(
-        name='Alpha', subtype='COLOR', default=[0.0, 0.0, 0.0], min=0.0, max=1.0)
-
-    lightingeffect1: FloatProperty(
-        name='Lighting Effect 1',
-        default=0.3
-    )
-    lightingeffect2: FloatProperty(
-        name='Lighting Effect 2',
-        default=2
-    )
-
-
-class AlphaFlags(PropertyGroup):
+class MaterialProperty(PropertyGroup):
     """Adds custom properties to material"""
 
     alphaflag: IntProperty(
@@ -99,20 +68,17 @@ class AlphaFlags(PropertyGroup):
 
 
 CLASSES = [
-    Material,
-    AlphaFlags
+    MaterialProperty
 ]
 
 
 def register():
     register_classes(CLASSES, __name__)
 
-    bpy.types.Material.niftools = bpy.props.PointerProperty(type=Material)
-    bpy.types.Material.niftools_alpha = bpy.props.PointerProperty(type=AlphaFlags)
+    bpy.types.Material.niftools = bpy.props.PointerProperty(type=MaterialProperty)
 
 
 def unregister():
     del bpy.types.Material.niftools
-    del bpy.types.Material.niftools_alpha
 
     unregister_classes(CLASSES, __name__)

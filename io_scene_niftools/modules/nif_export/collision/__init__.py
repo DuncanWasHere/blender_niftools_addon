@@ -39,11 +39,13 @@
 
 
 import bpy
+
 from io_scene_niftools.modules.nif_export.collision.bound import Bound, NiCollision
 from io_scene_niftools.modules.nif_export.collision.havok import BhkCollision
 from io_scene_niftools.modules.nif_export.collision.havok.animation import BhkBlendCollision
 from io_scene_niftools.modules.nif_export.object import DICT_NAMES
 from io_scene_niftools.utils.logging import NifLog
+
 from nifgen.formats.nif import classes as NifClasses
 
 
@@ -63,7 +65,7 @@ class Collision:
         NifLog.info(f"Exporting collision...")
 
         if not b_collision_objects:
-            return # No collision data in the scene
+            return  # No collision data in the scene
 
         for b_col_obj in b_collision_objects:
 

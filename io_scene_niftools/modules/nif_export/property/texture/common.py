@@ -105,14 +105,17 @@ class TextureWriter:
         @return: The file name of the image used in the b_texture_node.
         """
 
-        if not isinstance(b_texture_node, bpy.types.ShaderNodeTexImage):
-            raise io_scene_niftools.utils.logging.NifError(f"Expected a Shader node texture, got {type(b_texture_node)}")
+        if not (isinstance(b_texture_node, bpy.types.ShaderNodeTexImage) or
+                isinstance(b_texture_node, bpy.types.ShaderNodeTexEnvironment)):
+            raise io_scene_niftools.utils.logging.NifError(
+                f"Expected a Shader node texture, got {type(b_texture_node)}")
         # get filename from image
 
         # TODO [b_texture_node] still needed? can b_texture_node.image be None in current blender?
         # check that image is loaded
         if b_texture_node.image is None:
-            raise io_scene_niftools.utils.logging.NifError(f"Image type texture has no file loaded ('{b_texture_node.name}')")
+            raise io_scene_niftools.utils.logging.NifError(
+                f"Image type texture has no file loaded ('{b_texture_node.name}')")
 
         filename = b_texture_node.image.filepath
 
@@ -140,8 +143,8 @@ class TextureWriter:
             elif not os.path.exists(bpy.path.abspath(filename)):
                 pass
             else:
-                NifLog.warn(f"{filename} does not reside in a 'Textures' folder; texture path will be stripped and textures may not display in-game")
+                NifLog.warn(
+                    f"{filename} does not reside in a 'Textures' folder; texture path will be stripped and textures may not display in-game")
                 filename = os.path.basename(filename)
         # for linux export: fix path separators
         return filename.replace('/', '\\')
-

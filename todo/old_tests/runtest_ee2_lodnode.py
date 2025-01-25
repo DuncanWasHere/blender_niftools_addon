@@ -69,14 +69,14 @@ class LODTestSuite(TestSuite):
         assert(Blender.Object.Get("Cube_LOD0").parent == b_lod)
         assert(Blender.Object.Get("Cube_LOD1").parent == b_lod)
         # test stuff
-        check_lodnode(nif_import.root_blocks[0])
+        check_lodnode(nif_import.n_root_blocks[0])
         # export
         nif_export = self.test(
             filename='test/nif/ee2/_lodtest.nif',
             config=dict(game = 'EMPIRE_EARTH_II'),
             selection = ['Cube'])
         # test stuff
-        check_lodnode(nif_export.root_blocks[0])
+        check_lodnode(nif_export.n_root_blocks[0])
 
 suite = LODTestSuite("lod")
 suite.run()

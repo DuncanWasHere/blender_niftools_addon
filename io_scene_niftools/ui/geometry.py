@@ -50,8 +50,9 @@ class ObjectButtonsPanel(Panel):
     def is_root_object(b_obj):
         return b_obj.parent is None
 
+
 class ObjectPanel(ObjectButtonsPanel):
-    bl_label = "Niftools Object Property"
+    bl_label = "NifTools Object"
     bl_idname = "NIFTOOLS_PT_ObjectPanel"
 
     # noinspection PyUnusedLocal

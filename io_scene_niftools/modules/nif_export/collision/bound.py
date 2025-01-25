@@ -107,6 +107,7 @@ class Bound(CollisionCommon):
         radius.y = largest[1]
         radius.z = largest[2]
 
+
 class NiCollision(CollisionCommon):
 
     def export_nicollisiondata(self, b_obj, n_parent):

@@ -50,8 +50,9 @@ class ObjectButtonsPanel(Panel):
     def is_root_object(b_obj):
         return b_obj.parent is None
 
+
 class ObjectPanel(ObjectButtonsPanel):
-    bl_label = "Niftools Object Property"
+    bl_label = "NifTools Object"
     bl_idname = "NIFTOOLS_PT_ObjectPanel"
 
     # noinspection PyUnusedLocal
@@ -82,6 +83,7 @@ class ObjectPanel(ObjectButtonsPanel):
         if parent and parent.type == 'ARMATURE':
             row.prop_search(nif_obj_props, "skeleton_root", parent.data, "bones")
 
+
 class ObjectBSInvMarkerPanel(ObjectButtonsPanel):
     bl_label = "Niftools BS Inv Marker"
     bl_idname = "NIFTOOLS_PT_ObjectBSInvMarker"
@@ -110,7 +112,7 @@ class ObjectBSInvMarkerPanel(ObjectButtonsPanel):
 
 classes = [
     ObjectPanel,
-    ObjectBSInvMarkerPanel,
+    ObjectBSInvMarkerPanel
 ]
 
 

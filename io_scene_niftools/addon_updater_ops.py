@@ -37,6 +37,7 @@ except Exception as e:
     print(str(e))
     traceback.print_exc()
 
+
     class SingletonUpdaterNone(object):
         """Fake, bare minimum fields and functions for the updater object."""
 
@@ -63,6 +64,7 @@ except Exception as e:
 
         def check_for_update(self, now):
             pass
+
 
     updater = SingletonUpdaterNone()
     updater.error = "Error initializing updater module"

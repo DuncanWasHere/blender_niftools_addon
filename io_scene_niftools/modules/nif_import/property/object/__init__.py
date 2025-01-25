@@ -89,7 +89,7 @@ class ObjectProperty:
                     b_obj.niftools.prn_location = n_extra.string_data
                 elif n_extra.name == "UPB":
                     if 'BSBoneLOD' in n_extra.string_data or 'Bip' in n_extra.string_data:
-                       b_obj.niftools.upb = n_extra.string_data
+                        b_obj.niftools.upb = n_extra.string_data
             elif isinstance(n_extra, NifClasses.BSXFlags):
                 b_obj.niftools.bsxflags = n_extra.integer_data
             elif isinstance(n_extra, NifClasses.BSInvMarker):

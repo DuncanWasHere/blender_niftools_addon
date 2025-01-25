@@ -79,7 +79,7 @@ class BodyPartTestSuite(TestSuite):
             next_layer=False)
         # check body part
         self.info("checking for body parts")
-        skininst = nif_export.root_blocks[0].find(
+        skininst = nif_export.n_root_blocks[0].find(
             block_type = NifFormat.BSDismemberSkinInstance)
         if not skininst:
             raise ValueError("no body parts found")
@@ -126,7 +126,7 @@ class BodyPartTestSuite(TestSuite):
 
         # check body part
         self.info("checking for body parts")
-        skininst = nif_export.root_blocks[0].find(
+        skininst = nif_export.n_root_blocks[0].find(
             block_type = NifFormat.BSDismemberSkinInstance)
         if not skininst:
             raise ValueError("no body parts found")
@@ -150,10 +150,10 @@ class BodyPartTestSuite(TestSuite):
             selection=['Scene Root'])
         # check that skinning is exported without body parts
         self.info("checking that there are no body parts")
-        if nif_export.root_blocks[0].find(
+        if nif_export.n_root_blocks[0].find(
             block_type=NifFormat.BSDismemberSkinInstance):
 			raise ValueError("body part found even though they were disabled on export")
-        if not nif_export.root_blocks[0].find(
+        if not nif_export.n_root_blocks[0].find(
             block_type=NifFormat.NiSkinInstance):
 			raise ValueError("no skinning exported")
 

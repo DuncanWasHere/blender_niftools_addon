@@ -67,10 +67,10 @@ class GeometryAnimation(AnimationCommon):
                 self.export_ni_geom_morpher_controller(b_mesh, b_key, n_trishape, vertmap)
 
     def export_ni_geom_morpher_controller(self, b_mesh, b_key, n_trishape, vertmap):
-        
+
         # regular morph_data export
         b_shape_action = self.get_active_action(b_key)
-        
+
         # create geometry morph controller
         morph_ctrl = block_store.create_block("NiGeomMorpherController", b_shape_action)
         morph_ctrl.target = n_trishape
@@ -131,7 +131,7 @@ class GeometryAnimation(AnimationCommon):
             # geometry only export has no float data also skip keys that have no fcu (such as base b_key)
             if NifOp.props.animation == 'GEOM_NIF' or not b_shape_action.fcurves:
                 continue
-            
+
             # find fcurve that animates this shapekey's influence
             b_dtype = f'key_blocks["{key_block.name}"].value'
             fcurves = [fcu for fcu in b_shape_action.fcurves if b_dtype in fcu.data_path]

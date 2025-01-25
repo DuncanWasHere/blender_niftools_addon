@@ -1,27 +1,27 @@
 """ Nif Utilities, stores logging across the code base"""
 
 # ***** BEGIN LICENSE BLOCK *****
-# 
+#
 # Copyright © 2025 NIF File Format Library and Tools contributors.
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
 # are met:
-# 
+#
 #    * Redistributions of source code must retain the above copyright
 #      notice, this list of conditions and the following disclaimer.
-# 
+#
 #    * Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials provided
 #      with the distribution.
-# 
+#
 #    * Neither the name of the NIF File Format Library and Tools
 #      project nor the names of its contributors may be used to endorse
 #      or promote products derived from this software without specific
 #      prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -36,6 +36,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
+
+
 import inspect
 import logging
 
@@ -50,32 +52,39 @@ class _MockOperator:
 
 
 class NifLog:
-    """A simple custom exception class for export errors. This module require initialisation of an operator reference to function."""  
-    
+    """
+    A simple custom exception class for export errors.
+    This module require initialisation of an operator reference to function.
+    """
+
     # Injectable operator reference used to perform reporting, default to simple logging
     op = _MockOperator()
 
     @staticmethod
     def debug(message):
         """Report a debug message."""
+
         NifLog.op.report({'DEBUG'}, str(message))
         logging.getLogger("niftools").debug(str(message))
 
     @staticmethod
     def info(message):
         """Report an informative message."""
+
         NifLog.op.report({'INFO'}, str(message))
         logging.getLogger("niftools").info(str(message))
 
     @staticmethod
     def warn(message):
         """Report a warning message."""
+
         NifLog.op.report({'WARNING'}, str(message))
         logging.getLogger("niftools").warning(str(message))
 
     @staticmethod
     def error(message):
-        """Report an error and return ``{'FINISHED'}``. To be called by
+        """
+        Report an error and return ``{'FINISHED'}``. To be called by
         the :meth:`execute` method, as::
 
             return error('Something went wrong.')
@@ -86,10 +95,11 @@ class NifLog:
 
             The :ref:`error reporting <dev-design-error-reporting>` design.
         """
+
         NifLog.op.report({'ERROR'}, message)
         logging.getLogger("niftools").error(str(message))
         return {'FINISHED'}
-    
+
     @staticmethod
     def init(operator):
         NifLog.op = operator
@@ -103,15 +113,18 @@ class NifLog:
 
 class NifError(Exception):
     """A simple custom exception class for export errors."""
+
     def __init__(self, msg):
         caller = inspect.getframeinfo(inspect.stack()[1][0])
         NifLog.error(f"{msg:s}")
         NifLog.error(f"{caller.filename:s}:{caller.lineno:d}")
+
     pass
 
 
 def init_loggers():
     """Set up loggers."""
+
     log_handler = logging.StreamHandler()
     log_handler.setLevel(logging.DEBUG)
     log_formatter = logging.Formatter("%(name)s:%(levelname)s:%(message)s")

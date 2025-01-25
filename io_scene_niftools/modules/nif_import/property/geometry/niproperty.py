@@ -46,7 +46,6 @@ from nifgen.formats.nif import classes as NifClasses
 
 
 class NiPropertyProcessor:
-
     __instance = None
     _b_mesh = None
     _n_block = None
@@ -54,6 +53,7 @@ class NiPropertyProcessor:
 
     def __init__(self):
         pass
+
     #
     # @staticmethod
     # def get():
@@ -144,6 +144,3 @@ class NiPropertyProcessor:
         # TODO [property][mesh] Use the vertex color modes
         # this should influence the structure of the node tree, how the vcol and diffuse passes are blended
         NifLog.debug("NiVertexColorProperty property processed")
-
-
-

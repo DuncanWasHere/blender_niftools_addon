@@ -41,7 +41,6 @@ from io_scene_niftools.utils.logging import NifLog
 
 
 class BSShaderTexture:
-
     __instance = None
     _nodes_wrapper = None
 

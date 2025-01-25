@@ -45,14 +45,13 @@ from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
 
-
 EXPORT_OPTIMIZE_MATERIALS = True
 
 
 class MaterialProperty:
     """
     Main interface class for exporting NIF material property blocks
-    (i.e., NiMaterialProperty)
+    (i.e., NiMaterialProperty).
     """
 
     def __init__(self):
@@ -88,24 +87,24 @@ class MaterialProperty:
         n_mat_prop.name = name
         # TODO: - standard flag, check? material and texture properties in morrowind style nifs had a flag
         n_mat_prop.flags = flags
-        ambient = b_mat.niftools.ambient_color
-        n_mat_prop.ambient_color.r = ambient.r
-        n_mat_prop.ambient_color.g = ambient.g
-        n_mat_prop.ambient_color.b = ambient.b
+        # ambient = b_mat.niftools.ambient_color
+        # n_mat_prop.ambient_color.r = ambient.r
+        # n_mat_prop.ambient_color.g = ambient.g
+        # n_mat_prop.ambient_color.b = ambient.b
 
         # todo [material] some colors in the b2.8 api allow rgb access, others don't - why??
         # diffuse mat
         n_mat_prop.diffuse_color.r, n_mat_prop.diffuse_color.g, n_mat_prop.diffuse_color.b, _ = b_mat.diffuse_color
         n_mat_prop.specular_color.r, n_mat_prop.specular_color.g, n_mat_prop.specular_color.b = b_mat.specular_color
 
-        emissive = b_mat.niftools.emissive_color
-        n_mat_prop.emissive_color.r = emissive.r
-        n_mat_prop.emissive_color.g = emissive.g
-        n_mat_prop.emissive_color.b = emissive.b
+        # emissive = b_mat.niftools.emissive_color
+        # n_mat_prop.emissive_color.r = emissive.r
+        # n_mat_prop.emissive_color.g = emissive.g
+        # n_mat_prop.emissive_color.b = emissive.b
 
         # map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
-        n_mat_prop.glossiness = min(1/b_mat.roughness - 1, 128) if b_mat.roughness != 0 else 128
-        n_mat_prop.alpha = b_mat.niftools.emissive_alpha.v
+        n_mat_prop.glossiness = min(1 / b_mat.roughness - 1, 128) if b_mat.roughness != 0 else 128
+        # n_mat_prop.alpha = b_mat.niftools.emissive_alpha.v
         # todo [material] this float is used by FO3's material properties
         # n_mat_prop.emit_multi = emitmulti
 
@@ -117,7 +116,7 @@ class MaterialProperty:
 
             # when optimization is enabled, ignore material name
             if EXPORT_OPTIMIZE_MATERIALS:
-                ignore_strings = not(n_block.name in specialnames)
+                ignore_strings = not (n_block.name in specialnames)
             else:
                 ignore_strings = False
 

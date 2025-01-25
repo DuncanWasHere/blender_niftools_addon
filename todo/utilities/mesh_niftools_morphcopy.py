@@ -227,7 +227,7 @@ def main(arg):
     print('\nStarting morph copy...')
 
     # get selected meshes
-    scn = Blender.Scene.GetCurrent()
+    scn = Blender.SceneProperty.GetCurrent()
     obs = [ob for ob in self.context.selected_objects if ob.type == 'MESH']
     if not obs:
         Blender.Draw.PupMenu('Error%t|2 or more mesh objects need to be selected.|aborting.')

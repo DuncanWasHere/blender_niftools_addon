@@ -84,7 +84,8 @@ class VertexGroup:
             block_bone_transforms = [bone_transforms[i] for i in block.bones]
 
             # go over each vert in this block
-            for vert_index, vertex_weights, bone_indices in zip(block.vertex_map, block.vertex_weights, block.bone_indices):
+            for vert_index, vertex_weights, bone_indices in zip(block.vertex_map, block.vertex_weights,
+                                                                block.bone_indices):
                 # skip verts that were already processed in an earlier block
                 if sum_weights[vert_index] != 0:
                     continue
@@ -162,13 +163,15 @@ class VertexGroup:
                     weight = bone_weights_set[set_index]
                     bone_indices[i] = weight.bone_indices
                     bone_weights[i] = weight.weights
-                bone_names = [get_bone_name_for_blender(str(i)) for i in range(len(ni_block.extra_em_data.bone_transforms))]
+                bone_names = [get_bone_name_for_blender(str(i)) for i in
+                              range(len(ni_block.extra_em_data.bone_transforms))]
             else:
                 bone_indices = []
                 bone_weights = chain.from_iterable(ni_block.geomdata_by_name('BLENDWEIGHT'))
 
                 # assume there's only on SkinningMeshModifier
-                skin_modifier = [block for block in ni_block.modifiers if isinstance(block, NifClasses.NiSkinningMeshModifier)][0]
+                skin_modifier = \
+                [block for block in ni_block.modifiers if isinstance(block, NifClasses.NiSkinningMeshModifier)][0]
                 bone_names = [block_store.import_name(bone) for bone in skin_modifier.bones]
 
                 bone_palettes = ni_block.geomdata_by_name('BONE_PALETTE', sep_datastreams=False, sep_regions=True)
@@ -207,9 +210,10 @@ class VertexGroup:
                         if name:
                             bone_weights_map[name] = []
 
-                    for i, (weights, indices) in enumerate([(vert.bone_weights, vert.bone_indices) for vert in ni_block.vertex_data]):
+                    for i, (weights, indices) in enumerate(
+                            [(vert.bone_weights, vert.bone_indices) for vert in ni_block.vertex_data]):
                         for w, b_i in zip(weights, indices):
-                            if b_i  >= 0 and w > 0:
+                            if b_i >= 0 and w > 0:
                                 group_name = bone_names[b_i]
                                 bone_weights_map[group_name].append((i, w))
 
@@ -225,7 +229,7 @@ class VertexGroup:
                         group_name = block_store.import_name(n_bone)
                         if group_name not in bone_weights_map:
                             bone_weights_map[group_name] = []
-    
+
                         for skinWeight in vertex_weights:
                             vert = skinWeight.index
                             weight = skinWeight.weight
@@ -239,10 +243,11 @@ class VertexGroup:
                         bone_names = [block_store.import_name(bones[i]) for i in block.bones]
                         for group_name in bone_names:
                             bone_weights_map[group_name] = []
-    
+
                         # go over each vert in this block
-                        for vert, vertex_weights, bone_indices in zip(block.vertex_map, block.vertex_weights, block.bone_indices):
-    
+                        for vert, vertex_weights, bone_indices in zip(block.vertex_map, block.vertex_weights,
+                                                                      block.bone_indices):
+
                             # assign this vert's 4 weights to its 4 vgroups (at max)
                             for w, b_i in zip(vertex_weights, bone_indices):
                                 if w > 0:
@@ -329,4 +334,3 @@ class VertexGroup:
 
         # Update the mesh to ensure changes are reflected
         b_obj.data.update()
-

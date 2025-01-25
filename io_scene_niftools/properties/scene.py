@@ -58,25 +58,28 @@ game_version_map = {}
 
 
 def populate_version_map(iterable, version_map):
-	for game in iterable:
-		if game not in version_map:
-		    dummy_context.version = 0
-		    dummy_context.user_version = 0
-		    dummy_context.bs_header.bs_version = 0
-		    set_game(dummy_context, game)
-		    game_version_map[game.name] = (dummy_context.version, dummy_context.user_version, dummy_context.bs_header.bs_version)
+    for game in iterable:
+        if game not in version_map:
+            dummy_context.version = 0
+            dummy_context.user_version = 0
+            dummy_context.bs_header.bs_version = 0
+            set_game(dummy_context, game)
+            game_version_map[game.name] = (
+            dummy_context.version, dummy_context.user_version, dummy_context.bs_header.bs_version)
 
 
 populate_version_map(primary_games, game_version_map)
 populate_version_map(all_games, game_version_map)
 game_version_map["UNKNOWN"] = (0, 0, 0)
 
+
 # noinspection PyUnusedLocal
 def update_version_from_game(self, context):
     """Updates the Scene panel's numerical version fields if its game value has been changed"""
     self.nif_version, self.user_version, self.user_version_2 = game_version_map[self.game]
 
-class Scene(PropertyGroup):
+
+class SceneProperty(PropertyGroup):
     nif_version: IntProperty(
         name='Version',
         description="The Gamebryo Engine version used",
@@ -110,11 +113,10 @@ class Scene(PropertyGroup):
     def is_bs(self):
         return self.game in ('OBLIVION',
                              'OBLIVION_KF',
-                            'FALLOUT_3',
-                            'FALLOUT_NV',
-                            'SKYRIM',
-                            'SKYRIM_SE',
-                            )
+                             'FALLOUT_3',
+                             'FALLOUT_NV',
+                             'SKYRIM',
+                             'SKYRIM_SE')
 
     def is_fo3(self):
         return self.game in ('FALLOUT_3', 'FALLOUT_NV')
@@ -130,14 +132,14 @@ class Scene(PropertyGroup):
 
 
 CLASSES = [
-    Scene
+    SceneProperty
 ]
 
 
 def register():
     register_classes(CLASSES, __name__)
 
-    bpy.types.Scene.niftools_scene = bpy.props.PointerProperty(type=Scene)
+    bpy.types.Scene.niftools_scene = bpy.props.PointerProperty(type=SceneProperty)
 
 
 def unregister():

@@ -52,8 +52,6 @@ class NifCommon:
     Contains common utility functions that are used in both.
     """
 
-    SELECTED_OBJECTS = []
-
     def __init__(self, operator, context):
         """Common initialization functions for executing the import/export operators."""
 
@@ -67,11 +65,11 @@ class NifCommon:
 
         NifLog.info(f"Executing - NifTools : Blender NifTools Add-on v{niftools_ver}"
                     f"(Running on Blender {bpy.app.version_string}, "
-                    f"NIF XML version {NifFormat.__xml_version__})")
+                    f"NIF XML version {NifFormat.__xml_version__}).")
 
     @staticmethod
     def apply_scale(data, scale):
-        NifLog.info(f"Scale Correction set to {scale}")
+        NifLog.info(f"Scale Correction set to {scale}.")
         toaster = NifToaster()
         toaster.scale = scale
         SpellScale(data=data, toaster=toaster).recurse()

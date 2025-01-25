@@ -60,7 +60,8 @@ class KfImport(NifCommon):
 
         try:
             dirname = os.path.dirname(NifOp.props.filepath)
-            kf_files = [os.path.join(dirname, file.name) for file in NifOp.props.files if file.name.lower().endswith(".kf")]
+            kf_files = [os.path.join(dirname, file.name) for file in NifOp.props.files if
+                        file.name.lower().endswith(".kf")]
             # if an armature is present, prepare the bones for all actions
             b_armature = math.get_armature()
             if b_armature:

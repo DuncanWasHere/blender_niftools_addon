@@ -54,7 +54,6 @@ class NiTypes:
             for b_child in b_obj.children:
                 b_child.display_type = 'WIRE'
 
-
     @staticmethod
     def import_range_lod_data(n_node, b_obj, b_children):
         """ Import LOD ranges and mark b_obj as a LOD node """

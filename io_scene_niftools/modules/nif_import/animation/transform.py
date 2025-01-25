@@ -285,7 +285,8 @@ class TransformAnimation(Animation):
                 keys_res = [interpolate(times_all, times, keys) for times, keys in times_keys]
                 # for eulers, the actual interpolation type is apparently stored per channel
                 interp = self.get_b_interp_from_n_interp(n_kfd.xyz_rotations[0].interpolation)
-                self.import_keys(EULER, b_action, bone_name, times_all, zip(*keys_res), flags, interp, n_bind_rot_inv, n_bind_trans)
+                self.import_keys(EULER, b_action, bone_name, times_all, zip(*keys_res), flags, interp, n_bind_rot_inv,
+                                 n_bind_trans)
             else:
                 b_target.rotation_mode = "QUATERNION"
                 times, keys = self.get_keys_values(n_kfd.quaternion_keys)
@@ -337,4 +338,3 @@ class TransformAnimation(Animation):
                 self.get_bind_data(b_armature)
             for ctrl in ctrlm.controller_sequences:
                 self.import_kf_root(ctrl, b_armature)
-

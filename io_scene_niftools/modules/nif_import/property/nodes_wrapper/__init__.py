@@ -45,7 +45,6 @@ from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.nodes import nodes_iterate
 from nifgen.formats.nif import classes as NifClasses
 
-
 """Names (ordered by default index) of shader texture slots for Sid Meier's Railroads and similar games."""
 EXTRA_SHADER_TEXTURES = [
     "EnvironmentMapIndex",

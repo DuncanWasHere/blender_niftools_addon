@@ -62,7 +62,6 @@ class NifOp:
 
 
 class NifData:
-
     data = None
 
     def __init__(self):
@@ -74,7 +73,6 @@ class NifData:
 
 
 class KFData:
-
     data = None
 
     def __init__(self):
@@ -86,7 +84,6 @@ class KFData:
 
 
 class EGMData:
-
     data = None
 
     def __init__(self):

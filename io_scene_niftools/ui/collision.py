@@ -43,9 +43,9 @@ from io_scene_niftools.operators.shrink_hull import OperatorShrinkHull
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 
 
-class CollisionBoundsPanel(Panel):
-    bl_idname = "NIFTOOLS_PT_CollisionBoundsPanel"
-    bl_label = "Niftools Collision Bounds"
+class CollisionPanel(Panel):
+    bl_idname = "NIFTOOLS_PT_CollisionPanel"
+    bl_label = "NifTools Collision"
 
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -78,12 +78,12 @@ class CollisionBoundsPanel(Panel):
         box.prop(col_setting, "body_flags", text='React to Wind')  # body flags prop
         box.prop(col_setting, "use_blender_properties", text='Use Blender Properties')  # use blender properties prop\
         box.prop(col_setting, "solid", text='Solid')  # solid prop
-        box.prop(col_setting, "shrink_offset", text='Shrink Offset') # shrink offset prop
-        box.operator("niftools.shrink_hull", text='Shrink Hull') # shrink hull operator
+        box.prop(col_setting, "shrink_offset", text='Shrink Offset')  # shrink offset prop
+        box.operator("niftools.shrink_hull", text='Shrink Hull')  # shrink hull operator
 
 
 classes = [
-    CollisionBoundsPanel,
+    CollisionPanel,
     OperatorShrinkHull
 ]
 

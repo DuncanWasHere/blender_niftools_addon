@@ -50,11 +50,15 @@ class Vertex:
         # in Blender 3.2, vertex_colors was deprecated (https://wiki.blender.org/wiki/Reference/Release_Notes/3.2/Python_API)
         # so use Color attribute instead when 3.2 or greater
         if bpy.app.version >= (3, 2, 0):
-            b_mesh.color_attributes.new(name="RGBA",type="FLOAT_COLOR",domain="POINT")
-            b_mesh.color_attributes[-1].data.foreach_set("color", [channel for color in vertex_colors for channel in color])
+            b_mesh.color_attributes.new(name="RGBA", type="FLOAT_COLOR", domain="POINT")
+            b_mesh.color_attributes[-1].data.foreach_set("color",
+                                                         [channel for color in vertex_colors for channel in color])
         else:
             b_mesh.vertex_colors.new(name="RGBA")
-            b_mesh.vertex_colors[-1].data.foreach_set("color", [channel for col in [vertex_colors[loop.vertex_index] for loop in b_mesh.loops] for channel in (col.r, col.g, col.b, col.a)])
+            b_mesh.vertex_colors[-1].data.foreach_set("color", [channel for col in
+                                                                [vertex_colors[loop.vertex_index] for loop in
+                                                                 b_mesh.loops] for channel in
+                                                                (col.r, col.g, col.b, col.a)])
 
     @staticmethod
     def map_uv_layer(b_mesh, uv_sets):
@@ -65,7 +69,9 @@ class Vertex:
         # "sticky" UV coordinates: these are transformed in Blender UV's
         for uv_i, uv_set in enumerate(uv_sets):
             b_mesh.uv_layers.new(name=f"UV{uv_i}")
-            b_mesh.uv_layers[-1].data.foreach_set("uv", [coord for uv in [uv_set[loop.vertex_index] for loop in b_mesh.loops] for coord in (uv.u, 1.0 - uv.v)])
+            b_mesh.uv_layers[-1].data.foreach_set("uv",
+                                                  [coord for uv in [uv_set[loop.vertex_index] for loop in b_mesh.loops]
+                                                   for coord in (uv.u, 1.0 - uv.v)])
 
     @staticmethod
     def map_normals(b_mesh, normals):
@@ -83,7 +89,7 @@ class Vertex:
     @staticmethod
     def normalize(vector_array):
         vector_norms = np.linalg.norm(vector_array, ord=2, axis=1, keepdims=True)
-        non_zero_norms = np.reshape(vector_norms != 0, newshape = len(vector_array))
+        non_zero_norms = np.reshape(vector_norms != 0, newshape=len(vector_array))
         normalized_vectors = np.copy(vector_array)
         normalized_vectors[non_zero_norms] /= vector_norms[non_zero_norms]
         return normalized_vectors

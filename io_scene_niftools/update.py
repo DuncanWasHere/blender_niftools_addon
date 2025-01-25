@@ -41,7 +41,6 @@ import bpy
 
 from io_scene_niftools import addon_updater_ops
 
-
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 
 

@@ -263,7 +263,8 @@ class SkinnedGeometry:
         raise NifError(f"Bone '{b_bone.name}' not found.")
 
     def create_skin_inst_data(self, b_obj, b_obj_armature, body_part_face_groups):
-        if bpy.context.scene.niftools_scene.game in ('FALLOUT_3', 'FALLOUT_NV', 'SKYRIM') and len(body_part_face_groups) > 0:
+        if bpy.context.scene.niftools_scene.game in ('FALLOUT_3', 'FALLOUT_NV', 'SKYRIM') and len(
+                body_part_face_groups) > 0:
             skininst = block_store.create_block("BSDismemberSkinInstance", b_obj)
         else:
             skininst = block_store.create_block("NiSkinInstance", b_obj)

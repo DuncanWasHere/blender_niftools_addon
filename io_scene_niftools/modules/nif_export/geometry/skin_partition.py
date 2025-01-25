@@ -47,12 +47,12 @@ from nifgen.utils.vertex_cache import get_cache_optimized_triangles
 
 
 def update_skin_partition(self,
-                        maxbonesperpartition=4, maxbonespervertex=4,
-                        stripify=True, stitchstrips=False,
-                        padbones=False,
-                        triangles=None, trianglepartmap=None,
-                        maximize_bone_sharing=False,
-                        part_sort_order=[]):
+                          maxbonesperpartition=4, maxbonespervertex=4,
+                          stripify=True, stitchstrips=False,
+                          padbones=False,
+                          triangles=None, trianglepartmap=None,
+                          maximize_bone_sharing=False,
+                          part_sort_order=[]):
     """Recalculate skin partition data.
 
     :param maxbonesperpartition: Maximum number of bones in each partition.
@@ -107,7 +107,7 @@ def update_skin_partition(self,
     if minbones <= 0:
         noweights = [v for v, weight in enumerate(weights)
                      if not weight]
-        #raise ValueError(
+        # raise ValueError(
         NifLog.warn(
             'bad NiSkinData: some vertices have no weights %s'
             % noweights)
@@ -120,14 +120,14 @@ def update_skin_partition(self,
     for weight in weights:
         if len(weight) > maxbonespervertex:
             # delete bone influences with least weight
-            weight.sort(key=lambda x: x[1], reverse=True) # sort by weight
+            weight.sort(key=lambda x: x[1], reverse=True)  # sort by weight
             # save lost weight to return to user
             lostweight = max(
                 lostweight, max(
                     [x[1] for x in weight[maxbonespervertex:]]))
-            del weight[maxbonespervertex:] # only keep first elements
+            del weight[maxbonespervertex:]  # only keep first elements
             # normalize
-            totalweight = sum([x[1] for x in weight]) # sum of all weights
+            totalweight = sum([x[1] for x in weight])  # sum of all weights
             for x in weight: x[1] /= totalweight
             maxbones = maxbonespervertex
         # sort by again by bone (relied on later when matching vertices)
@@ -158,7 +158,7 @@ def update_skin_partition(self,
             # this triangle
             tribonesweights = {}
             for bonenum in tribones: tribonesweights[bonenum] = 0.0
-            nono = set() # bones with weight 1 cannot be removed
+            nono = set()  # bones with weight 1 cannot be removed
             for skinweights in [weights[t] for t in tri]:
                 # skinweights[0] is the first skinweight influencing vertex t
                 # and skinweights[0][0] is the bone number of that bone
@@ -184,7 +184,7 @@ def update_skin_partition(self,
             # remove minbone from all vertices of this triangle and from all
             # matching vertices
             for t in tri:
-                for tt in [t]: #match[t]:
+                for tt in [t]:  # match[t]:
                     # remove bone
                     weight = weights[tt]
                     for i, (bonenum, boneweight) in enumerate(weight):
@@ -206,7 +206,7 @@ def update_skin_partition(self,
     # keep creating partitions as long as there are triangles left
     while len(triangles) > 0:
         # create a partition
-        part = [set(), [], None] # bones, triangles, partition index
+        part = [set(), [], None]  # bones, triangles, partition index
         usedverts = set()
         addtriangles = True
         # keep adding triangles to it as long as the flag is set
@@ -226,7 +226,7 @@ def update_skin_partition(self,
                 # or if part has all bones of tribones and index coincides
                 # then add this triangle to this part
                 if ((not part[0])
-                    or ((part[0] >= tribones) and (part[2] == partindex))):
+                        or ((part[0] >= tribones) and (part[2] == partindex))):
                     part[0] |= tribones
                     part[1].append(tri)
                     usedverts |= set(tri)
@@ -279,7 +279,7 @@ def update_skin_partition(self,
 
     # merge all partitions
     NifLog.info("Merging partitions.")
-    merged = True # signals success, in which case do another run
+    merged = True  # signals success, in which case do another run
     while merged:
         merged = False
         # newparts is to contain the updated merged partitions as we go
@@ -301,11 +301,11 @@ def update_skin_partition(self,
                 # if partition indices are the same, and bone limit is not
                 # exceeded, merge them
                 if ((parta[2] == partb[2])
-                    and (len(parta[0] | partb[0]) <= maxbonesperpartition)):
+                        and (len(parta[0] | partb[0]) <= maxbonesperpartition)):
                     parta[0] |= partb[0]
                     parta[1] += partb[1]
                     addedparts.add(b)
-                    merged = True # signal another try in merging partitions
+                    merged = True  # signal another try in merging partitions
         # update partitions to the merged partitions
         parts = newparts
 
@@ -320,7 +320,7 @@ def update_skin_partition(self,
         skinpart = skininst.skin_partition
         skindata.skin_partition = skinpart
     else:
-    # otherwise, create a new block and link it
+        # otherwise, create a new block and link it
         skinpart = NifClasses.NiSkinPartition(skindata.context)
         skindata.skin_partition = skinpart
         skininst.skin_partition = skinpart
@@ -400,23 +400,23 @@ def update_skin_partition(self,
                     else:
                         break
                 parts[shared_boneset_start:shared_boneset_end] = sorted(
-                            parts[shared_boneset_start:shared_boneset_end],
-                            key = lambda part: body_part_order_map[part[2]])
+                    parts[shared_boneset_start:shared_boneset_end],
+                    key=lambda part: body_part_order_map[part[2]])
                 bone_sharing_lists.append([list(range(shared_boneset_start,
-                            shared_boneset_end)),
-                            body_part_order_map[parts[shared_boneset_start][2]]])
+                                                      shared_boneset_end)),
+                                           body_part_order_map[parts[shared_boneset_start][2]]])
                 shared_boneset_start = shared_boneset_end
                 shared_boneset_end = shared_boneset_start + 1
             # then sort the bonesets based on their first entry's body part
             bone_sharing_lists = sorted(bone_sharing_lists,
-                        key = lambda x: x[1])
+                                        key=lambda x: x[1])
             bone_sharing_lists = [entry[0] for entry in bone_sharing_lists]
             # flatten the indices into a list of the old indices
             new_part_indices = [index for sublist in bone_sharing_lists for index in sublist]
             parts = [parts[i] for i in new_part_indices]
         else:
             parts = sorted(parts,
-                        key = lambda part: body_part_order_map[part[2]])
+                           key=lambda part: body_part_order_map[part[2]])
 
     # for Fallout 3, set dismember partition indices
     if isinstance(skininst, NifClasses.BSDismemberSkinInstance):
@@ -433,7 +433,7 @@ def update_skin_partition(self,
                 bodypart.part_flag.pf_start_net_boneset = 0
             # caps are invisible
             bodypart.part_flag.pf_editor_visible = (part[2] < 100
-                                                 or part[2] >= 1000)
+                                                    or part[2] >= 1000)
             # store part for next iteration
             lastpart = part
 
@@ -454,8 +454,8 @@ def update_skin_partition(self,
         # decide whether to use strip or triangles as primitive
         if stripify is None:
             stripifyblock = (
-                strips_size < triangles_size
-                and all(len(strip) < 65536 for strip in strips))
+                    strips_size < triangles_size
+                    and all(len(strip) < 65536 for strip in strips))
         else:
             stripifyblock = stripify
         if stripifyblock:
@@ -505,7 +505,7 @@ def update_skin_partition(self,
         for i, bonenum in enumerate(bones):
             skinpartblock.bones[i] = bonenum
         for i in range(len(bones), skinpartblock.num_bones):
-            skinpartblock.bones[i] = 0 # dummy bone slots refer to first bone
+            skinpartblock.bones[i] = 0  # dummy bone slots refer to first bone
         skinpartblock.has_vertex_map = True
         skinpartblock.reset_field("vertex_map")
         for i, v in enumerate(vertices):
@@ -534,7 +534,7 @@ def update_skin_partition(self,
             # clear strips array
             skinpartblock.reset_field("strips")
             skinpartblock.reset_field("triangles")
-            for i, (v_1,v_2,v_3) in enumerate(triangles):
+            for i, (v_1, v_2, v_3) in enumerate(triangles):
                 skinpartblock.triangles[i].v_1 = vertices.index(v_1)
                 skinpartblock.triangles[i].v_2 = vertices.index(v_2)
                 skinpartblock.triangles[i].v_3 = vertices.index(v_3)
@@ -547,7 +547,7 @@ def update_skin_partition(self,
             for j in range(len(weights[v])):
                 skinpartblock.bone_indices[i][j] = bones.index(weights[v][j][0])
                 boneindices.remove(skinpartblock.bone_indices[i][j])
-            for j in range(len(weights[v]),skinpartblock.num_weights_per_vertex):
+            for j in range(len(weights[v]), skinpartblock.num_weights_per_vertex):
                 if padbones:
                     # if padbones is True then we have enforced
                     # num_bones == num_weights_per_vertex so this will not trigger

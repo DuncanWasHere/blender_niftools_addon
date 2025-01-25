@@ -63,7 +63,7 @@ class SkeletonTestSuite(TestSuite):
         for n_imp_node in data.roots[0].tree():
             if not isinstance(n_imp_node, NifFormat.NiNode):
                 continue
-            for n_exp_node in nif_export.root_blocks[0].tree():
+            for n_exp_node in nif_export.n_root_blocks[0].tree():
                 if not isinstance(n_exp_node, NifFormat.NiNode):
                     continue
                 if n_imp_node.name != n_exp_node.name:

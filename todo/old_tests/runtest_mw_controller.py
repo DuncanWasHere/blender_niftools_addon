@@ -98,14 +98,14 @@ class ControllerTestSuite(TestSuite):
         assert(b_curve)
         assert(len(b_curve.bezierPoints) == 11)
         # test stuff
-        check_alpha_controller(nif_import.root_blocks[0])
+        check_alpha_controller(nif_import.n_root_blocks[0])
         # export
         nif_export = self.test(
             filename='test/nif/mw/_alphactrl.nif',
             config=dict(game = 'MORROWIND'),
             selection = ['AlphaCtrlTest'])
         # test stuff
-        check_alpha_controller(nif_export.root_blocks[0])
+        check_alpha_controller(nif_export.n_root_blocks[0])
 
     def test_matcolor_controller(self):
         """Material color controller test."""
@@ -200,14 +200,14 @@ class ControllerTestSuite(TestSuite):
             assert(b_curve)
             assert(len(b_curve.bezierPoints) == 5)
         # test stuff
-        check_matcolor_controller(nif_import.root_blocks[0])
+        check_matcolor_controller(nif_import.n_root_blocks[0])
         # export
         nif_export = self.test(
             filename='test/nif/mw/_matcolorctrl.nif',
             config=dict(game = 'MORROWIND'),
             selection = ['MatColorCtrlTest'])
         # test stuff
-        check_matcolor_controller(nif_export.root_blocks[0])
+        check_matcolor_controller(nif_export.n_root_blocks[0])
 
     def test_vis_controller(self):
         """Vis controller test."""
@@ -235,7 +235,7 @@ class ControllerTestSuite(TestSuite):
         b_cube1 = Blender.Object.Get("VisCtrlCube1")
         b_cube2 = Blender.Object.Get("VisCtrlCube2")
         # test stuff
-        check_vis_controller(nif_import.root_blocks[0])
+        check_vis_controller(nif_import.n_root_blocks[0])
         # check that object has layer curve
         self.info("checking blender object layer curve...")
         for b_object in (b_cube1, b_cube2):
@@ -250,7 +250,7 @@ class ControllerTestSuite(TestSuite):
             config=dict(game = 'MORROWIND'),
             selection = ['VisCtrlCube1', 'VisCtrlCube2'])
         # test stuff
-        check_vis_controller(nif_export.root_blocks[0])
+        check_vis_controller(nif_export.n_root_blocks[0])
         self.layer += 1
 
 suite = ControllerTestSuite("controller")

@@ -119,7 +119,6 @@ class MeshPropertyProcessor:
         else:
             self.nodes_wrapper.connect_to_output(b_mesh.color_attributes)
 
-
     def process_property(self, prop):
         """Base method to warn user that this property is not supported"""
         NifLog.warn(f"Unknown property block found : {prop.name:s}")

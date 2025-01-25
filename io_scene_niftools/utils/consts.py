@@ -85,6 +85,8 @@ TEX_SLOTS.DECAL_1 = "decal 1"
 TEX_SLOTS.DECAL_2 = "decal 2"
 TEX_SLOTS.SPECULAR = "specular"
 TEX_SLOTS.NORMAL = "normal"
+TEX_SLOTS.ENV_MAP = "environment map"
+TEX_SLOTS.ENV_MASK = "environment mask"
 
 # fcurve data types for blender
 QUAT = "rotation_quaternion"

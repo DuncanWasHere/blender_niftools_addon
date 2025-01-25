@@ -131,8 +131,8 @@ class BhkCollision(Collision):
 
         # Properties shared by Blender and NIFs
         if (isinstance(n_bhk_rigid_body.shape, NifClasses.BhkMoppBvTreeShape)
-        and (isinstance(n_bhk_rigid_body.shape.shape, NifClasses.BhkPackedNiTriStripsShape)
-        or isinstance(n_bhk_rigid_body.shape.shape, NifClasses.BhkNiTriStripsShape))):
+                and (isinstance(n_bhk_rigid_body.shape.shape, NifClasses.BhkPackedNiTriStripsShape)
+                     or isinstance(n_bhk_rigid_body.shape.shape, NifClasses.BhkNiTriStripsShape))):
             b_r_body.collision_margin = n_bhk_rigid_body.shape.shape.radius
         else:
             b_r_body.collision_margin = 0.1
@@ -296,8 +296,10 @@ class BhkCollision(Collision):
         # create blender object
         b_col_obj = Object.box_from_extents("collision_capsule", minx, maxx, miny, maxy, minz, maxz)
         # here, these are not encoded as a direction so we must first calculate the direction
-        b_col_obj.matrix_local = self.center_origin_to_matrix((first_point + second_point) / 2, first_point - second_point)
-        self.set_b_collider(b_col_obj, bounds_type="CAPSULE", display_type="CAPSULE", radius=radius, n_obj=n_bhk_capsule_shape)
+        b_col_obj.matrix_local = self.center_origin_to_matrix((first_point + second_point) / 2,
+                                                              first_point - second_point)
+        self.set_b_collider(b_col_obj, bounds_type="CAPSULE", display_type="CAPSULE", radius=radius,
+                            n_obj=n_bhk_capsule_shape)
         return b_col_obj
 
     def import_bhkconvex_vertices_shape(self, n_bhk_convex_vertices_shape):

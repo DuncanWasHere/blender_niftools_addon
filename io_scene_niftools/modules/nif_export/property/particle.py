@@ -1,5 +1,6 @@
 """Main module for exporting NIF particle property blocks."""
 
+
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.

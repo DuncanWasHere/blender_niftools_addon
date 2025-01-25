@@ -49,7 +49,7 @@ class SceneButtonsPanel(Panel):
 
 
 class ScenePanel(SceneButtonsPanel):
-    bl_label = "Niftools Scene Panel"
+    bl_label = "NifTools Scene"
     bl_idname = "NIFTOOLS_PT_scene"
 
     # noinspection PyUnusedLocal

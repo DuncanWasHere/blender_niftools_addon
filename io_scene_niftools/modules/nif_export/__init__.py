@@ -1,5 +1,6 @@
 """Modules responsible for exporting NIF blocks from Blender objects."""
 
+
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.
@@ -36,3 +37,28 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
+
+
+class Export:
+    """
+    Abstract base class for exporting NIF blocks.
+    Contains common attributes used by all exporters.
+    Globals are being avoided for the sake of modularity.
+    """
+
+    def __init__(self):
+        self.b_exportable_objects = []
+
+        self.n_root_node = None
+
+        self.target_game = None
+
+        self.is_bs = False
+
+        self.is_morrowind = False
+
+        self.is_oblivion = False
+        self.is_fo3 = False
+
+        self.is_skyrim = False
+        self.is_skyrimse = False

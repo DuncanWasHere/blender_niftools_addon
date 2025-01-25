@@ -43,7 +43,7 @@ from io_scene_niftools.utils.decorators import register_classes, unregister_clas
 
 class AnimationPanel(Panel):
     bl_idname = "NIFTOOLS_PT_AnimationPanel"
-    bl_label = "Niftools Animation"
+    bl_label = "NifTools Animation"
 
     bl_space_type = 'DOPESHEET_EDITOR'
     bl_region_type = 'UI'

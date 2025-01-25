@@ -41,7 +41,6 @@
 import bpy
 import mathutils
 
-
 # Dictionary mapping bhkRigidBody objects to objects imported in Blender
 # This is used to set up the rigid body constraints
 DICT_HAVOK_OBJECTS = {}

@@ -168,4 +168,3 @@ class Object:
         for mod in b_obj.modifiers:
             if mod.type == "ARMATURE":
                 b_obj.modifiers.remove(mod)
-

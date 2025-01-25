@@ -47,6 +47,7 @@ from nifgen.formats.nif import classes as NifClasses
 THETA_THRESHOLD_NEGY = 1.0e-9
 THETA_THRESHOLD_NEGY_CLOSE = 1.0e-5
 
+
 def set_bone_orientation(from_forward, from_up):
     # if version in (0x14020007, ):
     #   skyrim
@@ -71,12 +72,14 @@ def import_keymat(rest_rot_inv, key_matrix):
     """Handles space conversions for imported keys """
     return correction @ (rest_rot_inv @ key_matrix) @ correction_inv
 
+
 def export_keymat(rest_rot, key_matrix, bone):
     """Handles space conversions for exported keys """
     if bone:
         return rest_rot @ (correction_inv @ key_matrix @ correction)
     else:
         return rest_rot @ key_matrix
+
 
 def _get_bone_bind(bone):
     """Get a nif local-space matrix from a blender bone. """
@@ -87,6 +90,7 @@ def _get_bone_bind(bone):
         bind = p_bind_restored.inverted() @ bind
     return bind
 
+
 def _get_bone_pose(bone):
     """Get a nif local-space matrix from a blender pose bone. """
     bind = bone.matrix @ correction
@@ -96,15 +100,19 @@ def _get_bone_pose(bone):
         bind = p_bind_restored.inverted() @ bind
     return bind
 
+
 def blender_bind_to_nif_bind(blender_armature_space_matrix):
     return blender_armature_space_matrix @ correction
+
 
 def nif_bind_to_blender_bind(nif_armature_space_matrix):
     return nif_armature_space_matrix @ correction_inv
 
+
 def import_matrix(n_block, relative_to=None):
     """Retrieves a n_block's transform matrix as a Mathutil.Matrix."""
     return nifformat_to_mathutils_matrix(n_block.get_transform(relative_to))
+
 
 def decompose_srt(b_matrix):
     """Decompose Blender transform matrix as a scale, 4x4 rotation matrix, and translation vector."""
@@ -124,6 +132,7 @@ def decompose_srt(b_matrix):
         NifLog.warn("Non-uniform scaling not supported. Workaround: apply size and rotation (CTRL-A).")
     return scale_vec[0], rotmat.to_4x4(), trans_vec
 
+
 def get_armature():
     """Get an armature. If there is more than one armature in the scene and some armatures are selected, return the first of the selected armatures. """
     b_armatures = [ob for ob in bpy.data.objects if type(ob.data) == bpy.types.Armature]
@@ -136,10 +145,12 @@ def get_armature():
                 return b_sel_armatures[0]
         return b_armatures[0]
 
+
 def get_armatures():
     """Get all armatures in the scene."""
     b_armatures = [ob for ob in bpy.data.objects if type(ob.data) == bpy.types.Armature]
     return b_armatures
+
 
 def get_object_bind(b_obj):
     """Get the bind matrix of a blender object.
@@ -169,6 +180,7 @@ def get_object_bind(b_obj):
     # Nonetype, maybe other weird stuff
     return mathutils.Matrix()
 
+
 def find_property(n_block, property_type):
     """Find a property."""
     if hasattr(n_block, "properties"):
@@ -183,6 +195,7 @@ def find_property(n_block, property_type):
                 return prop
     return None
 
+
 def find_controller(n_block, controller_type):
     """Find a controller."""
     ctrl = n_block.controller
@@ -192,6 +205,7 @@ def find_controller(n_block, controller_type):
                 return ctrl
         ctrl = ctrl.next_controller
 
+
 def controllers_iter(n_block, controller_type):
     """Find a controller."""
     ctrl = n_block.controller
@@ -200,6 +214,7 @@ def controllers_iter(n_block, controller_type):
             if ctrl.data or ctrl.interpolator:
                 yield ctrl
         ctrl = ctrl.next_controller
+
 
 def find_extra(n_block, extratype):
     # TODO: 3.0 - Optimise
@@ -220,18 +235,22 @@ def find_extra(n_block, extratype):
             return extra
     return None
 
+
 def set_object_matrix(b_obj, block):
     """Set a blender object's transform matrix to a NIF object's transformation matrix in rest pose."""
     block.set_transform(get_object_matrix(b_obj))
+
 
 def get_object_matrix(b_obj):
     """Get a blender object's matrix as NifFormat.Matrix44"""
     return mathutils_to_nifformat_matrix(get_object_bind(b_obj))
 
+
 def set_b_matrix_to_n_block(b_matrix, block):
     """Set a blender matrix to a NIF object's transformation matrix in rest pose."""
     # TODO [object] maybe favor this over the above two methods for more flexibility and transparency?
     block.set_transform(mathutils_to_nifformat_matrix(b_matrix))
+
 
 def mathutils_to_nifformat_matrix(b_matrix):
     """Convert a blender matrix to a NifFormat.Matrix44"""
@@ -240,6 +259,7 @@ def mathutils_to_nifformat_matrix(b_matrix):
     n_matrix = NifClasses.Matrix44()
     n_matrix.set_rows(*b_matrix.transposed())
     return n_matrix
+
 
 def nifformat_to_mathutils_matrix(n_matrix):
     """Convert a NifFormat.Matrix44 to a blender matrix"""

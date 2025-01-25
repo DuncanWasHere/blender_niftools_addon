@@ -42,7 +42,6 @@ from io_scene_niftools.utils.logging import NifLog
 
 
 class NiTextureProp:
-
     __instance = None
 
     def __init__(self):
@@ -58,7 +57,7 @@ class NiTextureProp:
             slot_lower = slot_name.lower().replace(' ', '_')
             field_name = f"{slot_lower}_texture"
             # get the tex desc link
-            has_tex = getattr(n_texture_desc, "has_"+field_name, None)
+            has_tex = getattr(n_texture_desc, "has_" + field_name, None)
             if has_tex:
                 NifLog.debug(f"Texdesc has active {slot_name}")
                 n_tex = getattr(n_texture_desc, field_name)

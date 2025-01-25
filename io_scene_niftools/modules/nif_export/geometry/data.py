@@ -343,7 +343,7 @@ class GeometryData:
                                       tangents=-bitangents,
                                       bitangents=tangents,
                                       as_extra_data=(
-                                                  bpy.context.scene.niftools_scene.game == 'OBLIVION'))  # as binary extra data only for Oblivion
+                                              bpy.context.scene.niftools_scene.game == 'OBLIVION'))  # as binary extra data only for Oblivion
         # vertex_colors
         n_geom.data.has_vertex_colors = 'COLOR' in vertex_information
         if n_geom.data.has_vertex_colors:

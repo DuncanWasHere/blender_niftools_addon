@@ -89,8 +89,8 @@ class Constraint:
             # get constraint descriptor
             n_bhk_descriptor = n_bhk_constraint.constraint
             if isinstance(n_bhk_descriptor, (NifClasses.BhkRagdollConstraintCInfo,
-                                         NifClasses.BhkLimitedHingeConstraintCInfo,
-                                         NifClasses.BhkHingeConstraintCInfo)):
+                                             NifClasses.BhkLimitedHingeConstraintCInfo,
+                                             NifClasses.BhkHingeConstraintCInfo)):
                 b_col_obj.rigid_body.enabled = True
             elif isinstance(n_bhk_descriptor, NifClasses.BhkMalleableConstraintCInfo):
                 # TODO [constraint] add other types used by malleable constraint (for values 0, 1, 6 and 8)
@@ -216,7 +216,8 @@ class Constraint:
                 if (mathutils.Vector.cross(axis_x, axis_y) - axis_z).length > 0.01:
                     # either not orthogonal, or negative orientation
                     if (mathutils.Vector.cross(-axis_x, axis_y) - axis_z).length > 0.01:
-                        NifLog.warn(f"Axes are not orthogonal in {n_bhk_descriptor.__class__.__name__}; Arbitrary orientation has been chosen")
+                        NifLog.warn(
+                            f"Axes are not orthogonal in {n_bhk_descriptor.__class__.__name__}; Arbitrary orientation has been chosen")
                         axis_z = mathutils.Vector.cross(axis_x, axis_y)
                     else:
                         # fix orientation

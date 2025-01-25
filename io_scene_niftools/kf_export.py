@@ -102,4 +102,3 @@ class KfExport(NifCommon):
 
         NifLog.info("Finished successfully")
         return {'FINISHED'}
-

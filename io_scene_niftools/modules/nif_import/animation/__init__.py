@@ -121,7 +121,7 @@ class Animation:
         # shapekey pose bone animation
         elif key_name:
             fcurves = [
-                action.fcurves.new(data_path=f'key_blocks["{key_name}"].{dtype}', index=0,)
+                action.fcurves.new(data_path=f'key_blocks["{key_name}"].{dtype}', index=0, )
             ]
         else:
             # Object animation (non-skeletal) is lumped into the "LocRotScale" action_group
@@ -258,6 +258,6 @@ class Animation:
         bpy.context.scene.frame_set(0)
 
     def set_max_key_time(self):
-            # Set the end frame to the last key time
-            bpy.context.scene.frame_end = round(self.max_key_time * self.fps)
-            NifLog.info(f"Animation length set to {self.max_key_time * self.fps} frames.")
+        # Set the end frame to the last key time
+        bpy.context.scene.frame_end = round(self.max_key_time * self.fps)
+        NifLog.info(f"Animation length set to {self.max_key_time * self.fps} frames.")

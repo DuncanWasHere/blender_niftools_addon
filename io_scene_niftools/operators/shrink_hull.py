@@ -39,6 +39,7 @@ class OperatorShrinkHull(Operator):
         self.report({'INFO'}, f"Shrank collision hull by {obj.nifcollision.shrink_offset}")
         return {'FINISHED'}
 
+
 classes = [
     OperatorShrinkHull
 ]

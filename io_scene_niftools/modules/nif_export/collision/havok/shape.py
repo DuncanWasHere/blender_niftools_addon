@@ -79,7 +79,6 @@ class BhkShape(BhkCollisionCommon):
 
         n_bhk_list_shape.material.material = n_hav_mat
 
-
         # Export all children as collision objects and attach each to the bhkListShape
         for b_sub_col_obj in b_col_obj.children:
             if b_sub_col_obj.type == 'MESH' and b_sub_col_obj.rigid_body:
@@ -127,7 +126,7 @@ class BhkShape(BhkCollisionCommon):
 
         n_bhk_box_shape = block_store.create_block("bhkBoxShape", b_col_obj)
         n_bhk_box_shape.material.material = n_hav_mat
-        n_bhk_box_shape.radius = 0.1 # This is hardcoded in the engine
+        n_bhk_box_shape.radius = 0.1  # This is hardcoded in the engine
 
         # Fix dimensions for Havok coordinate system
         dims = n_bhk_box_shape.dimensions
@@ -139,7 +138,7 @@ class BhkShape(BhkCollisionCommon):
         if (b_col_obj.parent and b_col_obj.parent.rigid_body and
                 b_col_obj.parent.rigid_body.collision_shape == 'COMPOUND'):
             if not b_col_obj.matrix_world.is_identity:
-                n_bhk_transform_shape = self.__export_bhk_transform_shape(b_col_obj, n_hav_mat, 0.1)
+                n_bhk_transform_shape = self.__export_bhk_convex_transform_shape(b_col_obj, n_hav_mat, 0.1)
                 n_bhk_transform_shape.shape = n_bhk_box_shape
                 return n_bhk_transform_shape
 
@@ -157,15 +156,15 @@ class BhkShape(BhkCollisionCommon):
 
         # TODO [object][collision]: Find out what this is - fix for havok coordinate system (6 * 7 = 42)
         radius = (box_extents[0][1] - box_extents[0][0] +
-                                    box_extents[1][1] - box_extents[1][0] +
-                                    box_extents[2][1] - box_extents[2][0]) / (6.0 * self.HAVOK_SCALE)
+                  box_extents[1][1] - box_extents[1][0] +
+                  box_extents[2][1] - box_extents[2][0]) / (6.0 * self.HAVOK_SCALE)
 
         n_bhk_sphere_shape.radius = radius
 
         if (b_col_obj.parent and b_col_obj.parent.rigid_body and
-            b_col_obj.parent.rigid_body.collision_shape == 'COMPOUND'):
+                b_col_obj.parent.rigid_body.collision_shape == 'COMPOUND'):
             if not b_col_obj.matrix_world.is_identity:
-                n_bhk_transform_shape = self.__export_bhk_transform_shape(b_col_obj, n_hav_mat, radius)
+                n_bhk_transform_shape = self.__export_bhk_convex_transform_shape(b_col_obj, n_hav_mat, radius)
                 n_bhk_transform_shape.shape = n_bhk_sphere_shape
                 return n_bhk_transform_shape
 
@@ -219,7 +218,7 @@ class BhkShape(BhkCollisionCommon):
 
         n_bhk_convex_vertices_shape = block_store.create_block("bhkConvexVerticesShape", b_col_obj)
         n_bhk_convex_vertices_shape.material.material = n_hav_mat
-        n_bhk_convex_vertices_shape.radius = 0.1 # This is hardcoded in the engine
+        n_bhk_convex_vertices_shape.radius = 0.1  # This is hardcoded in the engine
 
         # Note: we apply transforms to convex shapes directly. No need for bhkConvexTransformShape or bhkRigidBodyT
         b_mesh = b_col_obj.data
@@ -231,14 +230,16 @@ class BhkShape(BhkCollisionCommon):
         # Calculate vertices, normals, and distances
         vertex_list = [b_transform_mat @ vert.co for vert in b_mesh.vertices]
         face_normals_list = [b_rot_quat @ b_face.normal for b_face in b_mesh.polygons]
-        face_distances_list = [(b_transform_mat @ (-1 * b_mesh.vertices[b_mesh.polygons[b_face.index].vertices[0]].co)).dot(b_rot_quat.to_matrix() @ b_face.normal) for b_face in b_mesh.polygons]
+        face_distances_list = [
+            (b_transform_mat @ (-1 * b_mesh.vertices[b_mesh.polygons[b_face.index].vertices[0]].co)).dot(
+                b_rot_quat.to_matrix() @ b_face.normal) for b_face in b_mesh.polygons]
 
         # Remove duplicates through dictionary
         vertex_dict = {}
         for i, vert in enumerate(vertex_list):
             vertex_dict[(int(vert[0] * consts.VERTEX_RESOLUTION),
-                      int(vert[1] * consts.VERTEX_RESOLUTION),
-                      int(vert[2] * consts.VERTEX_RESOLUTION))] = i
+                         int(vert[1] * consts.VERTEX_RESOLUTION),
+                         int(vert[2] * consts.VERTEX_RESOLUTION))] = i
 
         fdict = {}
         for i, (norm, dist) in enumerate(zip(face_normals_list, face_distances_list)):
@@ -284,10 +285,10 @@ class BhkShape(BhkCollisionCommon):
 
         return n_bhk_convex_vertices_shape
 
-    def __export_bhk_transform_shape(self, b_col_obj, n_hav_mat, radius):
+    def __export_bhk_transform_shape(self, b_col_obj, n_hav_mat, radius=0.1):
         """
         Export and return a bhkTransformShape.
-        Note: should only be used for box and sphere sub-shapes of list shapes.
+        Note: should generally never be used. Function will remain here for completeness.
         """
 
         n_bhk_transform_shape = block_store.create_block("bhkTransformShape", b_col_obj)
@@ -304,16 +305,22 @@ class BhkShape(BhkCollisionCommon):
 
         return n_bhk_transform_shape
 
-    def __export_bhk_convex_transform_shape(self, b_col_obj, n_hav_mat):
+    def __export_bhk_convex_transform_shape(self, b_col_obj, n_hav_mat, radius=0.1):
         """
         Export and return a bhkConvexTransformShape.
-        Note: no reason to use this block in most circumstances.
-        Transform values intentionally left zeroed.
+        Note: should generally only be used for box and sphere sub-shapes of list shapes.
         """
 
         n_bhk_convex_transform_shape = block_store.create_block("bhkConvexTransformShape", b_col_obj)
+        n_bhk_convex_transform_shape.material.material = n_hav_mat
+        n_bhk_convex_transform_shape.radius = radius
 
-        n_bhk_convex_transform_shape.material = n_hav_mat
-        n_bhk_convex_transform_shape.radius = 0.1
+        matrix = math.get_object_bind(b_col_obj)
+        row0 = list(matrix[0])
+        row1 = list(matrix[1])
+        row2 = list(matrix[2])
+        row3 = list(matrix[3])
+        n_bhk_convex_transform_shape.transform.set_rows(row0, row1, row2, row3)
+        n_bhk_convex_transform_shape.apply_scale(1.0 / self.HAVOK_SCALE)
 
         return n_bhk_convex_transform_shape

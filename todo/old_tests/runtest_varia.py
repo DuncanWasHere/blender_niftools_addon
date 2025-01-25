@@ -80,7 +80,7 @@ class VariaTestSuite(TestSuite):
             config=dict(game = 'MORROWIND'),
             selection = ['Bounding Box'])
         # test stuff...
-        bbox = nif_export.root_blocks[0].children[0]
+        bbox = nif_export.n_root_blocks[0].children[0]
         assert(bbox.has_bounding_box)
 
     def test_bounding_box_bsbound(self):
@@ -130,9 +130,9 @@ class VariaTestSuite(TestSuite):
             filename = 'test/nif/_stenciltest.nif',
             config = dict(game = 'OBLIVION'),
             selection = ['NoStencil', 'Stencil'])
-        nif_stencil = nif_export.root_blocks[0].find(
+        nif_stencil = nif_export.n_root_blocks[0].find(
             block_type = NifFormat.NiGeometry, block_name = "Stencil")
-        nif_nostencil = nif_export.root_blocks[0].find(
+        nif_nostencil = nif_export.n_root_blocks[0].find(
             block_type = NifFormat.NiGeometry, block_name = "NoStencil")
         assert(self.hasStencil(nif_stencil))
         assert(not self.hasStencil(nif_nostencil))
@@ -151,7 +151,7 @@ class VariaTestSuite(TestSuite):
             filename = 'test/nif/_alphatest.nif',
             config = dict(game = 'OBLIVION'),
             selection = ['Alpha'])
-        nif_alpha = nif_export.root_blocks[0].find(
+        nif_alpha = nif_export.n_root_blocks[0].find(
             block_type = NifFormat.NiGeometry, block_name = "Alpha")
         nif_alpha_mat = nif_alpha.find(
             block_type = NifFormat.NiMaterialProperty)
@@ -269,7 +269,7 @@ class VariaTestSuite(TestSuite):
             selection=['FO3TextureSlots'],
             next_layer=True)
         # check presence of the slots
-        nif_textureset = nif_export.root_blocks[0].find(
+        nif_textureset = nif_export.n_root_blocks[0].find(
             block_type = NifFormat.BSShaderTextureSet)
         assert(nif_textureset.num_textures == 6)
         assert(nif_textureset.textures[0] == "stub.dds")
@@ -292,7 +292,7 @@ class VariaTestSuite(TestSuite):
         # import a nif with animation
         dance = self.test(
             filename = 'test/nif/mw/dance.nif')
-        check_ctrl_flags(dance.root_blocks[0])
+        check_ctrl_flags(dance.n_root_blocks[0])
         # export as nif + xnif + kf
         self.test(
             filename='test/nif/mw/_testnifxnifkf.nif',
@@ -339,7 +339,7 @@ class VariaTestSuite(TestSuite):
     def test_fo3_emit(self):
 
         def check_emit(nif):
-            nif_mat = nif.root_blocks[0].find(
+            nif_mat = nif.n_root_blocks[0].find(
                 block_type = NifFormat.NiMaterialProperty)
             self.assert_equal(nif_mat.emissive_color.r, 0.123)
             self.assert_equal(nif_mat.emissive_color.g, 0.456)
@@ -372,7 +372,7 @@ class VariaTestSuite(TestSuite):
         zero and one.
         """
         def check_emit2(nif):
-            nif_mat = nif.root_blocks[0].find(
+            nif_mat = nif.n_root_blocks[0].find(
                 block_type = NifFormat.NiMaterialProperty)
             self.assert_equal(nif_mat.emissive_color.r, 0.0)
             self.assert_equal(nif_mat.emissive_color.g, 0.0)
@@ -407,7 +407,7 @@ class VariaTestSuite(TestSuite):
             #nif_animnode = nif.root_blocks[0].find(
             #    block_type = NifFormat.NiBSAnimationNode)
             #assert(nif_animnode)
-            nif_node = nif.root_blocks[0].find(
+            nif_node = nif.n_root_blocks[0].find(
                 block_type=NifFormat.NiTriBasedGeom)
             assert(nif_node.name.startswith("TestUVController"))
             nif_uvctrl = nif_node.get_controllers()[0]
@@ -447,8 +447,8 @@ class VariaTestSuite(TestSuite):
             next_layer=True)
         # check that nif was correctly exported
         check_uv_controller(nif)
-        assert(isinstance(nif.root_blocks[0], NifFormat.NiBSAnimationNode))
-        assert(nif.root_blocks[0].flags == 42)
+        assert(isinstance(nif.n_root_blocks[0], NifFormat.NiBSAnimationNode))
+        assert(nif.n_root_blocks[0].flags == 42)
 
     def test_anim_buffer_out_of_range(self):
         # create animation keys

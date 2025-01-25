@@ -62,6 +62,7 @@ class BhkBlendCollision(BhkCollisionCommon):
         n_blend_ctrl.stop_time = consts.FLOAT_MIN
         parent_block.add_controller(n_blend_ctrl)
 
+
 """ # Oblivion skeleton export: check that all bones have a transform controller and transform interpolator
 if bpy.context.scene.niftools_scene.game == 'OBLIVION' and file_base.lower() in ('skeleton', 'skeletonbeast'):
 self.transform_anim_helper.add_dummy_controllers()"""

@@ -48,7 +48,6 @@ class ShaderAnimation(AnimationCommon):
         super().__init__()
 
     def export_bs_effect_shader_property(self, b_mat, n_bs_effect_shader_property, b_slot):
-
         # TODO [shader][animation] Do some form of check to ensure that we actually have data
         effect_control = block_store.create_block("BSEffectShaderPropertyFloatController", n_bs_effect_shader_property)
         effect_control.flags = b_mat.niftools_alpha.textureflag
