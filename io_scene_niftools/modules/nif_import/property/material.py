@@ -73,7 +73,7 @@ class MaterialProperty:
 
         n_ni_property_list = []
 
-        if bpy.context.scene.is_skyrim:
+        if bpy.context.scene.niftools_scene.is_skyrim:
             # Skyrim's material properties are stored in the shader property
             # And there is a dedicated attribute for the linked alpha property
             if n_ni_geometry.shader_property:

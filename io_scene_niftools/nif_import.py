@@ -92,6 +92,13 @@ class NifImport(NifCommon):
                     raise io_scene_niftools.utils.logging.NifError(
                         "You must select exactly one armature in 'Import Geometry Only' mode.")
 
+            # Force the wireframe color type to object for collision
+            for area in bpy.context.window.screen.areas:
+                if area.type == 'VIEW_3D':
+                    for space in area.spaces:
+                        if space.type == 'VIEW_3D':
+                            space.shading.wireframe_color_type = 'OBJECT'
+
             NifLog.info("Importing data")
             # calculate and set frames per second
             if NifOp.props.animation:

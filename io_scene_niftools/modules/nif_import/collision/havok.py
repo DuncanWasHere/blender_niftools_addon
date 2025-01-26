@@ -54,6 +54,15 @@ from nifgen.utils.quickhull import qhull3d
 
 class BhkCollision(Collision):
 
+    LAYER_WIREFRAME_COLOR_MAP = [(0, 255, 0, 1),
+                                 (255, 0, 0, 1),
+                                 (255, 0, 255, 1),
+                                 (255, 255, 255, 1),
+                                 (0, 0, 255, 1),
+                                 (255, 255, 0, 1),
+                                 (0, 255, 255, 1)
+                                 ]
+
     def __init__(self):
         # Dictionary mapping bhkRigidBody objects to objects imported in Blender;
         # We use this dictionary to set the physics constraints (ragdoll, etc.)
@@ -154,6 +163,7 @@ class BhkCollision(Collision):
 
         # Custom NIF properties
         b_col_obj.nif_collision.collision_layer = str(n_rigid_body_info.havok_filter.layer.value)
+
         b_col_obj.nif_collision.col_filter = n_bhk_rigid_body.havok_filter.flags
 
         b_col_obj.nif_collision.inertia_tensor = (n_rigid_body_info.inertia_tensor.m_11,
@@ -175,6 +185,11 @@ class BhkCollision(Collision):
         b_col_obj.nif_collision.quality_type = n_rigid_body_info.quality_type.name
 
         b_col_obj.nif_collision.body_flags = n_bhk_rigid_body.body_flags
+
+        # Apply NifSkope-like wireframe color
+        b_col_obj.color = self.LAYER_WIREFRAME_COLOR_MAP[n_rigid_body_info.havok_filter.layer.value %
+                                                         len(self.LAYER_WIREFRAME_COLOR_MAP)]
+        b_col_obj.visible_camera = False
 
         # Import constraints
         # This is done once all objects are imported for now, store all imported havok shapes with object lists
@@ -266,7 +281,7 @@ class BhkCollision(Collision):
 
         # create blender object
         b_col_obj = Object.box_from_extents("collision_box", minx, maxx, miny, maxy, minz, maxz)
-        self.set_b_collider(b_col_obj, radius=r, n_obj=n_bhk_box_shape)
+        self.set_b_collider(b_col_obj, radius=r, n_obj=n_bhk_box_shape, display_type='BOX')
         return b_col_obj
 
     def import_bhksphere_shape(self, n_bhk_sphere_shape):
@@ -382,7 +397,7 @@ class BhkCollision(Collision):
             poly.material_index = mat_index
 
         radius = min(vert.co.length for vert in b_me.vertices)
-        self.set_b_collider(b_col_obj, radius, bounds_type="MESH", display_type=None)
+        self.set_b_collider(b_col_obj, radius, bounds_type="MESH")
         return b_col_obj
 
     def import_bhk_nitristrips_shape(self, n_bhk_nitristrips_shape):
@@ -396,5 +411,5 @@ class BhkCollision(Collision):
         faces = list(n_nitristrips.get_triangles())
         b_col_obj = Object.mesh_from_data("collision_poly", verts, faces)
         # TODO [collision] self.havok_mat!
-        self.set_b_collider(b_col_obj, n_nitristrips.bounding_sphere.radius, bounds_type="MESH", display_type=None)
+        self.set_b_collider(b_col_obj, n_nitristrips.bounding_sphere.radius, bounds_type="MESH")
         return b_col_obj

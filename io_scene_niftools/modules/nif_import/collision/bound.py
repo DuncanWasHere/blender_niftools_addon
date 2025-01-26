@@ -153,7 +153,7 @@ class Bound(Collision):
         if hasattr(n_block, "flags"):
             b_obj.nif_object.flags = n_block.flags
         b_obj.location = bbox_center
-        self.set_b_collider(b_obj, radius=max(maxx, maxy, maxz))
+        self.set_b_collider(b_obj, radius=max(maxx, maxy, maxz), display_type='BOX')
         return [b_obj, ]
 
     def import_spherebv(self, sphere):
@@ -171,7 +171,7 @@ class Bound(Collision):
         x, y, z = box.extent
         b_obj = Object.box_from_extents("box", -x, x, -y, y, -z, z)
         b_obj.location = (offset.x, offset.y, offset.z)
-        self.set_b_collider(b_obj, radius=(x + y + z) / 3)
+        self.set_b_collider(b_obj, radius=(x + y + z) / 3, display_type='BOX')
         return [b_obj]
 
     def import_capsulebv(self, capsule):

@@ -68,7 +68,7 @@ class Collision:
         return rot
 
     @staticmethod
-    def set_b_collider(b_obj, radius, n_obj=None, bounds_type='BOX', display_type='BOX'):
+    def set_b_collider(b_obj, radius, n_obj=None, bounds_type='BOX', display_type=None):
         """Helper function to set up b_obj so it becomes recognizable as a collision object."""
 
         # Set bounds type
