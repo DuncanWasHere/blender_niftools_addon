@@ -74,11 +74,11 @@ class NodeWrapper:
             NodeWrapper.__instance = self
 
             self.texture_loader = TextureLoader()
-            self.tree = None
+            self.b_shader_tree = None
             self.b_mat = None
             self.output = None
             self.diffuse_pass = None
-            self.diffuse_shader = None
+            self.b_principled_bsdf = None
             # raw texture nodes
             self.diffuse_texture = None
             self.vcol = None
@@ -90,19 +90,19 @@ class NodeWrapper:
     def set_uv_map(self, b_texture_node, uv_index=0, reflective=False):
         """Attaches a vector node describing the desired coordinate transforms to the texture node's UV input."""
         if reflective:
-            uv = self.tree.nodes.new('ShaderNodeTexCoord')
-            self.tree.links.new(uv.outputs[6], b_texture_node.inputs[0])
+            uv = self.b_shader_tree.nodes.new('ShaderNodeTexCoord')
+            self.b_shader_tree.links.new(uv.outputs[6], b_texture_node.inputs[0])
         # use supplied UV maps for everything else, if present
         else:
             uv_name = self.uv_node_name(uv_index)
-            existing_node = self.tree.nodes.get(uv_name)
+            existing_node = self.b_shader_tree.nodes.get(uv_name)
             if not existing_node:
-                uv = self.tree.nodes.new('ShaderNodeUVMap')
+                uv = self.b_shader_tree.nodes.new('ShaderNodeUVMap')
                 uv.name = uv_name
                 uv.uv_map = f"UV{uv_index}"
             else:
                 uv = existing_node
-            self.tree.links.new(uv.outputs[0], b_texture_node.inputs[0])
+            self.b_shader_tree.links.new(uv.outputs[0], b_texture_node.inputs[0])
 
     def global_uv_offset_scale(self, x_scale, y_scale, x_offset, y_offset, clamp_x, clamp_y):
         # get all uv nodes (by name, since we are importing they have the predefined name
@@ -111,7 +111,7 @@ class NodeWrapper:
         uv_index = 0
         while True:
             uv_name = self.uv_node_name(uv_index)
-            uv_node = self.tree.nodes.get(uv_name)
+            uv_node = self.b_shader_tree.nodes.get(uv_name)
             if uv_node and isinstance(uv_node, bpy.types.ShaderNodeUVMap):
                 uv_nodes[uv_index] = uv_node
                 uv_index += 1
@@ -122,14 +122,14 @@ class NodeWrapper:
 
         for uv_index, uv_node in uv_nodes.items():
             # for each of those, create a new uv output node and relink
-            split_node = self.tree.nodes.new("ShaderNodeSeparateXYZ")
+            split_node = self.b_shader_tree.nodes.new("ShaderNodeSeparateXYZ")
             split_node.name = f"Separate UV{uv_index}"
             split_node.label = split_node.name
-            combine_node = self.tree.nodes.new("ShaderNodeCombineXYZ")
+            combine_node = self.b_shader_tree.nodes.new("ShaderNodeCombineXYZ")
             combine_node.name = f"Combine UV{uv_index}"
             combine_node.label = combine_node.name
 
-            x_node = self.tree.nodes.new("ShaderNodeMath")
+            x_node = self.b_shader_tree.nodes.new("ShaderNodeMath")
             x_node.name = f"X offset and scale UV{uv_index}"
             x_node.label = x_node.name
             x_node.operation = 'MULTIPLY_ADD'
@@ -138,18 +138,18 @@ class NodeWrapper:
             x_node.use_clamp = clamp_x and not clip_texture
             x_node.inputs[1].default_value = x_scale
             x_node.inputs[2].default_value = x_offset
-            self.tree.links.new(split_node.outputs[0], x_node.inputs[0])
-            self.tree.links.new(x_node.outputs[0], combine_node.inputs[0])
+            self.b_shader_tree.links.new(split_node.outputs[0], x_node.inputs[0])
+            self.b_shader_tree.links.new(x_node.outputs[0], combine_node.inputs[0])
 
-            y_node = self.tree.nodes.new("ShaderNodeMath")
+            y_node = self.b_shader_tree.nodes.new("ShaderNodeMath")
             y_node.name = f"Y offset and scale UV{uv_index}"
             y_node.label = y_node.name
             y_node.operation = 'MULTIPLY_ADD'
             y_node.use_clamp = clamp_y and not clip_texture
             y_node.inputs[1].default_value = y_scale
             y_node.inputs[2].default_value = y_offset
-            self.tree.links.new(split_node.outputs[1], y_node.inputs[0])
-            self.tree.links.new(y_node.outputs[0], combine_node.inputs[1])
+            self.b_shader_tree.links.new(split_node.outputs[1], y_node.inputs[0])
+            self.b_shader_tree.links.new(y_node.outputs[0], combine_node.inputs[1])
 
             # get all the texture nodes to which it is linked, and re-link them to the uv output node
             for link in uv_node.outputs[0].links:
@@ -158,29 +158,28 @@ class NodeWrapper:
                 if isinstance(link.to_node, bpy.types.ShaderNodeTexImage):
                     target_socket = link.to_socket
                     # delete the existing link
-                    self.tree.links.remove(link)
+                    self.b_shader_tree.links.remove(link)
                     # make new ones
-                    self.tree.links.new(combine_node.outputs[0], target_socket)
+                    self.b_shader_tree.links.new(combine_node.outputs[0], target_socket)
                     # if we clamp in both directions, clip the images:
                     if clip_texture:
                         target_node.extension = 'CLIP'
-            self.tree.links.new(uv_node.outputs[0], split_node.inputs[0])
+            self.b_shader_tree.links.new(uv_node.outputs[0], split_node.inputs[0])
         pass
 
     def clear_default_nodes(self):
-        self.b_mat.use_backface_culling = True
         self.b_mat.use_nodes = True
-        self.tree = self.b_mat.node_tree
+        self.b_shader_tree = self.b_mat.node_tree
         # clear default nodes
-        for node in self.tree.nodes:
-            self.tree.nodes.remove(node)
+        for node in self.b_shader_tree.nodes:
+            self.b_shader_tree.nodes.remove(node)
         # self.tree.update()
         # bpy.context.view_layer.update()
 
-        self.output = self.tree.nodes.new('ShaderNodeOutputMaterial')
+        self.output = self.b_shader_tree.nodes.new('ShaderNodeOutputMaterial')
 
         # shaders
-        self.diffuse_shader = self.tree.nodes.new('ShaderNodeBsdfDiffuse')
+        self.b_principled_bsdf = self.b_shader_tree.nodes.new('ShaderNodeBsdfPrincipled')
 
         # image passes
         self.diffuse_pass = None
@@ -192,7 +191,7 @@ class NodeWrapper:
         """Connect to an image premixing pass"""
         # connect if the pass has been established, ie. the base texture already exists
         if b_node_pass:
-            rgb_mixer = self.tree.nodes.new('ShaderNodeMixRGB')
+            rgb_mixer = self.b_shader_tree.nodes.new('ShaderNodeMixRGB')
             # these textures are overlaid onto the base
             if texture_type in ("Detail", "Reflect"):
                 rgb_mixer.inputs[0].default_value = 1
@@ -203,15 +202,15 @@ class NodeWrapper:
                 rgb_mixer.blend_type = "MULTIPLY"
             # these textures use their alpha channel as a mask over the input pass
             elif texture_type == "Decal":
-                self.tree.links.new(b_texture_node.outputs[1], rgb_mixer.inputs[0])
-            self.tree.links.new(b_node_pass.outputs[0], rgb_mixer.inputs[1])
-            self.tree.links.new(b_texture_node.outputs[0], rgb_mixer.inputs[2])
+                self.b_shader_tree.links.new(b_texture_node.outputs[1], rgb_mixer.inputs[0])
+            self.b_shader_tree.links.new(b_node_pass.outputs[0], rgb_mixer.inputs[1])
+            self.b_shader_tree.links.new(b_texture_node.outputs[0], rgb_mixer.inputs[2])
             return rgb_mixer
         return b_texture_node
 
     def connect_vertex_colors_to_pass(self, ):
         # if ob.data.vertex_colors:
-        self.vcol = self.tree.nodes.new('ShaderNodeVertexColor')
+        self.vcol = self.b_shader_tree.nodes.new('ShaderNodeVertexColor')
         self.vcol.layer_name = "RGBA"
         self.diffuse_pass = self.connect_to_pass(self.diffuse_pass, self.vcol, texture_type="Vertex_Color")
 
@@ -220,31 +219,31 @@ class NodeWrapper:
             self.connect_vertex_colors_to_pass()
 
         if self.diffuse_pass:
-            self.tree.links.new(self.diffuse_pass.outputs[0], self.diffuse_shader.inputs[0])
+            self.b_shader_tree.links.new(self.diffuse_pass.outputs[0], self.b_principled_bsdf.inputs[0])
         # transparency
         if self.b_mat.blend_method == "OPAQUE":
-            self.tree.links.new(self.diffuse_shader.outputs[0], self.output.inputs[0])
+            self.b_shader_tree.links.new(self.b_principled_bsdf.outputs[0], self.output.inputs[0])
         else:
-            transp = self.tree.nodes.new('ShaderNodeBsdfTransparent')
-            alpha_mixer = self.tree.nodes.new('ShaderNodeMixShader')
+            transp = self.b_shader_tree.nodes.new('ShaderNodeBsdfTransparent')
+            alpha_mixer = self.b_shader_tree.nodes.new('ShaderNodeMixShader')
             #
             if self.diffuse_texture and has_vcol:
-                mixAAA = self.tree.nodes.new('ShaderNodeMixRGB')
+                mixAAA = self.b_shader_tree.nodes.new('ShaderNodeMixRGB')
                 mixAAA.inputs[0].default_value = 1
                 mixAAA.blend_type = "MULTIPLY"
-                self.tree.links.new(self.diffuse_texture.outputs[1], mixAAA.inputs[1])
-                self.tree.links.new(self.vcol.outputs[1], mixAAA.inputs[2])
-                self.tree.links.new(mixAAA.outputs[0], alpha_mixer.inputs[0])
+                self.b_shader_tree.links.new(self.diffuse_texture.outputs[1], mixAAA.inputs[1])
+                self.b_shader_tree.links.new(self.vcol.outputs[1], mixAAA.inputs[2])
+                self.b_shader_tree.links.new(mixAAA.outputs[0], alpha_mixer.inputs[0])
             elif self.diffuse_texture:
-                self.tree.links.new(self.diffuse_texture.outputs[1], alpha_mixer.inputs[0])
+                self.b_shader_tree.links.new(self.diffuse_texture.outputs[1], alpha_mixer.inputs[0])
             elif has_vcol:
-                self.tree.links.new(self.vcol.outputs[1], alpha_mixer.inputs[0])
+                self.b_shader_tree.links.new(self.vcol.outputs[1], alpha_mixer.inputs[0])
 
-            self.tree.links.new(transp.outputs[0], alpha_mixer.inputs[1])
-            self.tree.links.new(self.diffuse_shader.outputs[0], alpha_mixer.inputs[2])
-            self.tree.links.new(alpha_mixer.outputs[0], self.output.inputs[0])
+            self.b_shader_tree.links.new(transp.outputs[0], alpha_mixer.inputs[1])
+            self.b_shader_tree.links.new(self.b_principled_bsdf.outputs[0], alpha_mixer.inputs[2])
+            self.b_shader_tree.links.new(alpha_mixer.outputs[0], self.output.inputs[0])
 
-        nodes_iterate(self.tree, self.output)
+        nodes_iterate(self.b_shader_tree, self.output)
 
     def create_and_link(self, slot_name, n_tex_info):
         """"""
@@ -304,8 +303,8 @@ class NodeWrapper:
         b_texture_node.image.colorspace_settings.name = 'Non-Color'
 
         # Create Y-invert node (because NIF normal maps are +X -Y +Z)
-        nodes = self.tree.nodes
-        links = self.tree.links
+        nodes = self.b_shader_tree.nodes
+        links = self.b_shader_tree.links
         group_name = "InvertY"
 
         if group_name in bpy.data.node_groups:
@@ -365,13 +364,13 @@ class NodeWrapper:
         links.new(group_node.inputs['Input'], b_texture_node.outputs['Color'])
 
         if self.b_mat.niftools_shader.model_space_normals:
-            links.new(self.diffuse_shader.inputs[2], group_node.outputs['Output'])
+            links.new(self.b_principled_bsdf.inputs[2], group_node.outputs['Output'])
         else:
             # Create tangent normal map converter and link to it
             tangent_converter = nodes.new("ShaderNodeNormalMap")
             tangent_converter.location = (0, 300)
             links.new(tangent_converter.inputs['Color'], group_node.outputs['Output'])
-            links.new(self.diffuse_shader.inputs[2], tangent_converter.outputs['Normal'])
+            links.new(self.b_principled_bsdf.inputs[2], tangent_converter.outputs['Normal'])
 
     def link_glow_node(self, b_texture_node):
         b_texture_node.label = TEX_SLOTS.GLOW

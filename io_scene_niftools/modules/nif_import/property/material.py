@@ -73,7 +73,7 @@ class MaterialProperty:
 
         n_ni_property_list = []
 
-        if bpy.context.scene.niftools_scene.is_skyrim:
+        if bpy.context.scene.niftools_scene.is_skyrim():
             # Skyrim's material properties are stored in the shader property
             # And there is a dedicated attribute for the linked alpha property
             if n_ni_geometry.shader_property:
@@ -104,6 +104,9 @@ class MaterialProperty:
 
         b_obj.data.materials.append(b_mat)
 
+        self.node_wrapper.b_mat = b_mat
+        self.node_wrapper.clear_default_nodes()
+
         for n_ni_property in n_ni_property_list:
             self.import_material_property(n_ni_property, b_obj)
 
@@ -133,7 +136,7 @@ class MaterialProperty:
          n_ni_material_property.specular_color.b, 1)
 
         b_shader_node.inputs[14].default_value = (n_ni_material_property.specular_color.r, n_ni_material_property.specular_color.g,
-         n_ni_material_property.specular_color.b)
+         n_ni_material_property.specular_color.b, 1)
 
         # map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
         b_shader_node.inputs[2].default_value = min(1, n_ni_material_property.glossiness / 128)
