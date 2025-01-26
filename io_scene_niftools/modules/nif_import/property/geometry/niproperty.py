@@ -71,13 +71,13 @@ class NiPropertyProcessor:
     #         NiPropertyProcessor.__instance = self
 
     def register(self, processor):
-        processor.register(NifClasses.NiMaterialProperty, self.process_nimaterial_property)
-        processor.register(NifClasses.NiAlphaProperty, self.process_nialpha_property)
-        processor.register(NifClasses.NiTexturingProperty, self.process_nitexturing_property)
-        processor.register(NifClasses.NiStencilProperty, self.process_nistencil_property)
-        processor.register(NifClasses.NiSpecularProperty, self.process_nispecular_property)
-        processor.register(NifClasses.NiWireframeProperty, self.process_niwireframe_property)
-        processor.register(NifClasses.NiVertexColorProperty, self.process_nivertexcolor_property)
+        processor.register(NifClasses.NiMaterialProperty, self.import_ni_material_property)
+        processor.register(NifClasses.NiAlphaProperty, self.import_ni_alpha_property)
+        processor.register(NifClasses.NiTexturingProperty, self.import_ni_texturing_property)
+        processor.register(NifClasses.NiStencilProperty, self.import_ni_stencil_property)
+        processor.register(NifClasses.NiSpecularProperty, self.import_ni_specular_property)
+        processor.register(NifClasses.NiWireframeProperty, self.import_ni_wireframe_property)
+        processor.register(NifClasses.NiVertexColorProperty, self.import_ni_vertex_color_property)
 
     @property
     def b_mesh(self):
@@ -103,12 +103,12 @@ class NiPropertyProcessor:
     def nodes_wrapper(self, value):
         self._nodes_wrapper = value
 
-    def process_nistencil_property(self, prop):
+    def import_ni_stencil_property(self, prop):
         """Stencil (for double sided meshes"""
         Material.set_stencil(self.b_mat, prop)
         NifLog.debug("NiStencilProperty property processed")
 
-    def process_nispecular_property(self, prop):
+    def import_ni_specular_property(self, prop):
         """SpecularProperty based specular"""
 
         # TODO [material][property]
@@ -116,30 +116,31 @@ class NiPropertyProcessor:
             self.b_mat.specular_intensity = 0.0  # no specular prop
         NifLog.debug("NiSpecularProperty property processed")
 
-    def process_nialpha_property(self, prop):
-        """Import a NiAlphaProperty based material"""
+    def import_ni_alpha_property(self, prop):
+        """Import a NiAlphaProperty block."""
+        
         Material.set_alpha(self.b_mat, prop)
-        NifLog.debug("NiAlphaProperty property processed")
+        NifLog.debug("NiAlphaProperty block imported.")
 
-    def process_nimaterial_property(self, prop):
+    def import_ni_material_property(self, prop):
         """Import a NiMaterialProperty based material"""
         NiMaterial().import_material(self.n_block, self.b_mat, prop)
         # TODO [animation][material] merge this call into import_material
         MaterialAnimation().import_material_controllers(self.n_block, self.b_mat)
         NifLog.debug("NiMaterialProperty property processed")
 
-    def process_nitexturing_property(self, prop):
+    def import_ni_texturing_property(self, prop):
         """Import a NiTexturingProperty based material"""
         NiTextureProp().import_nitextureprop_textures(prop, self._nodes_wrapper)
         NifLog.debug("NiTexturingProperty property processed")
 
-    def process_niwireframe_property(self, prop):
+    def import_ni_wireframe_property(self, prop):
         """Modifier based wireframe display"""
         b_mod = self.b_obj.modifiers.new("WIREFRAME", 'WIREFRAME')
         b_mod.use_relative_offset = True
         NifLog.debug("NiWireframeProperty property processed")
 
-    def process_nivertexcolor_property(self, prop):
+    def import_ni_vertex_color_property(self, prop):
         """Material based specular"""
         # TODO [property][mesh] Use the vertex color modes
         # this should influence the structure of the node tree, how the vcol and diffuse passes are blended

@@ -50,7 +50,7 @@ class NiTypes:
         if isinstance(n_node, NifClasses.RootCollisionNode):
             b_obj["type"] = "RootCollisionNode"
             b_obj.name = "RootCollisionNode"
-            b_obj.niftools.flags = n_node.flags
+            b_obj.nif_object.flags = n_node.flags
             for b_child in b_obj.children:
                 b_child.display_type = 'WIRE'
 

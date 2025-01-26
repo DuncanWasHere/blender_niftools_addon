@@ -270,8 +270,8 @@ class SkinnedGeometry:
             skininst = block_store.create_block("NiSkinInstance", b_obj)
 
         # get skeleton root from custom property
-        if b_obj.niftools.skeleton_root:
-            n_root_name = b_obj.niftools.skeleton_root
+        if b_obj.nif_object.skeleton_root:
+            n_root_name = b_obj.nif_object.skeleton_root
         # or use the armature name
         else:
             n_root_name = block_store.get_full_name(b_obj_armature)

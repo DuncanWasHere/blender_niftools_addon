@@ -55,7 +55,7 @@ def create_ninode(b_obj=None, n_node_type=None):
         # let n_node_type overwrite the detected node type
         if n_node_type is None:
             try:
-                n_node_type = b_obj.niftools.nodetype
+                n_node_type = b_obj.nif_object.nodetype
             except AttributeError:
                 n_node_type = "NiNode"
 

@@ -56,7 +56,7 @@ class AnimationPanel(Panel):
     def draw(self, context):
         layout = self.layout
 
-        col_setting = context.active_action.nifanimation
+        col_setting = context.active_action.nif_animation
 
         box = layout.box()
         box.prop(col_setting, "weight", text='Weight')  # weight prop

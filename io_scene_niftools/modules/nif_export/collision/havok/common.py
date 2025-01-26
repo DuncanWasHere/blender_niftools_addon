@@ -84,4 +84,4 @@ class BhkCollisionCommon(CollisionCommon):
             # Update rigid body center of mass and inertia
             # Mass value should be set manually as it is not necessarily physically accurate
             n_bhk_rigid_body.update_mass_center_inertia(mass=n_bhk_rigid_body.rigid_body_info.mass,
-                                                        solid=b_col_obj.nifcollision.solid)
+                                                        solid=b_col_obj.nif_collision.solid)

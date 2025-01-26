@@ -62,7 +62,7 @@ class ObjectPanel(ObjectButtonsPanel):
 
     def draw(self, context):
         b_obj = context.object
-        nif_obj_props = b_obj.niftools
+        nif_obj_props = b_obj.nif_object
 
         layout = self.layout
         row = layout.column()
@@ -97,7 +97,7 @@ class ObjectBSInvMarkerPanel(ObjectButtonsPanel):
     def draw(self, context):
         layout = self.layout
         row = layout.row()
-        bs_inv = context.object.niftools.bs_inv
+        bs_inv = context.object.nif_object.bs_inv
         if not bs_inv:
             row.operator("object.bs_inv_marker_add", icon='ZOOM_IN', text="")
         else:

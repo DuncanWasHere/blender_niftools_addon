@@ -100,7 +100,7 @@ class BhkCollision(BhkCollisionCommon):
             self.bhk_shape_helper.export_bhk_shape(b_col_obj, n_bhk_rigid_body, n_hav_mat_list[0])
 
         # Recalculate inertia tensor and center of mass for bhkRigidBody(T)
-        if b_col_obj.nifcollision.use_blender_properties:
+        if b_col_obj.nif_collision.use_blender_properties:
             self.update_rigid_body(b_col_obj, n_bhk_rigid_body)
 
         DICT_NAMES[b_col_obj.name] = n_bhk_rigid_body
@@ -110,7 +110,7 @@ class BhkCollision(BhkCollisionCommon):
         Export a bhkCollisionObject block.
         """
 
-        col_filter = b_obj.nifcollision.col_filter
+        col_filter = b_obj.nif_collision.col_filter
 
         n_col_obj = block_store.create_block("bhkCollisionObject", b_obj)
         n_col_obj.flags._value = 0
@@ -156,8 +156,8 @@ class BhkCollision(BhkCollisionCommon):
         b_r_body = b_col_obj.rigid_body  # Blender rigid body object
         n_r_info = n_bhk_rigid_body.rigid_body_info  # bhkRigidBody block
 
-        n_bhk_rigid_body.havok_filter.layer = int(b_col_obj.nifcollision.collision_layer)
-        n_bhk_rigid_body.havok_filter.flags = b_col_obj.nifcollision.col_filter
+        n_bhk_rigid_body.havok_filter.layer = int(b_col_obj.nif_collision.collision_layer)
+        n_bhk_rigid_body.havok_filter.flags = b_col_obj.nif_collision.col_filter
         # n_r_body.havok_filter.group = 0
 
         n_bhk_rigid_body.entity_info.collision_response = NifClasses.HkResponseType['RESPONSE_SIMPLE_CONTACT']
@@ -165,22 +165,22 @@ class BhkCollision(BhkCollisionCommon):
 
         n_r_info.havok_filter = n_bhk_rigid_body.havok_filter
 
-        n_r_info.inertia_tensor.m_11, n_r_info.inertia_tensor.m_22, n_r_info.inertia_tensor.m_33 = b_col_obj.nifcollision.inertia_tensor
-        n_r_info.center.x, n_r_info.center.y, n_r_info.center.z = b_col_obj.nifcollision.center
-        n_r_info.mass = b_col_obj.nifcollision.mass
+        n_r_info.inertia_tensor.m_11, n_r_info.inertia_tensor.m_22, n_r_info.inertia_tensor.m_33 = b_col_obj.nif_collision.inertia_tensor
+        n_r_info.center.x, n_r_info.center.y, n_r_info.center.z = b_col_obj.nif_collision.center
+        n_r_info.mass = b_col_obj.nif_collision.mass
         n_r_info.linear_damping = b_r_body.linear_damping
         n_r_info.angular_damping = b_r_body.angular_damping
         n_r_info.friction = b_r_body.friction
         n_r_info.restitution = b_r_body.restitution
-        n_r_info.max_linear_velocity = b_col_obj.nifcollision.max_linear_velocity
-        n_r_info.max_angular_velocity = b_col_obj.nifcollision.max_angular_velocity
-        n_r_info.penetration_depth = b_col_obj.nifcollision.penetration_depth
+        n_r_info.max_linear_velocity = b_col_obj.nif_collision.max_linear_velocity
+        n_r_info.max_angular_velocity = b_col_obj.nif_collision.max_angular_velocity
+        n_r_info.penetration_depth = b_col_obj.nif_collision.penetration_depth
 
-        n_r_info.motion_system = NifClasses.HkMotionType[b_col_obj.nifcollision.motion_system]
-        n_r_info.deactivator_type = NifClasses.HkDeactivatorType[b_col_obj.nifcollision.deactivator_type]
-        n_r_info.solver_deactivation = NifClasses.HkSolverDeactivation[b_col_obj.nifcollision.solver_deactivation]
-        n_r_info.quality_type = NifClasses.HkQualityType[b_col_obj.nifcollision.quality_type]
+        n_r_info.motion_system = NifClasses.HkMotionType[b_col_obj.nif_collision.motion_system]
+        n_r_info.deactivator_type = NifClasses.HkDeactivatorType[b_col_obj.nif_collision.deactivator_type]
+        n_r_info.solver_deactivation = NifClasses.HkSolverDeactivation[b_col_obj.nif_collision.solver_deactivation]
+        n_r_info.quality_type = NifClasses.HkQualityType[b_col_obj.nif_collision.quality_type]
 
-        n_bhk_rigid_body.body_flags = b_col_obj.nifcollision.body_flags
+        n_bhk_rigid_body.body_flags = b_col_obj.nif_collision.body_flags
 
         return n_bhk_rigid_body

@@ -183,7 +183,7 @@ class Geometry:
 
         # Set consistency flags
         if isinstance(n_ni_geometry, NifClasses.NiTriBasedGeom):
-            n_ni_geometry_data.consistency_flags = NifClasses.ConsistencyType[b_obj.niftools.consistency_flags]
+            n_ni_geometry_data.consistency_flags = NifClasses.ConsistencyType[b_obj.nif_object.consistency_flags]
 
         b_uv_layers = b_eval_mesh.uv_layers
 

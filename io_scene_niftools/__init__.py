@@ -49,7 +49,7 @@ from io_scene_niftools.utils.logging import NifLog
 
 # Blender addon info
 bl_info = {
-    "name": "NifTools Add-on",
+    "name": "NifTools",
     "description": "Import and export files in the NetImmerse/Gamebryo formats (.nif, .kf, .egm)",
     "author": "NifTools Team",
     "blender": (4, 3, 2),
@@ -62,10 +62,11 @@ bl_info = {
     "category": "Import-Export"
 }
 
-global current_dir
+global current_dir # NifTools Addon install directory
 
 def locate_dependencies():
-    # Python dependencies are bundled inside the io_scene_nif/dependencies folder
+    """Locate Python dependencies bundled inside the io_scene_niftools/dependencies folder."""
+
     global current_dir
     current_dir = os.path.dirname(__file__)
     _dependencies_path = os.path.join(current_dir, "dependencies")
@@ -84,22 +85,25 @@ def locate_dependencies():
 locate_dependencies()
 logging.init_loggers()
 
-def retrieve_ordered_submodules():
+def get_ordered_submodules():
+    """Get submodules and return them in the order by which they are to be registered."""
+
     from . import properties, operators, ui, update
     return [update, properties, operators, ui]
 
-MODS = retrieve_ordered_submodules()
+MODS = get_ordered_submodules()
 
 def register():
-    # Addon updater code and configurations in case of broken version, try to register the updater first
-    # so that users can revert back to a working version
+    """Register addon updater."""
+
     NifLog.debug("Starting registration")
     configure_autoupdater()
 
     register_modules(MODS, __name__)
 
 def unregister():
-    # Addon updater unregister
+    """Unregister addon updater."""
+
     unregister_modules(MODS, __name__)
     addon_updater_ops.unregister()
 
@@ -112,6 +116,8 @@ def select_zip_file(self, tag):
     return link
 
 def configure_autoupdater():
+    """Configure addon updater for GitHub repository."""
+
     NifLog.debug("Configuring auto-updater")
     addon_updater_ops.register(bl_info)
     addon_updater_ops.updater.select_link = select_zip_file
@@ -122,3 +128,4 @@ def configure_autoupdater():
     addon_updater_ops.updater.repo = "blender_niftools_addon"
     addon_updater_ops.updater.website = "https://github.com/DuncanWasHere/blender_niftools_addon"
     addon_updater_ops.updater.version_min_update = (0, 0, 4)
+

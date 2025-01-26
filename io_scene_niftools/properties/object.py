@@ -48,32 +48,6 @@ from bpy.types import PropertyGroup
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 from nifgen.formats.nif import classes as NifClasses
 
-prn_map = {"OBLIVION": [("SideWeapon", ""),
-                        ("BackWeapon", ""),
-                        ("Bip01 L ForearmTwist", "Used for shields"),
-                        ("Torch", ""),
-                        ("Quiver", ""),
-                        ("Bip01 Head", "Used for helmets"),
-                        ("Bip01 R Finger1", "Used for rings")],
-           "FALLOUT_3": [("Weapon", ""),
-                         ("Bip01 Head", "Used for helmets"),
-                         ("Bip01 R Finger1", "")],
-           "SKYRIM": [("WeaponDagger", ""),
-                      ("WeaponBack", ""),
-                      ("WeaponBow", ""),
-                      ("WeaponMace", ""),
-                      ("SHIELD", ""),
-                      ("WeaponStaff", ""),
-                      ("WeaponSword", ""),
-                      ("WeaponAxe", ""),
-                      ("QUIVER", ""),
-                      ("SHIELD", ""),
-                      ("NPC Head [Head]", "Used for helmets"),
-                      ("NPC R Finger10 [RF10]", "Used for rings")]
-           }
-prn_map["FALLOUT_NV"] = prn_map["FALLOUT_3"]
-prn_map["SKYRIM_SE"] = prn_map["SKYRIM"]
-
 
 class BsInventoryMarker(PropertyGroup):
     name: StringProperty(
@@ -108,13 +82,10 @@ class BsInventoryMarker(PropertyGroup):
         default=1
     )
 
-
 prn_versioned_arguments = {}
 if bpy.app.version >= (3, 3, 0):
     prn_versioned_arguments['search'] = lambda self, context, edit_text: prn_map.get(context.scene.niftools_scene.game,
                                                                                      [])
-
-
 class ObjectProperty(PropertyGroup):
     nodetype: EnumProperty(
         name='Node Type',
@@ -135,9 +106,8 @@ class ObjectProperty(PropertyGroup):
     )
 
     prn_location: StringProperty(
-        name='Weapon Location',
-        description='Attachment point of weapon, for Skyrim, FO3 & Oblivion',
-        **prn_versioned_arguments,
+        name='PRN',
+        description='Attachment point of weapon, armor, or body part. For FO3, Oblivion, and Skyrim'
     )
 
     consistency_flags: EnumProperty(
@@ -184,10 +154,10 @@ CLASSES = [
 def register():
     register_classes(CLASSES, __name__)
 
-    bpy.types.Object.niftools = bpy.props.PointerProperty(type=ObjectProperty)
+    bpy.types.Object.nif_object = bpy.props.PointerProperty(type=ObjectProperty)
 
 
 def unregister():
-    del bpy.types.Object.niftools
+    del bpy.types.Object.nif_object
 
     unregister_classes(CLASSES, __name__)

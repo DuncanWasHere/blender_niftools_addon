@@ -47,11 +47,11 @@ from io_scene_niftools.utils.logging import NifLog, NifError
 from io_scene_niftools.utils.singleton import EGMData
 
 
-class NifFile:
+class KfFile:
     """Class for loading and saving NIF files."""
 
     @staticmethod
-    def load_nif(file_path):
+    def load_kf(file_path):
         """Load a NIF from the given file path."""
 
         NifLog.info(f"Importing {file_path}")
@@ -75,15 +75,13 @@ class NifFile:
         return data
 
     @staticmethod
-    def write_nif(n_data, directory, file_base, file_ext):
+    def write_kf(n_data, directory, file_base, file_ext):
         # export nif file:
-        if bpy.context.scene.niftools_scene.game == 'EMPIRE_EARTH_II':
-            file_ext = ".nifcache"
         NifLog.info(f"Writing {file_ext} file.")
 
         # Assemble full file path and add 'x' prefix for Morrowind
         prefix = "x" if bpy.context.scene.niftools_scene.game in ('MORROWIND',) else ""
-        niffile = os.path.join(directory, prefix + file_base + file_ext)
+        niffile = os.path.join(directory, prefix + file_base + ext)
 
         # todo [export] I believe this is redundant and setting modification only is the current way?
         n_data.neosteam = (bpy.context.scene.niftools_scene.game == 'NEOSTEAM')
@@ -98,13 +96,3 @@ class NifFile:
         n_data.validate()
         with open(niffile, "wb") as stream:
             n_data.write(stream)
-
-        # export egm file:
-        # -----------------
-        if EGMData.data:
-            ext = ".egm"
-            NifLog.info(f"Writing {ext} file.")
-
-            egmfile = os.path.join(directory, file_base + ext)
-            with open(egmfile, "wb") as stream:
-                EGMData.data.write(stream)

@@ -91,7 +91,7 @@ class Collision:
 
             if bpy.context.scene.niftools_scene.is_bs():
                 # Export Bethesda/Havok collision objects
-                layer = int(b_col_obj.nifcollision.collision_layer)
+                layer = int(b_col_obj.nif_collision.collision_layer)
 
                 if self.target_game in ('OBLIVION', 'OBLIVION_KF'):
                     if NifClasses.OblivionLayer.from_value(layer) == 'OL_BIPED':

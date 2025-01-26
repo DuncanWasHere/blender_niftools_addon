@@ -37,6 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import bpy
 from bpy.props import (IntProperty,
                        EnumProperty,
@@ -47,7 +48,7 @@ from bpy.types import PropertyGroup
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 
 
-class BoneProperty(PropertyGroup):
+class BoneProperties(PropertyGroup):
     flags: IntProperty(
         name='Bone Flag',
         default=0
@@ -61,7 +62,7 @@ class BoneProperty(PropertyGroup):
     )
 
 
-class ArmatureProperty(PropertyGroup):
+class ArmatureProperties(PropertyGroup):
     axis_forward: EnumProperty(
         name="Forward",
         items=(('X', "X Forward", ""),
@@ -88,16 +89,16 @@ class ArmatureProperty(PropertyGroup):
 
 
 CLASSES = [
-    BoneProperty,
-    ArmatureProperty
+    BoneProperties,
+    ArmatureProperties
 ]
 
 
 def register():
     register_classes(CLASSES, __name__)
 
-    bpy.types.Armature.niftools = bpy.props.PointerProperty(type=ArmatureProperty)
-    bpy.types.Bone.niftools = bpy.props.PointerProperty(type=BoneProperty)
+    bpy.types.Armature.nif_armature = bpy.props.PointerProperty(type=ArmatureProperties)
+    bpy.types.Bone.nif_bone = bpy.props.PointerProperty(type=BoneProperties)
 
 
 def unregister():

@@ -1,4 +1,4 @@
-""" Nif User Interface, connect custom properties from properties.py into Blenders UI"""
+"""Classes for displaying custom NifTools properties in the Blender interface."""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -37,15 +37,15 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 from io_scene_niftools.ui import animation, armature, collision, material, object, operators, shader, scene
 from io_scene_niftools.utils.decorators import register_modules, unregister_modules
 
-MODS = [animation, armature, collision, material, object, operators, shader, scene]
 
+MODS = [animation, armature, collision, material, object, operators, shader, scene]
 
 def register():
     register_modules(MODS, __name__)
-
 
 def unregister():
     unregister_modules(MODS, __name__)

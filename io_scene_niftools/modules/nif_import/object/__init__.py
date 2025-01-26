@@ -142,14 +142,14 @@ class Object:
     @staticmethod
     def import_object_flags(n_block, b_obj):
         """ Various settings in b_obj's niftools panel """
-        b_obj.niftools.flags = n_block.flags
+        b_obj.nif_object.flags = n_block.flags
 
         if hasattr(n_block, "data") and isinstance(n_block.data.consistency_flags, NifClasses.ConsistencyType):
-            b_obj.niftools.consistency_flags = n_block.data.consistency_flags.name
+            b_obj.nif_object.consistency_flags = n_block.data.consistency_flags.name
         if n_block.is_skin() and hasattr(n_block, "skin_instance"):
             skininst = n_block.skin_instance
             skelroot = skininst.skeleton_root
-            b_obj.niftools.skeleton_root = block_store.import_name(skelroot)
+            b_obj.nif_object.skeleton_root = block_store.import_name(skelroot)
 
     @staticmethod
     def append_armature_modifier(b_obj, b_armature):

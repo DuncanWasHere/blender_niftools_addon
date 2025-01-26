@@ -39,46 +39,94 @@
 
 
 import bpy
-from bpy.props import (IntProperty,
-                       )
+
+from bpy.props import (IntProperty, BoolProperty, EnumProperty)
 from bpy.types import PropertyGroup
 
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 
+from nifgen.formats.nif import classes as NifClasses
 
-class MaterialProperty(PropertyGroup):
-    """Adds custom properties to material"""
 
-    alphaflag: IntProperty(
-        name='Alpha Flag',
+class MaterialProperties(PropertyGroup):
+    """Group of material related properties, which gets attached to materials through a property pointer."""
+
+    texture_flags: IntProperty(
+        name='Texture Flags',
         default=0,
         min=0,
-        max=100
+        max=65535
     )
 
-    textureflag: IntProperty(
-        name='Texture Flag',
+    material_flags: IntProperty(
+        name='Material Flags',
+        default=0,
+        min=0,
+        max=65535
+    )
+
+    use_alpha: BoolProperty(
+        name='Use Alpha',
         default=0
     )
 
-    materialflag: IntProperty(
-        name='Material Flag',
+class AlphaProperties(PropertyGroup):
+    """Group of alpha related properties, which gets attached to materials through a property pointer."""
+
+    enable_blending: BoolProperty(
+        name='Enable Blending',
         default=0
     )
 
+    source_blend_mode: EnumProperty(
+        name='Source Blend Mode',
+        items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.AlphaFunction)],
+        default='SRC_ALPHA'
+    )
+
+    destination_blend_mode: EnumProperty(
+        name='Destination Blend Mode',
+        items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.AlphaFunction)],
+        default='INV_SRC_ALPHA'
+    )
+
+    enable_testing: BoolProperty(
+        name='Enable Testing',
+        default=1
+    )
+
+    alpha_test_function: EnumProperty(
+        name='Alpha Test Function',
+        items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.TestFunction)],
+        default='TEST_GREATER'
+    )
+
+    alpha_test_threshold: IntProperty(
+        name='Alpha Test Threshold',
+        default=128,
+        min=0,
+        max=255
+    )
+
+    no_sorter: BoolProperty(
+        name='No Sorter',
+        default=0
+    )
 
 CLASSES = [
-    MaterialProperty
+    MaterialProperties,
+    AlphaProperties
 ]
-
 
 def register():
     register_classes(CLASSES, __name__)
 
-    bpy.types.Material.niftools = bpy.props.PointerProperty(type=MaterialProperty)
+    bpy.types.Material.nif_material = bpy.props.PointerProperty(type=MaterialProperties)
+    bpy.types.Material.nif_alpha = bpy.props.PointerProperty(type=AlphaProperties)
 
 
 def unregister():
-    del bpy.types.Material.niftools
+    del bpy.types.Material.nif_material
+    del bpy.types.Material.nif_alpha
 
     unregister_classes(CLASSES, __name__)

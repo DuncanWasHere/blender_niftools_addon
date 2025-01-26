@@ -92,6 +92,7 @@ class BhkMOPPShape(BhkCollisionCommon):
         """
 
         n_bhk_packed_ni_tri_strips_shape = block_store.create_block("bhkPackedNiTriStripsShape", b_col_obj)
+        n_bhk_mopp_bv_tree_shape.shape = n_bhk_packed_ni_tri_strips_shape
 
         b_rigid_body = b_col_obj.rigid_body
 
@@ -108,8 +109,6 @@ class BhkMOPPShape(BhkCollisionCommon):
         else:
             n_bhk_packed_ni_tri_strips_shape.radius = 0.1
             n_bhk_packed_ni_tri_strips_shape.radius_copy = 0.1
-
-        n_bhk_mopp_bv_tree_shape.shape = n_bhk_packed_ni_tri_strips_shape
 
         return n_bhk_packed_ni_tri_strips_shape
 

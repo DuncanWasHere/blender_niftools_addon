@@ -41,6 +41,7 @@
 import os
 
 from bpy.types import Scene
+
 from io_scene_niftools.modules.nif_export.animation.object import ObjectAnimation
 from io_scene_niftools.modules.nif_export.scene import Scene
 from io_scene_niftools.nif_common import NifCommon
@@ -50,55 +51,69 @@ from io_scene_niftools.utils.singleton import NifOp, NifData
 
 
 class KfExport(NifCommon):
+    """Main KF export class."""
 
     def __init__(self, operator, context):
         NifCommon.__init__(self, operator, context)
 
-        # Helper systems
+        # Export helpers
         self.transform_anim = ObjectAnimation()
         self.scene_helper = Scene()
+
+        # Common export properties
+        self.target_game = None
+        self.version = None
 
     def execute(self):
         """Main KF export function."""
 
-        NifLog.info(f"Exporting {NifOp.props.filepath}")
-
-        # extract directory, base name, extension
+        # Get output directory, filename, and file extension from UI; the file IO scripts will use this later
+        NifLog.info(f"Preparing to write file at {NifOp.props.filepath}")
         directory = os.path.dirname(NifOp.props.filepath)
-        filebase, fileext = os.path.splitext(os.path.basename(NifOp.props.filepath))
+        file_base, file_ext = os.path.splitext(os.path.basename(NifOp.props.filepath))
 
-        game, self.version, data = self.scene_helper.get_version_data()
+        try:
+            # Initialize NIF data that will be written to the file
+            self.__initialize_kf_data()
+            if self.target_game == 'UNKNOWN':
+                raise NifError("You have not selected a game. Please select a game and "
+                               "NIF version in the scene tab.")
 
-        if game == 'UNKNOWN':
-            raise NifError("You have not selected a game. Please select a game in the scene tab.")
+            prefix = "x" if self.target_game in 'MORROWIND' else ""
+            # TODO[anim] - Change to KfData, but create_controller() [and maybe more] has to be updated first
 
-        prefix = "x" if game in ('MORROWIND',) else ""
-        # todo[anim] - change to KfData, but create_controller() [and maybe more] has to be updated first
-        NifData.init(data)
+            b_armature = math.get_armature()
+            # Some scenes may not have an armature, so nothing to do here
+            if b_armature:
+                math.set_bone_orientation(b_armature.data.nif_armature.axis_forward, b_armature.data.nif_armature.axis_up)
 
-        b_armature = math.get_armature()
-        # some scenes may not have an armature, so nothing to do here
-        if b_armature:
-            math.set_bone_orientation(b_armature.data.niftools.axis_forward, b_armature.data.niftools.axis_up)
+            NifLog.info("Creating keyframe tree.")
+            kf_root = self.transform_anim.export_kf_root(b_armature)
 
-        NifLog.info("Creating keyframe tree")
-        kf_root = self.transform_anim.export_kf_root(b_armature)
+            # write kf (and xkf if asked)
+            file_ext = ".kf"
+            NifLog.info(f"Writing {prefix}{file_ext} file")
 
-        # write kf (and xkf if asked)
-        ext = ".kf"
-        NifLog.info(f"Writing {prefix}{ext} file")
+            NifData.data.roots = [kf_root]
+            NifData.data.neosteam = (self.target_game == 'NEOSTEAM')
 
-        data.roots = [kf_root]
-        data.neosteam = (game == 'NEOSTEAM')
+            # scale correction for the skeleton
+            self.apply_scale(NifData.data, 1 / NifOp.props.scale_correction)
 
-        # scale correction for the skeleton
-        self.apply_scale(data, 1 / NifOp.props.scale_correction)
+            NifData.data.validate()
 
-        data.validate()
+            kffile = os.path.join(directory, prefix + file_base + file_ext)
+            with open(kffile, "wb") as stream:
+                NifData.data.write(stream)
 
-        kffile = os.path.join(directory, prefix + filebase + ext)
-        with open(kffile, "wb") as stream:
-            data.write(stream)
+        except NifError:
+            return {'CANCELLED'}
 
-        NifLog.info("Finished successfully")
+        NifLog.info("Export finished successfully.")
         return {'FINISHED'}
+
+    def __initialize_kf_data(self):
+        """Initialize KF data stream with version from the scene."""
+
+        self.target_game, self.version, n_data = self.scene_helper.get_version_data()
+        NifData.init(n_data)

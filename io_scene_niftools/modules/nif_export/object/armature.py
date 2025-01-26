@@ -93,8 +93,8 @@ class Armature:
         or the game version if none was set.
         """
 
-        if b_bone.niftools.flags != 0:
-            n_node.flags = b_bone.niftools.flags
+        if b_bone.nif_bone.flags != 0:
+            n_node.flags = b_bone.nif_bone.flags
         else:
             game = bpy.context.scene.niftools_scene.game
             if bpy.context.scene.niftools_scene.is_bs():

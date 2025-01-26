@@ -37,10 +37,10 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import bpy
 
 from io_scene_niftools import addon_updater_ops
-
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 
 
@@ -68,6 +68,7 @@ class UpdaterPreferences(bpy.types.AddonPreferences):
         min=0,
         max=31
     )
+
     updater_interval_hours: bpy.props.IntProperty(
         name='Hours',
         description="Number of hours between update checks",
@@ -75,6 +76,7 @@ class UpdaterPreferences(bpy.types.AddonPreferences):
         min=0,
         max=23
     )
+
     updater_interval_minutes: bpy.props.IntProperty(
         name='Minutes',
         description="Number of minutes between update checks",
@@ -105,15 +107,12 @@ class UpdaterPreferences(bpy.types.AddonPreferences):
     # col.scale_y = 2
     # col.operator("wm.url_open","Open webpage ").url=addon_updater_ops.updater.website
 
-
 classes = [
     UpdaterPreferences
 ]
 
-
 def register():
     register_classes(classes, __name__)
-
 
 def unregister():
     unregister_classes(classes, __name__)

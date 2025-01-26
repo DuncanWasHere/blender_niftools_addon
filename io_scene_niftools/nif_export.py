@@ -41,18 +41,23 @@
 import os.path
 
 import bpy
+
 from io_scene_niftools.file_io import File
+
+from io_scene_niftools.nif_common import NifCommon
+
+from io_scene_niftools.utils import math
+from io_scene_niftools.utils.logging import NifLog, NifError
+from io_scene_niftools.utils.singleton import NifOp, EGMData, NifData
+
 from io_scene_niftools.modules.nif_export.animation import Animation
-from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.collision import Collision
 from io_scene_niftools.modules.nif_export.constraint import Constraint
 from io_scene_niftools.modules.nif_export.object import Object
 from io_scene_niftools.modules.nif_export.particle import Particle
 from io_scene_niftools.modules.nif_export.scene import Scene
-from io_scene_niftools.nif_common import NifCommon
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.logging import NifLog, NifError
-from io_scene_niftools.utils.singleton import NifOp, EGMData, NifData
+from io_scene_niftools.modules.nif_export.block_registry import block_store
+
 from nifgen.formats.nif import classes as NifClasses
 
 
@@ -145,10 +150,7 @@ class NifExport(NifCommon):
         return {'FINISHED'}
 
     def __initialize_nif_data(self):
-        """
-        Initialize NIF data stream with version from the scene.
-        Abort export if selected game is invalid.
-        """
+        """Initialize NIF data stream with version from the scene."""
 
         self.target_game, self.version, n_data = self.scene_helper.get_version_data()
         NifData.init(n_data)
@@ -208,7 +210,7 @@ class NifExport(NifCommon):
 
         if self.b_armatures:
             for b_armature in self.b_armatures:
-                math.set_bone_orientation(b_armature.data.niftools.axis_forward, b_armature.data.niftools.axis_up)
+                math.set_bone_orientation(b_armature.data.nif_bone.axis_forward, b_armature.data.nif_bone.axis_up)
 
     def __flatten_skin(self):
         """

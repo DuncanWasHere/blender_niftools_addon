@@ -52,15 +52,15 @@ class Material:
         return b_mat
 
     @staticmethod
-    def set_alpha(b_mat, n_alpha_prop):
-        NifLog.debug("Alpha prop detected")
-        # flags is a bitfield
-        blend_enable = 1 & n_alpha_prop.flags
-        test_enable = (1 << 9) & n_alpha_prop.flags
-
-        b_mat.niftools_alpha.alphaflag = n_alpha_prop.flags
-
-        return b_mat
+    def set_alpha(b_mat, n_ni_alpha_property):
+        b_mat.nif_material.use_alpha = True
+        b_mat.nif_alpha.enable_blending = n_ni_alpha_property.flags.alpha_blend
+        b_mat.nif_alpha.source_blend_mode = n_ni_alpha_property.flags.source_blend_mode.name
+        b_mat.nif_alpha.destination_blend_mode = n_ni_alpha_property.flags.destination_blend_mode.name
+        b_mat.nif_alpha.enable_testing = n_ni_alpha_property.flags.alpha_test
+        b_mat.nif_alpha.alpha_test_function = n_ni_alpha_property.flags.test_func.name
+        b_mat.nif_alpha.no_sorter = n_ni_alpha_property.flags.no_sorter
+        b_mat.nif_alpha.alpha_test_threshold = n_ni_alpha_property.threshold
 
     @staticmethod
     def import_material_specular(b_mat, n_specular_color):
@@ -68,7 +68,7 @@ class Material:
 
     @staticmethod
     def import_material_emissive(b_mat, n_emissive_color):
-        b_mat.niftools.emissive_color = (n_emissive_color.r, n_emissive_color.g, n_emissive_color.b)
+        b_mat.nif_material.emissive_color = (n_emissive_color.r, n_emissive_color.g, n_emissive_color.b)
 
     @staticmethod
     def import_material_diffuse(b_mat, n_diffuse_color):
@@ -77,7 +77,7 @@ class Material:
 
     @staticmethod
     def import_material_ambient(b_mat, ambient_color):
-        b_mat.niftools.ambient_color = (ambient_color.r, ambient_color.g, ambient_color.b)
+        b_mat.nif_material.ambient_color = (ambient_color.r, ambient_color.g, ambient_color.b)
 
     @staticmethod
     def import_material_gloss(b_mat, glossiness):
@@ -88,7 +88,7 @@ class Material:
     @staticmethod
     def import_material_alpha(b_mat, n_alpha):
         # TODO [Shader] Alpha property
-        b_mat.niftools.emissive_alpha.v = n_alpha
+        b_mat.nif_material.emissive_alpha.v = n_alpha
 
 
 class NiMaterial(Material):

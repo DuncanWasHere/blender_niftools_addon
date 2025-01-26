@@ -82,14 +82,14 @@ def b_check_gloss_property(b_mat):
 
 
 def b_create_emmisive_property(b_mat):
-    b_mat.niftools.emissive_color = (0.5, 0.0, 0.0)
+    b_mat.nif_material.emissive_color = (0.5, 0.0, 0.0)
     b_mat.emit = 1.0
     return b_mat
 
 
 def b_check_emission_property(b_mat):
     nose.tools.assert_equal(b_mat.emit, 1.0)
-    nose.tools.assert_equal((b_mat.niftools.emissive_color.r,
-                             b_mat.niftools.emissive_color.g,
-                             b_mat.niftools.emissive_color.b),
+    nose.tools.assert_equal((b_mat.nif_material.emissive_color.r,
+                             b_mat.nif_material.emissive_color.g,
+                             b_mat.nif_material.emissive_color.b),
                             (0.5, 0.0, 0.0))

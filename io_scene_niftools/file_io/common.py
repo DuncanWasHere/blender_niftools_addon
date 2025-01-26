@@ -47,8 +47,8 @@ from io_scene_niftools.utils.logging import NifLog, NifError
 from io_scene_niftools.utils.singleton import EGMData
 
 
-class NifFile:
-    """Class for loading and saving NIF files."""
+class File:
+    """Abstract base class for loading and saving files."""
 
     @staticmethod
     def load_nif(file_path):
@@ -75,7 +75,7 @@ class NifFile:
         return data
 
     @staticmethod
-    def write_nif(n_data, directory, file_base, file_ext):
+    def write_file(n_data, directory, file_base, file_ext):
         # export nif file:
         if bpy.context.scene.niftools_scene.game == 'EMPIRE_EARTH_II':
             file_ext = ".nifcache"

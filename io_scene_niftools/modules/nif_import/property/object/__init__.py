@@ -48,37 +48,37 @@ class ObjectProperty:
         """Import object flags and node types."""
 
         # Store object flags
-        b_obj.niftools.flags = n_block.flags
+        b_obj.nif_object.flags = n_block.flags
 
         if not issubclass(type(n_block), NifClasses.NiNode):
             return
 
         # Store type of node
         if isinstance(n_block, NifClasses.BSFadeNode):
-            b_obj.niftools.nodetype = 'BSFadeNode'
+            b_obj.nif_object.nodetype = 'BSFadeNode'
         elif isinstance(n_block, NifClasses.NiLODNode):
-            b_obj.niftools.nodetype = 'NiLODNode'
+            b_obj.nif_object.nodetype = 'NiLODNode'
         elif isinstance(n_block, NifClasses.NiBillboardNode):
-            b_obj.niftools.nodetype = 'NiBillboardNode'
+            b_obj.nif_object.nodetype = 'NiBillboardNode'
         elif isinstance(n_block, NifClasses.BSBlastNode):
-            b_obj.niftools.nodetype = 'BSBlastNode'
+            b_obj.nif_object.nodetype = 'BSBlastNode'
         elif isinstance(n_block, NifClasses.BSDamageStage):
-            b_obj.niftools.nodetype = 'BSDamageStage'
+            b_obj.nif_object.nodetype = 'BSDamageStage'
         elif isinstance(n_block, NifClasses.BSDebrisNode):
-            b_obj.niftools.nodetype = 'BSDebrisNode'
+            b_obj.nif_object.nodetype = 'BSDebrisNode'
         elif isinstance(n_block, NifClasses.BSMultiBoundNode):
-            b_obj.niftools.nodetype = 'BSMultiBoundNode'
+            b_obj.nif_object.nodetype = 'BSMultiBoundNode'
         elif isinstance(n_block, NifClasses.BSOrderedNode):
-            b_obj.niftools.nodetype = 'BSOrderedNode'
+            b_obj.nif_object.nodetype = 'BSOrderedNode'
         elif isinstance(n_block, NifClasses.BSValueNode):
-            b_obj.niftools.nodetype = 'BSValueNode'
+            b_obj.nif_object.nodetype = 'BSValueNode'
 
     def import_extra_data(self, n_node, b_obj):
         """Import extra data blocks for NiNode types."""
         for n_extra in n_node.get_extra_datas():
             if n_extra.name == "UPB":
                 if 'BSBoneLOD' in n_extra.string_data or 'Bip' in n_extra.string_data:
-                    b_obj.niftools.upb = n_extra.string_data
+                    b_obj.nif_object.upb = n_extra.string_data
 
     def import_root_extra_data(self, n_root_node, b_obj):
         """Import extra data blocks for root node."""
@@ -86,14 +86,14 @@ class ObjectProperty:
             if isinstance(n_extra, NifClasses.NiStringExtraData):
                 # weapon location or attachment position
                 if n_extra.name == "Prn":
-                    b_obj.niftools.prn_location = n_extra.string_data
+                    b_obj.nif_object.prn_location = n_extra.string_data
                 elif n_extra.name == "UPB":
                     if 'BSBoneLOD' in n_extra.string_data or 'Bip' in n_extra.string_data:
-                        b_obj.niftools.upb = n_extra.string_data
+                        b_obj.nif_object.upb = n_extra.string_data
             elif isinstance(n_extra, NifClasses.BSXFlags):
-                b_obj.niftools.bsxflags = n_extra.integer_data
+                b_obj.nif_object.bsxflags = n_extra.integer_data
             elif isinstance(n_extra, NifClasses.BSInvMarker):
-                bs_inv_item = b_obj.niftools.bs_inv.add()
+                bs_inv_item = b_obj.nif_object.bs_inv.add()
                 bs_inv_item.name = n_extra.name
                 bs_inv_item.x = (-n_extra.rotation_x / 1000) % (2 * pi)
                 bs_inv_item.y = (-n_extra.rotation_y / 1000) % (2 * pi)

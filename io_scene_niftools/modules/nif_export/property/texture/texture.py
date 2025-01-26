@@ -40,14 +40,15 @@
 
 import bpy
 from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.property.texture import TextureProperty
-from io_scene_niftools.modules.nif_export.property.texture.common import TextureWriter
+from io_scene_niftools.modules.nif_export.property.texture.common import TextureCommon
+from io_scene_niftools.utils.consts import TEX_SLOTS
 from io_scene_niftools.utils.logging import NifLog, NifError
 from io_scene_niftools.utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
 
 
-class NiTexturingProperty(TextureProperty):
+class NiTexturingProperty(TextureCommon):
+
     # TODO Common for import/export
     """Names (ordered by default index) of shader texture slots for Sid Meier's Railroads and similar games."""
     EXTRA_SHADER_TEXTURES = [
@@ -81,28 +82,29 @@ class NiTexturingProperty(TextureProperty):
             NiTexturingProperty()
         return NiTexturingProperty.__instance
 
-    def export_texturing_property(self, flags=0x0001, applymode=None, b_mat=None):
-        """Export texturing property."""
+    def export_ni_texturing_property(self, b_mat, n_ni_geometry, n_bs_shader_property=None, applymode=None):
+        """Export and return a NiTexturingProperty block."""
 
         self.determine_texture_types(b_mat)
 
-        texprop = NifClasses.NiTexturingProperty(NifData.data)
+        n_ni_texturing_property = NifClasses.NiTexturingProperty(NifData.data)
 
-        texprop.flags = flags
-        texprop.apply_mode = applymode
-        texprop.texture_count = 7
+        n_ni_texturing_property.flags = b_mat.nif_material.texture_flags
+        n_ni_texturing_property.apply_mode = applymode
+        n_ni_texturing_property.texture_count = 7
 
-        self.export_texture_shader_effect(texprop)
-        self.export_nitextureprop_tex_descs(texprop)
+        self.export_texture_shader_effect(n_ni_texturing_property)
+        self.export_nitextureprop_tex_descs(n_ni_texturing_property)
 
-        # search for duplicate
+        # Search for duplicate
         for n_block in block_store.block_to_obj:
-            if isinstance(n_block, NifClasses.NiTexturingProperty) and n_block.get_hash() == texprop.get_hash():
-                return n_block
+            if isinstance(n_block, NifClasses.NiTexturingProperty) and n_block.get_hash() == n_ni_texturing_property.get_hash():
+                n_ni_texturing_property = n_block
 
-        # no texturing property with given settings found, so use and register
-        # the new one
-        return texprop
+        block_store.register_block(n_ni_texturing_property)
+        n_ni_geometry.add_property(n_ni_texturing_property)
+        if n_bs_shader_property and isinstance(n_bs_shader_property, NifClasses.BSShaderNoLightingProperty):
+            n_bs_shader_property.file_name = n_ni_texturing_property.base_texture.source.file_name
 
     def export_nitextureprop_tex_descs(self, texprop):
         # go over all valid texture slots
@@ -117,7 +119,7 @@ class NiTexturingProperty(TextureProperty):
                 uv_index = self.get_uv_node(b_texture_node)
                 # set uv index and source texture to the texdesc
                 texdesc.uv_set = uv_index
-                texdesc.source = TextureWriter.export_source_texture(b_texture_node)
+                texdesc.source = TextureCommon.export_source_texture(b_texture_node)
 
         # TODO [animation] FIXME Heirarchy
         # self.texture_anim.export_flip_controller(fliptxt, self.base_mtex.texture, texprop, 0)
@@ -174,7 +176,7 @@ class NiTexturingProperty(TextureProperty):
         texeff.texture_type = NifClasses.EffectType.EFFECT_ENVIRONMENT_MAP
         texeff.coordinate_generation_type = NifClasses.CoordGenType.CG_SPHERE_MAP
         if b_texture_node:
-            texeff.source_texture = TextureWriter.export_source_texture(b_texture_node.texture)
+            texeff.source_texture = TextureCommon.export_source_texture(b_texture_node.texture)
             if bpy.context.scene.niftools_scene.game == 'MORROWIND':
                 texeff.num_affected_node_list_pointers += 1
                 # added value doesn't matter since it apparently gets automagically updated in engine
@@ -199,12 +201,12 @@ class NiTexturingProperty(TextureProperty):
             # some texture slots required by the engine
             shadertexdesc_envmap = tex_prop.shader_textures[0]
             shadertexdesc_envmap.is_used = True
-            shadertexdesc_envmap.texture_data.source = TextureWriter.export_source_texture(
+            shadertexdesc_envmap.texture_data.source = TextureCommon.export_source_texture(
                 filename="RRT_Engine_Env_map.dds")
 
             shadertexdesc_cubelightmap = tex_prop.shader_textures[4]
             shadertexdesc_cubelightmap.is_used = True
-            shadertexdesc_cubelightmap.texture_data.source = TextureWriter.export_source_texture(
+            shadertexdesc_cubelightmap.texture_data.source = TextureCommon.export_source_texture(
                 filename="RRT_Cube_Light_map_128.dds")
 
         elif bpy.context.scene.niftools_scene.game == 'CIVILIZATION_IV':
@@ -294,16 +296,14 @@ class NiTexturingProperty(TextureProperty):
                 clamp_y = y_node.use_clamp
         return x_scale, y_scale, x_offset, y_offset, clamp_x, clamp_y
 
-    @staticmethod
-    def get_uv_layers(b_mat):
+    def get_uv_layers(self, b_mat):
         used_uvlayers = set()
-        texture_slots = TextureProperty.get_used_textslots(b_mat)
+        texture_slots = self.get_used_textslots(b_mat)
         for slot in texture_slots:
             used_uvlayers.add(slot.uv_layer)
         return used_uvlayers
 
-    @staticmethod
-    def get_used_textslots(b_mat):
+    def get_used_textslots(self, b_mat):
         used_slots = []
         if b_mat is not None and b_mat.use_nodes:
             used_slots = [node for node in b_mat.node_tree.nodes if isinstance(node, bpy.types.ShaderNodeTexImage)]

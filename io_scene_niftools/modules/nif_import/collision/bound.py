@@ -151,7 +151,7 @@ class Bound(Collision):
         b_obj = Object.box_from_extents(b_name, minx, maxx, miny, maxy, minz, maxz)
         # probably only on NiNodes with BB
         if hasattr(n_block, "flags"):
-            b_obj.niftools.flags = n_block.flags
+            b_obj.nif_object.flags = n_block.flags
         b_obj.location = bbox_center
         self.set_b_collider(b_obj, radius=max(maxx, maxy, maxz))
         return [b_obj, ]

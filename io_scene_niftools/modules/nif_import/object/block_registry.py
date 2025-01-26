@@ -73,7 +73,7 @@ class BlockRegistry:
     def store_longname(b_obj, n_name):
         """Save original name as object property, for export"""
         if b_obj.name != n_name:
-            b_obj.niftools.longname = n_name
+            b_obj.nif_object.longname = n_name
             NifLog.debug(f"Stored long name for {b_obj.name}")
 
     @staticmethod

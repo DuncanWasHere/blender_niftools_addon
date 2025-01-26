@@ -72,21 +72,21 @@ def b_create_bhksphere(b_obj, b_name):
 def b_create_bhksphereshape_properties(b_col_obj):
     """Set the object to be Sphere Collision."""
 
-    b_col_obj.nifcollision.oblivion_layer = "OL_CLUTTER"  # 4
-    b_col_obj.nifcollision.motion_system = "MO_SYS_BOX"  # 4
-    b_col_obj.nifcollision.quality_type = "MO_QUAL_MOVING"  # 4
+    b_col_obj.nif_collision.oblivion_layer = "OL_CLUTTER"  # 4
+    b_col_obj.nif_collision.motion_system = "MO_SYS_BOX"  # 4
+    b_col_obj.nif_collision.quality_type = "MO_QUAL_MOVING"  # 4
 
     b_col_obj.game.collision_bounds_type = 'SPHERE'
-    b_col_obj.nifcollision.havok_material = "HAV_MAT_WOOD"  # 9
+    b_col_obj.nif_collision.havok_material = "HAV_MAT_WOOD"  # 9
 
 
 def b_check_bhkboxshape_properties(b_col_obj):
     """Check the box collision related property."""
     # bhkrigidbody
-    nose.tools.assert_equal(b_col_obj.nifcollision.oblivion_layer, "OL_CLUTTER")  # 4
-    nose.tools.assert_equal(b_col_obj.nifcollision.motion_system, "MO_SYS_BOX")  # 4
-    nose.tools.assert_equal(b_col_obj.nifcollision.quality_type, "MO_QUAL_MOVING")  # 4
+    nose.tools.assert_equal(b_col_obj.nif_collision.oblivion_layer, "OL_CLUTTER")  # 4
+    nose.tools.assert_equal(b_col_obj.nif_collision.motion_system, "MO_SYS_BOX")  # 4
+    nose.tools.assert_equal(b_col_obj.nif_collision.quality_type, "MO_QUAL_MOVING")  # 4
 
     # bhkshape
     nose.tools.assert_equal(b_col_obj.game.collision_bounds_type, 'BOX')
-    nose.tools.assert_equal(b_col_obj.nifcollision.havok_material, "HAV_MAT_WOOD")  # 9
+    nose.tools.assert_equal(b_col_obj.nif_collision.havok_material, "HAV_MAT_WOOD")  # 9

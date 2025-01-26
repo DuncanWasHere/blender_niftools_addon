@@ -66,7 +66,7 @@ class KfImport(NifCommon):
             b_armature = math.get_armature()
             if b_armature:
                 # the axes used for bone correction depend on the armature in our scene
-                math.set_bone_orientation(b_armature.data.niftools.axis_forward, b_armature.data.niftools.axis_up)
+                math.set_bone_orientation(b_armature.data.nif_armature.axis_forward, b_armature.data.nif_armature.axis_up)
                 # get nif space bind pose of armature here for all anims
                 self.transform_anim.get_bind_data(b_armature)
             for kf_file in kf_files:

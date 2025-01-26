@@ -52,14 +52,14 @@ def b_create_default_collision_properties(b_col_obj):
     
     b_col_obj.display_type = 'WIRE' # visual aid, no need to check
     b_col_obj.game.use_collision_bounds = True  # also enables BGE visualisation
-    b_col_obj.nifcollision.col_filter = 1
+    b_col_obj.nif_collision.col_filter = 1
     
 
 def b_check_default_collision_properties(b_col_obj):
     """Checks the default properties for a collision object"""
     
     nose.tools.assert_equal(b_col_obj.game.use_collision_bounds, True)
-    nose.tools.assert_equal(b_col_obj.nifcollision.col_filter, 1)
+    nose.tools.assert_equal(b_col_obj.nif_collision.col_filter, 1)
     
     
 def b_create_translation_matrix():

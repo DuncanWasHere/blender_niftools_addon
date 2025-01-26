@@ -37,6 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 import bpy
 from bpy.props import (IntProperty,
                        BoolProperty,
@@ -67,13 +68,13 @@ def game_specific_col_layer_items(self, context):
         return [(str(member.value), member.name, "", member.value) for member in col_layer_format]
 
 
-class CollisionProperty(PropertyGroup):
+class CollisionProperties(PropertyGroup):
     """Group of Havok related properties, which gets attached to objects through a property pointer."""
 
     collision_layer: EnumProperty(
         name='Collision layer',
         description='Collision layer string (game-specific)',
-        items=game_specific_col_layer_items,
+        items=game_specific_col_layer_items
     )
 
     col_filter: IntProperty(
@@ -171,19 +172,16 @@ class CollisionProperty(PropertyGroup):
         min=0
     )
 
-
 CLASSES = [
-    CollisionProperty
+    CollisionProperties
 ]
-
 
 def register():
     register_classes(CLASSES, __name__)
 
-    bpy.types.Object.nifcollision = bpy.props.PointerProperty(type=CollisionProperty)
-
+    bpy.types.Object.nif_collision = bpy.props.PointerProperty(type=CollisionProperties)
 
 def unregister():
-    del bpy.types.Object.nifcollision
+    del bpy.types.Object.nif_collision
 
     unregister_classes(CLASSES, __name__)

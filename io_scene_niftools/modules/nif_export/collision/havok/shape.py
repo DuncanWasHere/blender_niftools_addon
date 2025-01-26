@@ -69,9 +69,7 @@ class BhkShape(BhkCollisionCommon):
                 n_bhk_rigid_body.shape = n_bhk_shape
 
     def __export_bhk_list_shape(self, b_col_obj, n_bhk_rigid_body, n_hav_mat):
-        """
-        Export a bhkListShape block.
-        """
+        """Export a bhkListShape block."""
 
         # Create the list shape block
         n_bhk_list_shape = block_store.create_block("bhkListShape")
@@ -88,9 +86,7 @@ class BhkShape(BhkCollisionCommon):
                     n_bhk_list_shape.add_shape(n_bhk_shape)
 
     def __export_bhk_shape(self, b_col_obj, n_hav_mat):
-        """
-        Export a single bhkShape block.
-        """
+        """Export and return a single bhkShape block."""
 
         # Ensure mesh geometry exists
         if not b_col_obj.data.vertices:

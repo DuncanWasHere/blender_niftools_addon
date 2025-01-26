@@ -42,7 +42,7 @@ import bpy
 from io_scene_niftools.modules.nif_export.animation.common import AnimationCommon
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.object import DICT_NAMES
-from io_scene_niftools.modules.nif_export.property.texture.common import TextureWriter
+from io_scene_niftools.modules.nif_export.property.texture.common import TextureCommon
 from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
@@ -283,7 +283,7 @@ class TextureAnimation(AnimationCommon):
             if len(t) == 0:
                 continue  # skip empty lines
             # create a NiSourceTexture for each n_flip
-            tex = TextureWriter.export_source_texture(texture, t)
+            tex = TextureCommon.export_source_texture(texture, t)
             n_flip.num_sources += 1
             n_flip.sources.append(tex)
             count += 1

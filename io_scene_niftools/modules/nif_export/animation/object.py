@@ -194,7 +194,7 @@ class ObjectAnimation(AnimationCommon):
             # just for more detailed error reporting later on
             bonestr = f" in bone {bone.name}"
             target_name = block_store.get_full_name(bone)
-            priority = bone.niftools.priority
+            priority = bone.nif_bone.priority
 
         # object level animation - no coordinate corrections
         elif not bone:

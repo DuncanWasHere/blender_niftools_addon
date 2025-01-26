@@ -72,9 +72,11 @@ class Collision:
         """Helper function to set up b_obj so it becomes recognizable as a collision object."""
 
         # Set bounds type
-        b_obj.show_bounds = True
-        b_obj.display_type = 'BOUNDS'
-        b_obj.display_bounds_type = display_type
+        b_obj.display_type = 'WIRE'
+
+        if display_type:
+            b_obj.show_bounds = True
+            b_obj.display_bounds_type = display_type
 
         # Override context and add rigid body
         with bpy.context.temp_override(selected_objects=[b_obj]):

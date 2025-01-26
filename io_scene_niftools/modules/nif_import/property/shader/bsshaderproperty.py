@@ -124,8 +124,8 @@ class BSShaderPropertyProcessor(BSShader):
         self._b_mat.specular_intensity = bs_shader_property.specular_strength
 
         # lighting effect
-        self._b_mat.niftools.lightingeffect1 = bs_shader_property.lighting_effect_1
-        self._b_mat.niftools.lightingeffect2 = bs_shader_property.lighting_effect_2
+        self._b_mat.nif_material.lightingeffect1 = bs_shader_property.lighting_effect_1
+        self._b_mat.nif_material.lightingeffect2 = bs_shader_property.lighting_effect_2
 
     def import_bs_effect_shader_property(self, bs_effect_shader_property):
         # update material material name
@@ -156,7 +156,7 @@ class BSShaderPropertyProcessor(BSShader):
 
         # TODO [animation][shader] Move out to a dedicated controller processor
         if bs_effect_shader_property.controller:
-            self._b_mat.niftools_alpha.textureflag = bs_effect_shader_property.controller.flags
+            self._b_mat.niftools_alpha.texture_flags = bs_effect_shader_property.controller.flags
 
     def import_shader_flags(self, b_prop):
         flags_1 = b_prop.shader_flags_1

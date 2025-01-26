@@ -37,14 +37,15 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 from bpy.types import Panel
 
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 
 
 class MaterialPanel(Panel):
-    bl_label = "NifTools Material"
     bl_idname = "NIFTOOLS_PT_MaterialPanel"
+    bl_label = "NifTools Material"
 
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -54,25 +55,53 @@ class MaterialPanel(Panel):
     def poll(cls, context):
         if context.material:
             return True
+        return False
 
     def draw(self, context):
-        matalpha = context.material.niftools
-
         layout = self.layout
-        row = layout.column()
 
-        row.prop(matalpha, "materialflag")
-        row.prop(matalpha, "textureflag")
+        col_setting = context.active_object.active_material.nif_material
 
+        box = layout.box()
+        box.prop(col_setting, "material_flags", text='Material Flags')
+        box.prop(col_setting, "texture_flags", text='Texture Flags')
+        box.prop(col_setting, "use_alpha", text='Use Alpha')
 
-CLASSES = [
-    MaterialPanel
+class AlphaPanel(Panel):
+    bl_idname = "NIFTOOLS_PT_AlphaPanel"
+    bl_label = "NifTools Alpha"
+
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "material"
+
+    @classmethod
+    def poll(cls, context):
+        if context.material and context.material.nif_material.use_alpha:
+            return True
+        return False
+
+    def draw(self, context):
+        layout = self.layout
+
+        col_setting = context.active_object.active_material.nif_alpha
+
+        box = layout.box()
+        box.prop(col_setting, "enable_blending", text='Enable Blending')
+        box.prop(col_setting, "source_blend_mode", text='Source Blend Mode')
+        box.prop(col_setting, "destination_blend_mode", text='Destination Blend Mode')
+        box.prop(col_setting, "enable_testing", text='Enable Testing')
+        box.prop(col_setting, "alpha_test_function", text='Alpha Test Function')
+        box.prop(col_setting, "alpha_test_threshold", text='Alpha Test Threshold')
+        box.prop(col_setting, "no_sorter", text='No Sorter')
+
+classes = [
+    MaterialPanel,
+    AlphaPanel
 ]
 
-
 def register():
-    register_classes(CLASSES, __name__)
-
+    register_classes(classes, __name__)
 
 def unregister():
-    unregister_classes(CLASSES, __name__)
+    unregister_classes(classes, __name__)

@@ -1,7 +1,4 @@
 """Helper methods for file import/export operations."""
-from io_scene_niftools.file_io import nif
-from io_scene_niftools.file_io.nif import NifFile
-
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -40,6 +37,12 @@ from io_scene_niftools.file_io.nif import NifFile
 #
 # ***** END LICENSE BLOCK *****
 
+
+from io_scene_niftools.file_io import nif
+from io_scene_niftools.file_io.kf import KfFile
+from io_scene_niftools.file_io.nif import NifFile
+
+
 class File:
 
     @staticmethod
@@ -50,3 +53,5 @@ class File:
     def write_file(n_data, directory, file_base, file_ext):
         if file_ext == '.nif':
             NifFile.write_nif(n_data, directory, file_base, file_ext)
+        elif file_ext == '.kf':
+            KfFile.write_kf(n_data, directory, file_base, file_ext)

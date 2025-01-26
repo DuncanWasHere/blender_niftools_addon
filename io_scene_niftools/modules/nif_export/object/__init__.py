@@ -83,7 +83,7 @@ class Object:
         if len(b_root_objects) == 1:
             # There is only one root object, so use it as the root
             b_obj = b_root_objects[0]
-            self.export_object_hierarchy(b_obj, None, n_node_type=b_obj.niftools.nodetype)
+            self.export_object_hierarchy(b_obj, None, n_node_type=b_obj.nif_object.nodetype)
         else:
             # There is more than one root object, so create a meta root
             NifLog.info(f"Created meta root because Blender scene had {len(b_root_objects)} root objects.")
@@ -105,6 +105,7 @@ class Object:
 
         :param n_parent_node:
         :param b_obj:
+        :param n_node_type:
         """
 
         # Can we export this object?
@@ -177,8 +178,8 @@ class Object:
         """Set node object flags if not already set in the properties panel."""
 
         # Default object flags
-        if b_obj.niftools.flags != 0:
-            n_node.flags = b_obj.niftools.flags
+        if b_obj.nif_object.flags != 0:
+            n_node.flags = b_obj.nif_object.flags
         else:
             if bpy.context.scene.niftools_scene.is_bs():
                 n_node.flags = 0x000E

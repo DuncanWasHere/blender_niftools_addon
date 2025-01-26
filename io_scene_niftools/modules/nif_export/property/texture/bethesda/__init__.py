@@ -38,14 +38,13 @@
 # ***** END LICENSE BLOCK *****
 
 
-from io_scene_niftools.modules.nif_export.property.texture import TextureProperty
-from io_scene_niftools.modules.nif_export.property.texture.common import TextureWriter
+from io_scene_niftools.modules.nif_export.property.texture.common import TextureCommon
 from io_scene_niftools.utils.consts import TEX_SLOTS
 from io_scene_niftools.utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
 
 
-class BSShaderTextureSet(TextureProperty):
+class BSShaderTextureSet(TextureCommon):
     __instance = None
 
     @staticmethod
@@ -64,13 +63,14 @@ class BSShaderTextureSet(TextureProperty):
             BSShaderTextureSet.__instance = self
 
     def export_bs_effect_shader_property_textures(self, n_bs_effect_shader_property):
+        """Export a BSEffectShaderProperty block."""
         n_bs_effect_shader_property.texture_set = self.__export_bs_shader_texture_set()
 
         if self.slots[TEX_SLOTS.BASE]:
-            n_bs_effect_shader_property.source_texture = TextureWriter.export_texture_filename(
+            n_bs_effect_shader_property.source_texture = TextureCommon.export_texture_filename(
                 self.slots[TEX_SLOTS.BASE])
         if self.slots[TEX_SLOTS.GLOW]:
-            n_bs_effect_shader_property.greyscale_texture = TextureWriter.export_texture_filename(
+            n_bs_effect_shader_property.greyscale_texture = TextureCommon.export_texture_filename(
                 self.slots[TEX_SLOTS.GLOW])
 
         # get the offset, scale and UV wrapping mode and set them
@@ -87,10 +87,10 @@ class BSShaderTextureSet(TextureProperty):
         n_bs_shader_texture_set.textures[:len(existing_textures)] = existing_textures
 
         if self.slots[TEX_SLOTS.DECAL_0]:
-            n_bs_shader_texture_set.textures[6] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.DECAL_0])
+            n_bs_shader_texture_set.textures[6] = TextureCommon.export_texture_filename(self.slots[TEX_SLOTS.DECAL_0])
 
         if self.slots[TEX_SLOTS.GLOSS]:
-            n_bs_shader_texture_set.textures[7] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.GLOSS])
+            n_bs_shader_texture_set.textures[7] = TextureCommon.export_texture_filename(self.slots[TEX_SLOTS.GLOSS])
 
         # get the offset, scale and UV wrapping mode and set them
         self.export_uv_transform(n_bs_lighting_shader_property)
@@ -102,22 +102,22 @@ class BSShaderTextureSet(TextureProperty):
         n_bs_shader_texture_set = NifClasses.BSShaderTextureSet(NifData.data)
 
         if self.slots[TEX_SLOTS.BASE]:
-            n_bs_shader_texture_set.textures[0] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.BASE])
+            n_bs_shader_texture_set.textures[0] = TextureCommon.export_texture_filename(self.slots[TEX_SLOTS.BASE])
 
         if self.slots[TEX_SLOTS.NORMAL]:
-            n_bs_shader_texture_set.textures[1] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.NORMAL])
+            n_bs_shader_texture_set.textures[1] = TextureCommon.export_texture_filename(self.slots[TEX_SLOTS.NORMAL])
 
         if self.slots[TEX_SLOTS.GLOW]:
-            n_bs_shader_texture_set.textures[2] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.GLOW])
+            n_bs_shader_texture_set.textures[2] = TextureCommon.export_texture_filename(self.slots[TEX_SLOTS.GLOW])
 
         if self.slots[TEX_SLOTS.DETAIL]:
-            n_bs_shader_texture_set.textures[3] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.DETAIL])
+            n_bs_shader_texture_set.textures[3] = TextureCommon.export_texture_filename(self.slots[TEX_SLOTS.DETAIL])
 
         if self.slots[TEX_SLOTS.ENV_MAP]:
-            n_bs_shader_texture_set.textures[4] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.ENV_MAP])
+            n_bs_shader_texture_set.textures[4] = TextureCommon.export_texture_filename(self.slots[TEX_SLOTS.ENV_MAP])
 
         if self.slots[TEX_SLOTS.ENV_MASK]:
-            n_bs_shader_texture_set.textures[5] = TextureWriter.export_texture_filename(self.slots[TEX_SLOTS.ENV_MASK])
+            n_bs_shader_texture_set.textures[5] = TextureCommon.export_texture_filename(self.slots[TEX_SLOTS.ENV_MASK])
 
         return n_bs_shader_texture_set
 

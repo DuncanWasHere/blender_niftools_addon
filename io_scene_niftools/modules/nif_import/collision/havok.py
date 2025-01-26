@@ -152,28 +152,28 @@ class BhkCollision(Collision):
         b_r_body.deactivate_angular_velocity = mathutils.Vector([ang_vel.w, ang_vel.x, ang_vel.y, ang_vel.z]).magnitude
 
         # Custom NIF properties
-        b_col_obj.nifcollision.collision_layer = str(n_rigid_body_info.havok_filter.layer.value)
-        b_col_obj.nifcollision.col_filter = n_bhk_rigid_body.havok_filter.flags
+        b_col_obj.nif_collision.collision_layer = str(n_rigid_body_info.havok_filter.layer.value)
+        b_col_obj.nif_collision.col_filter = n_bhk_rigid_body.havok_filter.flags
 
-        b_col_obj.nifcollision.inertia_tensor = (n_rigid_body_info.inertia_tensor.m_11,
-                                                 n_rigid_body_info.inertia_tensor.m_22,
-                                                 n_rigid_body_info.inertia_tensor.m_33)
+        b_col_obj.nif_collision.inertia_tensor = (n_rigid_body_info.inertia_tensor.m_11,
+                                                  n_rigid_body_info.inertia_tensor.m_22,
+                                                  n_rigid_body_info.inertia_tensor.m_33)
 
-        b_col_obj.nifcollision.center = (n_rigid_body_info.center.x,
-                                         n_rigid_body_info.center.y,
-                                         n_rigid_body_info.center.z)
+        b_col_obj.nif_collision.center = (n_rigid_body_info.center.x,
+                                          n_rigid_body_info.center.y,
+                                          n_rigid_body_info.center.z)
 
-        b_col_obj.nifcollision.mass = n_rigid_body_info.mass
-        b_col_obj.nifcollision.max_linear_velocity = n_rigid_body_info.max_linear_velocity
-        b_col_obj.nifcollision.max_angular_velocity = n_rigid_body_info.max_angular_velocity
-        b_col_obj.nifcollision.penetration_depth = n_rigid_body_info.penetration_depth
+        b_col_obj.nif_collision.mass = n_rigid_body_info.mass
+        b_col_obj.nif_collision.max_linear_velocity = n_rigid_body_info.max_linear_velocity
+        b_col_obj.nif_collision.max_angular_velocity = n_rigid_body_info.max_angular_velocity
+        b_col_obj.nif_collision.penetration_depth = n_rigid_body_info.penetration_depth
 
-        b_col_obj.nifcollision.motion_system = n_rigid_body_info.motion_system.name
-        b_col_obj.nifcollision.deactivator_type = n_rigid_body_info.deactivator_type.name
-        b_col_obj.nifcollision.solver_deactivation = n_rigid_body_info.solver_deactivation.name
-        b_col_obj.nifcollision.quality_type = n_rigid_body_info.quality_type.name
+        b_col_obj.nif_collision.motion_system = n_rigid_body_info.motion_system.name
+        b_col_obj.nif_collision.deactivator_type = n_rigid_body_info.deactivator_type.name
+        b_col_obj.nif_collision.solver_deactivation = n_rigid_body_info.solver_deactivation.name
+        b_col_obj.nif_collision.quality_type = n_rigid_body_info.quality_type.name
 
-        b_col_obj.nifcollision.body_flags = n_bhk_rigid_body.body_flags
+        b_col_obj.nif_collision.body_flags = n_bhk_rigid_body.body_flags
 
         # Import constraints
         # This is done once all objects are imported for now, store all imported havok shapes with object lists
@@ -381,7 +381,7 @@ class BhkCollision(Collision):
             poly.material_index = mat_index
 
         radius = min(vert.co.length for vert in b_me.vertices)
-        self.set_b_collider(b_col_obj, bounds_type="MESH", radius=radius)
+        self.set_b_collider(b_col_obj, radius, bounds_type="MESH", display_type=None)
         return b_col_obj
 
     def import_bhk_nitristrips_shape(self, n_bhk_nitristrips_shape):
@@ -395,5 +395,5 @@ class BhkCollision(Collision):
         faces = list(n_nitristrips.get_triangles())
         b_col_obj = Object.mesh_from_data("collision_poly", verts, faces)
         # TODO [collision] self.havok_mat!
-        self.set_b_collider(b_col_obj, bounds_type="MESH", radius=n_nitristrips.bounding_sphere.radius)
+        self.set_b_collider(b_col_obj, n_nitristrips.bounding_sphere.radius, bounds_type="MESH", display_type=None)
         return b_col_obj

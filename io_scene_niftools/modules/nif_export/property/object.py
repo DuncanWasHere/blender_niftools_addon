@@ -51,6 +51,11 @@ from nifgen.formats.nif import classes as NifClasses
 
 
 class ObjectProperty:
+    """
+    Main interface class for exporting NIF object property blocks
+    (i.e., NiMaterialProperty, NiAlphaProperty, BSLightingShaderProperty).
+    """
+
     def __init__(self):
         self.material_property_helper = MaterialProperty()
         self.texture_property_helper = TextureProperty()
@@ -69,11 +74,13 @@ class ObjectProperty:
             self.export_wireframe_property(b_obj, n_node),
             self.export_stencil_property(b_mat, n_node),
             self.export_specular_property(b_mat, n_node),
-            self.material_property_helper.export_material_property(b_mat, n_node)
-            self.texture_property_helper.export_textures(b_mat, n_node)
+            self.material_property_helper.export_ni_material_property(b_mat, n_node)
+            self.texture_property_helper.export_texture_properties(b_mat, n_node)
 
     def export_root_node_properties(self, n_root_node, b_root_obj):
         """Wrapper for exporting properties that are commonly attached to the nif root"""
+
+        NifLog.info(f"Exporting root node properties...")
 
         # Add vertex color and zbuffer properties for civ4 and railroads
         if bpy.context.scene.niftools_scene.game in (
@@ -131,35 +138,17 @@ class ObjectProperty:
         """Return existing alpha property with given flags, or create new one
         if an alpha property with required flags is not found."""
         # don't export an alpha property if mat is opaque in blender
-        if b_mat.use_nodes:
-            b_shader_node = b_mat.node_tree.nodes["Principled BSDF"]
+        if b_mat.nif_material.use_alpha:
+            n_ni_alpha_property = block_store.create_block("NiAlphaProperty")
+            n_node.add_property(n_ni_alpha_property)
 
-            if b_shader_node:
-                b_alpha_socket = b_shader_node.inputs[4]
-                if not b_alpha_socket.default_value == 1:
-                    pass
-                    # We need to update the alpha in the NiMaterialProperty
-                    # And figure out how this would work animated
-
-                # We need to create a NiAlphaProperty if alpha was not 1.
-                # Set the flags for clip/blend based on math nodes
-
-        """
-        if b_mat.niftools_alpha.alphaflag != 0:
-            # todo [material] reconstruct flag from material alpha settings
-            flags = b_mat.niftools_alpha.alphaflag
-            threshold = b_mat.alpha_threshold * 255
-        elif bpy.context.scene.niftools_scene.game == 'SID_MEIER_S_RAILROADS':
-            flags = 0x32ED
-            threshold = 150
-        elif bpy.context.scene.niftools_scene.game == 'EMPIRE_EARTH_II':
-            flags = 0x00ED
-            threshold = 0
-        else:
-            flags = 0x12ED
-            threshold = 0
-        return self.get_matching_block("NiAlphaProperty", flags=flags, threshold=int(threshold))
-        """
+            n_ni_alpha_property.flags.alpha_blend = b_mat.nif_alpha.enable_blending
+            n_ni_alpha_property.flags.source_blend_mode = NifClasses.AlphaFunction[b_mat.nif_alpha.source_blend_mode]
+            n_ni_alpha_property.flags.destination_blend_mode = NifClasses.AlphaFunction[b_mat.nif_alpha.destination_blend_mode]
+            n_ni_alpha_property.flags.alpha_test = b_mat.nif_alpha.enable_testing
+            n_ni_alpha_property.flags.test_func = NifClasses.TestFunction[b_mat.nif_alpha.alpha_test_function]
+            n_ni_alpha_property.flags.no_sorter = b_mat.nif_alpha.no_sorter
+            n_ni_alpha_property.threshold = b_mat.nif_alpha.alpha_test_threshold
 
     def export_specular_property(self, b_mat, n_node, flags=0x0001):
         """Return existing specular property with given flags, or create new one
@@ -197,18 +186,18 @@ class ObjectProperty:
     def export_ni_string_extra_data_upb(self, n_node, b_obj):
         """Export UPB NiStringExtraData if not optimizer junk."""
 
-        if b_obj.niftools.upb:
-            if 'BSBoneLOD' in b_obj.niftools.upb or 'Bip' in b_obj.niftools.upb:
+        if b_obj.nif_object.upb:
+            if 'BSBoneLOD' in b_obj.nif_object.upb or 'Bip' in b_obj.nif_object.upb:
                 n_ni_string_extra_data = block_store.create_block("NiStringExtraData")
                 n_ni_string_extra_data.name = 'UPB'
-                n_ni_string_extra_data.string_data = b_obj.niftools.upb
+                n_ni_string_extra_data.string_data = b_obj.nif_object.upb
                 n_node.add_extra_data(n_ni_string_extra_data)
 
     def export_ni_string_extra_data_prn(self, n_root_node, b_root_obj):
         """Export weapon location."""
 
         if bpy.context.scene.niftools_scene.is_bs():
-            loc = b_root_obj.niftools.prn_location
+            loc = b_root_obj.nif_object.prn_location
             if loc:
                 n_ni_string_extra_data = block_store.create_block("NiStringExtraData")
                 n_ni_string_extra_data.name = 'Prn'
@@ -218,7 +207,7 @@ class ObjectProperty:
     def export_bs_inv_marker(self, n_root_node, b_root_obj):
         """Attaches a BSInvMarker to n_root if desired and fill in its values"""
         niftools_scene = bpy.context.scene.niftools_scene
-        bs_inv_store = b_root_obj.niftools.bs_inv
+        bs_inv_store = b_root_obj.nif_object.bs_inv
         if niftools_scene.is_skyrim() and bs_inv_store:
             bs_inv = bs_inv_store[0]
             n_bs_inv_marker = NifClasses.BSInvMarker(n_root_node.context)
@@ -238,7 +227,7 @@ class ObjectProperty:
             n_root_node.add_extra_data(n_bs_x_flags)
 
             # Export root object's BSXFlags property
-            n_bs_x_flags.integer_data = b_root_obj.niftools.bsxflags
+            n_bs_x_flags.integer_data = b_root_obj.nif_object.bsxflags
 
             # Set or clear animated bit
             if self.has_animation():
@@ -278,7 +267,7 @@ class ObjectProperty:
         b_objs = []
         for b_obj in bpy.data.objects:
             if b_obj.rigid_body:
-                if not 'INVALID' in b_obj.nifcollision.motion_system and not 'FIXED' in b_obj.nifcollision.motion_system:
+                if not 'INVALID' in b_obj.nif_collision.motion_system and not 'FIXED' in b_obj.nif_collision.motion_system:
                     b_objs.append(b_obj)
 
         return b_objs
