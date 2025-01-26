@@ -65,6 +65,13 @@ class MaterialProperties(PropertyGroup):
         max=65535
     )
 
+    specular_flags: IntProperty(
+        name='Specular Flags',
+        default=0,
+        min=0,
+        max=65535
+    )
+
     use_alpha: BoolProperty(
         name='Use Alpha',
         default=0

@@ -65,6 +65,7 @@ class MaterialPanel(Panel):
         box = layout.box()
         box.prop(col_setting, "material_flags", text='Material Flags')
         box.prop(col_setting, "texture_flags", text='Texture Flags')
+        box.prop(col_setting, "specular_flags", text='Specular Flags')
         box.prop(col_setting, "use_alpha", text='Use Alpha')
 
 class AlphaPanel(Panel):
