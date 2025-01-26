@@ -143,7 +143,7 @@ class VariaTestSuite(TestSuite):
             filename = 'test/nif/alphatest.nif')
         alpha_obj = Blender.Object.Get("Alpha")
         # check Z transparency
-        assert(alpha_obj.data.materials[0].mode & Blender.Material.Modes.ZTRANSP)
+        assert(alpha_obj.data.materials[0].mode & Blender.MaterialProperty.Modes.ZTRANSP)
         # check that transparency was exported
         alpha_obj_alpha = alpha_obj.data.materials[0].alpha
         assert(alpha_obj_alpha < 0.99)

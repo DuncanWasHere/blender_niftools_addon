@@ -79,6 +79,7 @@ class BhkCollision(Collision):
 
     def process_bhk(self, n_bhk_shape):
         """Base method to warn user that this collision shape is not supported."""
+
         NifLog.warn(f"Unsupported bhk shape {n_bhk_shape.__class__.__name__}")
         NifLog.warn(f"This type isn't currently supported: {type(n_bhk_shape)}")
         return None

@@ -43,8 +43,7 @@ from io_scene_niftools.modules.nif_import.animation.morph import MorphAnimation
 from io_scene_niftools.modules.nif_import.geometry import mesh
 from io_scene_niftools.modules.nif_import.geometry.vertex import Vertex
 from io_scene_niftools.modules.nif_import.geometry.vertex.groups import VertexGroup
-from io_scene_niftools.modules.nif_import.property.geometry.mesh import MeshPropertyProcessor
-from io_scene_niftools.modules.nif_import.property.material import Material
+from io_scene_niftools.modules.nif_import.property.material import MaterialProperty
 from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
@@ -55,9 +54,8 @@ class Mesh:
     supported_mesh_types = (NifClasses.BSTriShape, NifClasses.NiMesh, NifClasses.NiTriBasedGeom)
 
     def __init__(self):
-        self.materialhelper = Material()
+        self.material_property_helper = MaterialProperty()
         self.morph_anim = MorphAnimation()
-        self.mesh_prop_processor = MeshPropertyProcessor()
 
     def import_mesh(self, n_block, b_obj):
         """Creates and returns a raw mesh, or appends geometry data to group_mesh.
@@ -157,7 +155,7 @@ class Mesh:
             # for some cases, normals can be four-component structs instead of 3, discard the 4th.
             Vertex.map_normals(b_mesh, np.array(normals)[:, :3])
 
-        self.mesh_prop_processor.process_property_list(n_block, b_obj)
+        self.material_property_helper.import_material_properties(n_block, b_obj)
 
         # import skinning info, for meshes affected by bones
         if n_block.is_skin():

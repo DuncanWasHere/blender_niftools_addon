@@ -38,7 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 from io_scene_niftools.modules.nif_import.property.shader import BSShader
-from io_scene_niftools.modules.nif_import.property.texture.types.bsshadertexture import BSShaderTexture
+from io_scene_niftools.modules.nif_import.property.texture.types.bsshadertextureset import BSShaderTextureSet
 from nifgen.formats.nif import classes as NifClasses
 
 
@@ -60,7 +60,7 @@ class BSShaderLightingPropertyProcessor(BSShader):
         else:
             super().__init__()
             BSShaderLightingPropertyProcessor.__instance = self
-            self.texturehelper = BSShaderTexture.get()
+            self.texturehelper = BSShaderTextureSet.get()
 
     @staticmethod
     def get():

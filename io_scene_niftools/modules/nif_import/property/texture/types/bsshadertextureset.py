@@ -40,24 +40,24 @@ from io_scene_niftools.utils.consts import TEX_SLOTS
 from io_scene_niftools.utils.logging import NifLog
 
 
-class BSShaderTexture:
+class BSShaderTextureSet:
     __instance = None
     _nodes_wrapper = None
 
     def __init__(self):
         """ Virtually private constructor. """
-        if BSShaderTexture.__instance:
+        if BSShaderTextureSet.__instance:
             raise Exception("This class is a singleton!")
         else:
             super().__init__()
-            BSShaderTexture.__instance = self
+            BSShaderTextureSet.__instance = self
 
     @staticmethod
     def get():
         """ Static access method. """
-        if not BSShaderTexture.__instance:
-            BSShaderTexture()
-        return BSShaderTexture.__instance
+        if not BSShaderTextureSet.__instance:
+            BSShaderTextureSet()
+        return BSShaderTextureSet.__instance
 
     def import_bsshaderproperty_textureset(self, bs_shader_property, nodes_wrapper):
         textures = bs_shader_property.texture_set.textures

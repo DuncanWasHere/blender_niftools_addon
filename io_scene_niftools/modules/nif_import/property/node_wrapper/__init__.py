@@ -55,18 +55,33 @@ EXTRA_SHADER_TEXTURES = [
     "ShadowTextureIndex"]
 
 
-class NodesWrapper:
+class NodeWrapper:
+    __instance = None
+
+    @staticmethod
+    def get():
+        """Static access method."""
+        if NodeWrapper.__instance is None:
+            NodeWrapper()
+        return NodeWrapper.__instance
 
     def __init__(self):
-        self.texture_loader = TextureLoader()
-        self.tree = None
-        self.b_mat = None
-        self.output = None
-        self.diffuse_pass = None
-        self.diffuse_shader = None
-        # raw texture nodes
-        self.diffuse_texture = None
-        self.vcol = None
+        """Virtually private constructor."""
+
+        if NodeWrapper.__instance is not None:
+            raise Exception("This class is a singleton!")
+        else:
+            NodeWrapper.__instance = self
+
+            self.texture_loader = TextureLoader()
+            self.tree = None
+            self.b_mat = None
+            self.output = None
+            self.diffuse_pass = None
+            self.diffuse_shader = None
+            # raw texture nodes
+            self.diffuse_texture = None
+            self.vcol = None
 
     @staticmethod
     def uv_node_name(uv_index):
