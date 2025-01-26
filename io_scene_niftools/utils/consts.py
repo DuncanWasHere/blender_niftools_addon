@@ -72,7 +72,6 @@ LOGGER_PLUGIN = "niftools"
 class EmptyObject:
     pass
 
-
 TEX_SLOTS = EmptyObject()
 TEX_SLOTS.BASE = "base"
 TEX_SLOTS.DARK = "dark"
@@ -87,6 +86,16 @@ TEX_SLOTS.SPECULAR = "specular"
 TEX_SLOTS.NORMAL = "normal"
 TEX_SLOTS.ENV_MAP = "environment map"
 TEX_SLOTS.ENV_MASK = "environment mask"
+
+BS_TEX_SLOTS = EmptyObject()
+BS_TEX_SLOTS.DIFFUSE_MAP = "Diffuse Map"
+BS_TEX_SLOTS.NORMAL_MAP = "Normal Map"
+BS_TEX_SLOTS.GLOW_MAP = "Glow Map"
+BS_TEX_SLOTS.PARALLAX_MAP = "Parallax Map"
+BS_TEX_SLOTS.ENVIRONMENT_MAP = "Environment Map"
+BS_TEX_SLOTS.ENVIRONMENT_MASK = "Environment Mask"
+BS_TEX_SLOTS.SUBSURFACE_TINT_MAP = "Subsurface Tint Map"
+BS_TEX_SLOTS.BACKLIGHT_MAP = "Backlight Map"
 
 # fcurve data types for blender
 QUAT = "rotation_quaternion"
