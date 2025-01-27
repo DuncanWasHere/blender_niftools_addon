@@ -39,7 +39,7 @@
 
 import bpy
 from bpy.props import (BoolProperty,
-                       EnumProperty,
+                       EnumProperty, FloatProperty,
                        )
 from bpy.types import PropertyGroup
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
@@ -78,6 +78,18 @@ class ShaderProperty(PropertyGroup):
         # default = 'SHADER_DEFAULT'
     )
 
+    lighting_effect_1: FloatProperty(
+        name='Lighting Effect 1',
+        description='Controls strength of envmap/backlight/rim/softlight lighting effect',
+        default = 0
+    )
+
+    lighting_effect_2: FloatProperty(
+        name='Lighting Effect 2',
+        description='Controls strength of envmap/backlight/rim/softlight lighting effect',
+        default = 0
+    )
+
 
 def prettify_prop_name(property_name):
     replacers = [('Hd', 'HD'), ('Lod', 'LOD')]
@@ -105,10 +117,10 @@ CLASSES = [
 def register():
     register_classes(CLASSES, __name__)
 
-    bpy.types.Material.niftools_shader = bpy.props.PointerProperty(type=ShaderProperty)
+    bpy.types.Material.nif_shader = bpy.props.PointerProperty(type=ShaderProperty)
 
 
 def unregister():
-    del bpy.types.Material.niftools_shader
+    del bpy.types.Material.nif_shader
 
     unregister_classes(CLASSES, __name__)
