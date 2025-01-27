@@ -180,7 +180,7 @@ class MaterialProperty:
 
         b_mat = b_obj.active_material
 
-        b_mat.nif_material.use_specular = n_ni_specular_property.value
+        b_mat.nif_material.use_specular = n_ni_specular_property.flags.value
 
     def __import_ni_stencil_property(self, n_ni_stencil_property, b_obj):
         """Import a NiStencilProperty block into a Blender material."""
