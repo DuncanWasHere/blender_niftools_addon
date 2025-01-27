@@ -318,7 +318,7 @@ class VertexGroup:
         b_mesh = b_obj.data  # Work directly with the original mesh
 
         for group_name, tri_indices in face_groups.items():
-            NifLog.warn(f"Adding face group: {group_name}.")
+            NifLog.debug(f"Adding face group: {group_name}.")
 
             # Create or retrieve the attribute
             if group_name not in b_mesh.attributes:
