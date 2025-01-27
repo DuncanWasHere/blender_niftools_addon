@@ -1,6 +1,6 @@
 """This script contains helper methods to import textures."""
-
-from io_scene_niftools.utils.consts import TEX_SLOTS
+from io_scene_niftools.modules.nif_import.property.node_wrapper import NodeWrapper
+from io_scene_niftools.utils.consts import TEX_SLOTS, BS_TEX_SLOTS
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.
@@ -51,6 +51,7 @@ class BSShaderTextureSet:
         else:
             super().__init__()
             BSShaderTextureSet.__instance = self
+            self.node_wrapper = NodeWrapper.get()
 
     @staticmethod
     def get():
@@ -59,21 +60,21 @@ class BSShaderTextureSet:
             BSShaderTextureSet()
         return BSShaderTextureSet.__instance
 
-    def import_bsshaderproperty_textureset(self, bs_shader_property, nodes_wrapper):
+    def import_bs_shader_texture_set(self, bs_shader_property, b_mat):
+
         textures = bs_shader_property.texture_set.textures
+
         slots = {
-            TEX_SLOTS.BASE: 0,
-            TEX_SLOTS.NORMAL: 1,
-            TEX_SLOTS.GLOW: 2,
-            TEX_SLOTS.DETAIL: 3,
-            TEX_SLOTS.GLOSS: 7,
-            TEX_SLOTS.BUMP_MAP: None,
-            TEX_SLOTS.DECAL_0: 6,
-            TEX_SLOTS.DECAL_1: None,
-            TEX_SLOTS.DECAL_2: None,
-            # extra shader stuff?
-            TEX_SLOTS.SPECULAR: None,
+            BS_TEX_SLOTS.DIFFUSE_MAP: 0,
+            BS_TEX_SLOTS.NORMAL_MAP: 1,
+            BS_TEX_SLOTS.GLOW_MAP: 2,
+            BS_TEX_SLOTS.PARALLAX_MAP: 3,
+            BS_TEX_SLOTS.ENVIRONMENT_MAP: 4,
+            BS_TEX_SLOTS.ENVIRONMENT_MASK: 5,
+            BS_TEX_SLOTS.SUBSURFACE_TINT_MAP: 6,
+            BS_TEX_SLOTS.BACKLIGHT_MAP: 7
         }
+
         for slot_name, slot_i in slots.items():
             # skip those whose index we don't know from old code
             if slot_i is not None and len(textures) > slot_i:
@@ -81,16 +82,16 @@ class BSShaderTextureSet:
                 # see if it holds a texture
                 if tex_str:
                     NifLog.debug(f"Shader has active {slot_name}")
-                    nodes_wrapper.create_and_link(slot_name, tex_str)
+                    self.node_wrapper.create_and_link(slot_name, tex_str)
 
-    def import_bseffectshaderproperty_textures(self, bs_effect_shader_property, nodes_wrapper):
+    def import_bseffectshaderproperty_textures(self, bs_effect_shader_property, b_mat):
 
         base = bs_effect_shader_property.source_texture
         if base:
-            nodes_wrapper.create_and_link(TEX_SLOTS.BASE, base)
+            self.node_wrapper.create_and_link(TEX_SLOTS.BASE, base)
 
         glow = bs_effect_shader_property.greyscale_texture
         if glow:
-            nodes_wrapper.create_and_link(TEX_SLOTS.GLOW, glow)
+            self.node_wrapper.create_and_link(TEX_SLOTS.GLOW, glow)
 
         # self.import_texture_game_properties(b_mat, bs_effect_shader_property)

@@ -40,7 +40,7 @@
 
 import bpy
 from io_scene_niftools.modules.nif_import.property.texture.loader import TextureLoader
-from io_scene_niftools.utils.consts import TEX_SLOTS
+from io_scene_niftools.utils.consts import TEX_SLOTS, BS_TEX_SLOTS
 from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.nodes import nodes_iterate
 from nifgen.formats.nif import classes as NifClasses
@@ -89,7 +89,7 @@ class NodeWrapper:
             self.b_texture_coordinate = None # Texture Coordinate (for environment map)
 
             # Texture Nodes
-            self.b_textures = []
+            self.b_textures = [None] * 8
 
     @staticmethod
     def uv_node_name(uv_index):
@@ -193,7 +193,7 @@ class NodeWrapper:
         self.b_diffuse_pass = None
         self.b_texture_coordinate = None
 
-        self.b_textures = []
+        self.b_textures = [None] * 8
 
         # Add basic shader nodes
         self.b_principled_bsdf = self.b_shader_tree.nodes.new('ShaderNodeBsdfPrincipled')
@@ -233,35 +233,26 @@ class NodeWrapper:
 
         if self.b_diffuse_pass:
             self.b_shader_tree.links.new(self.b_diffuse_pass.outputs[0], self.b_principled_bsdf.inputs[0])
-        # transparency
-        if self.b_mat.blend_method == "OPAQUE":
-            self.b_shader_tree.links.new(self.b_principled_bsdf.outputs[0], self.b_mat_output.inputs[0])
-        else:
-            transp = self.b_shader_tree.nodes.new('ShaderNodeBsdfTransparent')
-            alpha_mixer = self.b_shader_tree.nodes.new('ShaderNodeMixShader')
-            #
-            if self.diffuse_texture and has_vcol:
+
+            if self.b_textures[0] and has_vcol:
                 mixAAA = self.b_shader_tree.nodes.new('ShaderNodeMixRGB')
                 mixAAA.inputs[0].default_value = 1
                 mixAAA.blend_type = "MULTIPLY"
-                self.b_shader_tree.links.new(self.diffuse_texture.outputs[1], mixAAA.inputs[1])
+                self.b_shader_tree.links.new(self.b_textures[0].outputs[1], mixAAA.inputs[1])
                 self.b_shader_tree.links.new(self.b_color_attribute.outputs[1], mixAAA.inputs[2])
-                self.b_shader_tree.links.new(mixAAA.outputs[0], alpha_mixer.inputs[0])
-            elif self.diffuse_texture:
-                self.b_shader_tree.links.new(self.diffuse_texture.outputs[1], alpha_mixer.inputs[0])
+                self.b_shader_tree.links.new(mixAAA.outputs[0], self.b_principled_bsdf.inputs[4])
+            elif self.b_textures[0]:
+                self.b_shader_tree.links.new(self.b_textures[0].outputs[1], self.b_principled_bsdf.inputs[4])
             elif has_vcol:
-                self.b_shader_tree.links.new(self.b_color_attribute.outputs[1], alpha_mixer.inputs[0])
-
-            self.b_shader_tree.links.new(transp.outputs[0], alpha_mixer.inputs[1])
-            self.b_shader_tree.links.new(self.b_principled_bsdf.outputs[0], alpha_mixer.inputs[2])
-            self.b_shader_tree.links.new(alpha_mixer.outputs[0], self.b_mat_output.inputs[0])
+                self.b_shader_tree.links.new(self.b_color_attribute.outputs[1], self.b_principled_bsdf.inputs[4])
 
         nodes_iterate(self.b_shader_tree, self.b_mat_output)
 
     def create_and_link(self, slot_name, n_tex_info):
-        """"""
-        slot_lower = slot_name.lower().replace(' ', '_')
-        import_func_name = f"link_{slot_lower}_node"
+
+        slot_name_lower = slot_name.lower().replace(' ', '_')
+
+        import_func_name = f"link_{slot_name_lower}_node"
         import_func = getattr(self, import_func_name, None)
         if not import_func:
             NifLog.debug(f"Could not find texture linking function {import_func_name}")
@@ -292,7 +283,7 @@ class NodeWrapper:
         return b_texture_node
 
     def link_base_node(self, b_texture_node):
-        self.diffuse_texture = b_texture_node
+        self.b_textures[0] = b_texture_node
         b_texture_node.label = TEX_SLOTS.BASE
         self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node)
 
@@ -377,13 +368,13 @@ class NodeWrapper:
         links.new(group_node.inputs['Input'], b_texture_node.outputs['Color'])
 
         if self.b_mat.nif_shader.model_space_normals:
-            links.new(self.b_principled_bsdf.inputs[2], group_node.outputs['Output'])
+            links.new(self.b_principled_bsdf.inputs[5], group_node.outputs['Output'])
         else:
             # Create tangent normal map converter and link to it
             tangent_converter = nodes.new("ShaderNodeNormalMap")
             tangent_converter.location = (0, 300)
             links.new(tangent_converter.inputs['Color'], group_node.outputs['Output'])
-            links.new(self.b_principled_bsdf.inputs[2], tangent_converter.outputs['Normal'])
+            links.new(self.b_principled_bsdf.inputs[5], tangent_converter.outputs['Normal'])
 
     def link_glow_node(self, b_texture_node):
         b_texture_node.label = TEX_SLOTS.GLOW
@@ -439,9 +430,10 @@ class NodeWrapper:
         # if self.nif_import.ni_alpha_prop:
         #     b_texture_node.use_map_alpha = True
 
-        b_texture_node.use_map_color_diffuse = True
-        b_texture_node.use_map_emit = True
-        b_texture_node.use_map_mirror = True
+        # b_texture_node.use_map_color_diffuse = True
+        # b_texture_node.use_map_emit = True
+        # b_texture_node.use_map_mirror = True
+        return
 
     def link_environment_node(self, b_texture_node):
         # Influence mapping
@@ -451,8 +443,49 @@ class NodeWrapper:
         # if self.nif_import.ni_alpha_prop:
         #     b_texture_node.use_map_alpha = True
 
-        b_texture_node.use_map_color_diffuse = True
-        b_texture_node.blend_type = 'ADD'
+        # b_texture_node.use_map_color_diffuse = True
+        # b_texture_node.blend_type = 'ADD'
+        return
+
+    def link_diffuse_map_node(self, b_texture_node):
+        self.b_textures[0] = b_texture_node
+        b_texture_node.label = BS_TEX_SLOTS.DIFFUSE_MAP
+        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node)
+
+    def link_normal_map_node(self, b_texture_node):
+        self.b_textures[1] = b_texture_node
+        self.link_normal_node(b_texture_node)
+        b_texture_node.label = BS_TEX_SLOTS.NORMAL_MAP
+
+    def link_glow_map_node(self, b_texture_node):
+        self.b_textures[2] = b_texture_node
+        self.link_glow_node(b_texture_node)
+        b_texture_node.label = BS_TEX_SLOTS.GLOW_MAP
+
+    def link_parallax_map_node(self, b_texture_node):
+        self.b_textures[3] = b_texture_node
+        self.link_detail_node(b_texture_node)
+        b_texture_node.label = BS_TEX_SLOTS.PARALLAX_MAP
+
+    def link_environment_map_node(self, b_texture_node):
+        self.b_textures[4] = b_texture_node
+        self.link_reflection_node(b_texture_node)
+        b_texture_node.label = BS_TEX_SLOTS.ENVIRONMENT_MAP
+
+    def link_environment_mask_node(self, b_texture_node):
+        self.b_textures[5] = b_texture_node
+        self.link_environment_node(b_texture_node)
+        b_texture_node.label = BS_TEX_SLOTS.ENVIRONMENT_MASK
+
+    def link_subsurface_tint_map_node(self, b_texture_node):
+        self.b_textures[6] = b_texture_node
+        self.link_environment_node(b_texture_node)
+        b_texture_node.label = BS_TEX_SLOTS.SUBSURFACE_TINT_MAP
+
+    def link_backlight_map_node(self, b_texture_node):
+        self.b_textures[7] = b_texture_node
+        self.link_environment_node(b_texture_node)
+        b_texture_node.label = BS_TEX_SLOTS.BACKLIGHT_MAP
 
     @staticmethod
     def get_b_blend_type_from_n_apply_mode(n_apply_mode):

@@ -40,6 +40,7 @@
 import bpy
 
 from io_scene_niftools.modules.nif_import.property.node_wrapper import NodeWrapper
+from io_scene_niftools.modules.nif_import.property.shader.bethesda import BSShaderProperty
 from io_scene_niftools.utils.logging import NifLog
 from nifgen.formats.nif import classes as NifClasses
 from functools import singledispatch
@@ -49,7 +50,7 @@ class MaterialProperty:
     """Main interface class for importing NIF property blocks into Blender materials."""
 
     def __init__(self):
-        self.shader_property_helper = None
+        self.shader_property_helper = BSShaderProperty()
         self.texture_property = None
         self.node_wrapper = NodeWrapper.get()
 
@@ -112,6 +113,8 @@ class MaterialProperty:
         for n_ni_property in n_ni_property_list:
             self.import_material_property(n_ni_property, b_obj)
 
+        self.node_wrapper.connect_to_output(b_obj.data.color_attributes)
+
     def __import_material_property(self, n_property_block, b_obj):
         """Base method for unsupported blocks."""
 
@@ -137,8 +140,11 @@ class MaterialProperty:
         b_shader_node.inputs[14].default_value = (n_ni_material_property.specular_color.r, n_ni_material_property.specular_color.g,
          n_ni_material_property.specular_color.b, 1)
 
+        b_shader_node.inputs[27].default_value = (n_ni_material_property.emissive_color.r, n_ni_material_property.emissive_color.g,
+         n_ni_material_property.emissive_color.b, 1)
+
         # Map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
-        b_shader_node.inputs[2].default_value = min(1, n_ni_material_property.glossiness / 128)
+        b_shader_node.inputs[2].default_value = 1/(n_ni_material_property.glossiness + 0.1)
 
         b_shader_node.inputs[4].default_value = n_ni_material_property.alpha
 

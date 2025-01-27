@@ -136,7 +136,7 @@ class BSShader(ABC):
         return b_mat
 
     @staticmethod
-    def import_flags(b_mat, flags):
+    def import_shader_flags(b_mat, flags):
         for name in type(flags).__members__:
             if getattr(flags, name):
                 b_mat.nif_shader[name] = True
