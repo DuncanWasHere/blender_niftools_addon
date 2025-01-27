@@ -37,67 +37,76 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
+import bpy
 from bpy.types import Operator
 
 from io_scene_niftools import properties
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 
 
-class BSXExtraDataAdd(Operator):
-    """Adds BSX Flag to extra data of the currently selected object"""
-    bl_idname = "object.niftools_extradata_bsx_add"
-    bl_label = "Add BSX Flags"
+class BSFurnitureMarkerAdd(Operator):
+    """Add BSFurnitureMarker."""
+
+    bl_idname = "object.bs_furniture_marker_add"
+    bl_label = "Add Furniture Marker"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        bs_furniture_marker = context.object.nif_object.bs_furniture_marker
+        bs_furniture_marker_item = bs_furniture_marker.add()
+        bs_furniture_marker_item.name = "FRN"
+        return {'FINISHED'}
+
+class BSFurnitureMarkerRemove(bpy.types.Operator):
+    """Remove BSFurnitureMarker."""
+
+    bl_idname = "object.bs_furniture_marker_remove"
+    bl_label = "Remove Furniture Marker"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        bs_furniture_marker = context.object.nif_object.bs_furniture_marker
+        item = len(bs_furniture_marker) - 1
+        bs_furniture_marker.remove(item)
+        return {'FINISHED'}
+
+class FurniturePositionAdd(Operator):
+    """Add furniture position."""
+
+    bl_idname = "object.furniture_position_add"
+    bl_label = "Add Furniture Position"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         b_obj = context.active_object
-        extradata = properties.object.BSXFlags
-        b_obj.nif_object.extra_data_store.extra_data.add()
+
+        for i, x in enumerate(b_obj.nif_object.bs_furniture_marker):
+            b_obj.nif_object.bs_furniture_marker[i].positions.add()
+
         return {'FINISHED'}
 
+class FurniturePositionRemove(Operator):
+    """Remove furniture position."""
 
-class UPBExtraDataAdd(Operator):
-    """Adds BSX Flags to extra data"""
-    bl_idname = "object.niftools_extradata_upb_add"
-    bl_label = "Add UPB"
+    bl_idname = "object.furniture_position_remove"
+    bl_label = "Remove Furniture Position"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         b_obj = context.active_object
-        b_obj.nif_object.extra_data_store.extra_data.add()
+
+        for i, x in enumerate(b_obj.nif_object.bs_furniture_marker):
+            item = b_obj.nif_object.bs_furniture_marker[i].position_index
+            b_obj.nif_object.bs_furniture_marker[i].positions.remove(item)
+
         return {'FINISHED'}
-
-
-class SampleExtraDataAdd(Operator):
-    """Sample"""
-    bl_idname = "object.niftools_extradata_sample_add"
-    bl_label = "Sample 1"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        b_obj = context.active_object
-        b_obj.nif_object.extra_data_store.extra_data.add()
-        return {'FINISHED'}
-
-
-class NiExtraDataRemove(Operator):
-    """Removes Extra Data from Objects"""
-    bl_idname = "object.niftools_extradata_remove"
-    bl_label = "Remove Inventory Marker"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        b_obj = context.active_object
-        item = b_obj.nif_object.extra_data_store.extra_data_index
-        b_obj.nif_object.extra_data_store.extra_data.remove(item)
-        return {'FINISHED'}
-
 
 classes = [
-    BSXExtraDataAdd,
-    UPBExtraDataAdd,
-    SampleExtraDataAdd,
-    NiExtraDataRemove
+    BSFurnitureMarkerAdd,
+    BSFurnitureMarkerRemove,
+    FurniturePositionAdd,
+    FurniturePositionRemove
 ]
 
 

@@ -42,12 +42,70 @@ import bpy
 from bpy.props import (StringProperty,
                        IntProperty,
                        EnumProperty,
-                       FloatProperty
+                       FloatProperty, CollectionProperty
                        )
 from bpy.types import PropertyGroup
 from io_scene_niftools.utils.decorators import register_classes, unregister_classes
 from nifgen.formats.nif import classes as NifClasses
 
+
+class FurniturePosition(PropertyGroup):
+
+    offset_x: FloatProperty(
+        name="X Offset",
+        description="Offset of furniture marker along the X axis",
+        default=0
+    )
+
+    offset_y: FloatProperty(
+        name="Y Offset",
+        description="Offset of furniture marker along the Y axis",
+        default=0
+    )
+
+    offset_z: FloatProperty(
+        name="Z Offset",
+        description="Offset of furniture marker along the Z axis",
+        default=0
+    )
+
+    orientation: IntProperty(
+        name="Orientation",
+        description="Orientation of furniture marker",
+        default=0,
+        min=0,
+        max=65535
+    )
+
+    position_ref_1: IntProperty(
+        name="Ref 1 Position",
+        description="Refers to a furnituremarkerxx.nif file",
+        default=0,
+        min=0,
+        max=255
+    )
+
+    position_ref_2: IntProperty(
+        name="Ref 2 Position",
+        description="Refers to a furnituremarkerxx.nif file",
+        default=0,
+        min=0,
+        max=255
+    )
+
+class BSFurnitureMarker(PropertyGroup):
+    name: StringProperty(
+        name="",
+        default='FRN'
+    )
+
+    position_index: IntProperty()
+
+    positions: CollectionProperty(
+        name="Positions",
+        description="Furniture positions",
+        type=FurniturePosition
+    )
 
 class BsInventoryMarker(PropertyGroup):
     name: StringProperty(
@@ -82,10 +140,6 @@ class BsInventoryMarker(PropertyGroup):
         default=1
     )
 
-prn_versioned_arguments = {}
-if bpy.app.version >= (3, 3, 0):
-    prn_versioned_arguments['search'] = lambda self, context, edit_text: prn_map.get(context.scene.niftools_scene.game,
-                                                                                     [])
 class ObjectProperty(PropertyGroup):
     nodetype: EnumProperty(
         name='Node Type',
@@ -114,7 +168,7 @@ class ObjectProperty(PropertyGroup):
         name='Consistency Flag',
         description='Controls animation type',
         items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.ConsistencyType)],
-        # default = 'SHADER_DEFAULT'
+        default = 'CT_STATIC'
     )
 
     flags: IntProperty(
@@ -144,18 +198,19 @@ class ObjectProperty(PropertyGroup):
 
     bs_inv: bpy.props.CollectionProperty(type=BsInventoryMarker)
 
+    bs_furniture_marker: bpy.props.CollectionProperty(type=BSFurnitureMarker)
 
 CLASSES = [
+    FurniturePosition,
+    BSFurnitureMarker,
     BsInventoryMarker,
-    ObjectProperty,
+    ObjectProperty
 ]
-
 
 def register():
     register_classes(CLASSES, __name__)
 
     bpy.types.Object.nif_object = bpy.props.PointerProperty(type=ObjectProperty)
-
 
 def unregister():
     del bpy.types.Object.nif_object
