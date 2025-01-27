@@ -57,20 +57,20 @@ class BSShaderProperty:
     def export_bs_shader_property(self, n_ni_geometry, b_mat=None):
         """Main function for handling Bethesda shader property export."""
 
-        if b_mat.niftools_shader.bs_shadertype == 'None':
+        if b_mat.nif_shader.bs_shadertype == 'None':
             io_scene_niftools.NifLog.warn(f"No shader applied to material '{b_mat}' for mesh "
                                           f"'{n_ni_geometry.name}'. It will not be visible in game.")
             return
 
         self.bs_shader_texture_set_helper.determine_texture_types(b_mat)
 
-        if b_mat.niftools_shader.bs_shadertype == 'BSShaderPPLightingProperty':
+        if b_mat.nif_shader.bs_shadertype == 'BSShaderPPLightingProperty':
             self.export_bs_shader_pp_lighting_property(n_ni_geometry, b_mat)
-        elif b_mat.niftools_shader.bs_shadertype == 'BSLightingShaderProperty':
+        elif b_mat.nif_shader.bs_shadertype == 'BSLightingShaderProperty':
             self.export_bs_lighting_shader_property(n_ni_geometry, b_mat)
-        elif b_mat.niftools_shader.bs_shadertype == 'BSEffectShaderProperty':
+        elif b_mat.nif_shader.bs_shadertype == 'BSEffectShaderProperty':
             self.export_bs_effect_shader_property(n_ni_geometry, b_mat)
-        elif b_mat.niftools_shader.bs_shadertype == 'BSShaderNoLightingProperty':
+        elif b_mat.nif_shader.bs_shadertype == 'BSShaderNoLightingProperty':
             self.export_bs_shader_no_lighting_property(n_ni_geometry, b_mat)
 
     def export_bs_effect_shader_property(self, n_ni_geometry, b_mat):
@@ -95,9 +95,9 @@ class BSShaderProperty:
 
         n_bs_lighting_shader_property = block_store.create_block("BSLightingShaderProperty")
 
-        b_s_type = NifClasses.BSLightingShaderType[b_mat.niftools_shader.bslsp_shaderobjtype]
+        b_s_type = NifClasses.BSLightingShaderType[b_mat.nif_shader.bslsp_shaderobjtype]
         n_bs_lighting_shader_property.skyrim_shader_type = NifClasses.BSLightingShaderType[
-            b_mat.niftools_shader.bslsp_shaderobjtype]
+            b_mat.nif_shader.bslsp_shaderobjtype]
 
         self.bs_shader_texture_set_helper.export_bs_lighting_shader_property_textures(n_bs_lighting_shader_property)
 
@@ -140,7 +140,7 @@ class BSShaderProperty:
         n_bs_shader_pp_lighting_property = block_store.create_block("BSShaderPPLightingProperty")
 
         n_bs_shader_pp_lighting_property.shader_type = NifClasses.BSShaderType[
-            b_mat.niftools_shader.bsspplp_shaderobjtype]
+            b_mat.nif_shader.bsspplp_shaderobjtype]
 
         self.bs_shader_texture_set_helper.export_bs_shader_pp_lighting_property_textures(
             n_bs_shader_pp_lighting_property)
@@ -155,7 +155,7 @@ class BSShaderProperty:
         n_bs_shader_no_lighting_property = block_store.create_block("BSShaderNoLightingProperty")
 
         n_bs_shader_no_lighting_property.shader_type = NifClasses.BSShaderType[
-            b_mat.niftools_shader.bsspplp_shaderobjtype]
+            b_mat.nif_shader.bsspplp_shaderobjtype]
 
         n_ni_texturing_property = self.ni_texturing_property_helper.export_ni_texturing_property(b_mat)
         n_ni_geometry.add_property(n_ni_texturing_property)
@@ -206,10 +206,10 @@ class BSShaderProperty:
     def process_flags(b_mat, n_shader_flags):
         """Set shader flags for a BSShaderProperty block from Blender properties."""
 
-        b_flag_list = b_mat.niftools_shader.bl_rna.properties.keys()
+        b_flag_list = b_mat.nif_shader.bl_rna.properties.keys()
         for sf_flag in n_shader_flags.__members__:
             if sf_flag in b_flag_list:
-                b_flag = b_mat.niftools_shader.get(sf_flag)
+                b_flag = b_mat.nif_shader.get(sf_flag)
                 if b_flag:
                     setattr(n_shader_flags, sf_flag, True)
                 else:

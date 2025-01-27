@@ -44,52 +44,54 @@ from nifgen.formats.nif import classes as NifClasses
 
 
 class ShaderPanel(Panel):
-    bl_label = "NifTools Shader"
     bl_idname = "NIFTOOLS_PT_ShaderPanel"
+    bl_label = "NifTools Shader"
 
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "material"
     bl_options = {'DEFAULT_CLOSED'}
 
-    # noinspection PyUnusedLocal
     @classmethod
     def poll(cls, context):
-        return True
+        if context.material:
+            return True
+        return False
 
     def draw(self, context):
-        nif_obj_props = context.material.niftools_shader
-
         layout = self.layout
-        row = layout.column()
 
-        row.prop(nif_obj_props, "bs_shadertype")
+        col_setting = context.active_object.active_material.nif_shader
 
-        if nif_obj_props.bs_shadertype == 'BSShaderPPLightingProperty' or nif_obj_props.bs_shadertype == 'BSShaderNoLightingProperty':
-            row.prop(nif_obj_props, "bsspplp_shaderobjtype")
+        box = layout.box()
+
+        box.prop(col_setting, "bs_shadertype", text="Shader Type")
+
+        if col_setting.bs_shadertype and not (col_setting.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty')):
+            box.prop(col_setting, "bsspplp_shaderobjtype", text="BS Shader PP Lighting Type")
 
             for property_name in sorted(NifClasses.BSShaderFlags.__members__):
-                row.prop(nif_obj_props, property_name)
+                box.prop(col_setting, property_name)
             for property_name in sorted(NifClasses.BSShaderFlags2.__members__):
-                row.prop(nif_obj_props, property_name)
+                box.prop(col_setting, property_name)
 
-        elif nif_obj_props.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty'):
-            row.prop(nif_obj_props, "bslsp_shaderobjtype")
+        elif col_setting.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty'):
+            box.prop(col_setting, "bslsp_shaderobjtype", text="BS Lighting Shader Type")
+
+            box.prop(col_setting, "lighting_effect_1", text="Lighting Effect 1")
+            box.prop(col_setting, "lighting_effect_2", text="Lighting Effect 2")
 
             for property_name in sorted(NifClasses.SkyrimShaderPropertyFlags1.__members__):
-                row.prop(nif_obj_props, property_name)
+                box.prop(col_setting, property_name)
             for property_name in sorted(NifClasses.SkyrimShaderPropertyFlags2.__members__):
-                row.prop(nif_obj_props, property_name)
-
+                box.prop(col_setting, property_name)
 
 classes = [
     ShaderPanel
 ]
 
-
 def register():
     register_classes(classes, __name__)
-
 
 def unregister():
     unregister_classes(classes, __name__)

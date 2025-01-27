@@ -201,7 +201,7 @@ class Geometry:
         has_normals = False
         if b_mat is not None:
             has_normals = True
-            if self.nif_scene.is_skyrim() and b_mat.niftools_shader.model_space_normals:
+            if self.nif_scene.is_skyrim() and b_mat.nif_shader.model_space_normals:
                 has_normals = False
 
         # Should tangents be exported?

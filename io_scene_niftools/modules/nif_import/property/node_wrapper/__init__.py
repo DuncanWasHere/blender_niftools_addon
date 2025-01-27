@@ -376,7 +376,7 @@ class NodeWrapper:
 
         links.new(group_node.inputs['Input'], b_texture_node.outputs['Color'])
 
-        if self.b_mat.niftools_shader.model_space_normals:
+        if self.b_mat.nif_shader.model_space_normals:
             links.new(self.b_principled_bsdf.inputs[2], group_node.outputs['Output'])
         else:
             # Create tangent normal map converter and link to it
