@@ -210,7 +210,7 @@ class NifExport(NifCommon):
 
         if self.b_armatures:
             for b_armature in self.b_armatures:
-                math.set_bone_orientation(b_armature.data.nif_bone.axis_forward, b_armature.data.nif_bone.axis_up)
+                math.set_bone_orientation(b_armature.data.nif_armature.axis_forward, b_armature.data.nif_armature.axis_up)
 
     def __flatten_skin(self):
         """

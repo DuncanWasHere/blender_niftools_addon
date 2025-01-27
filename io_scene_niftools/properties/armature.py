@@ -102,7 +102,7 @@ def register():
 
 
 def unregister():
-    del bpy.types.Armature.niftools
-    del bpy.types.Bone.niftools
+    del bpy.types.Armature.nif_armature
+    del bpy.types.Bone.nif_bone
 
     unregister_classes(CLASSES, __name__)

@@ -77,7 +77,7 @@ class ArmaturePanel(Panel):
         return context.armature is not None
 
     def draw(self, context):
-        nif_armature_props = context.armature.niftools
+        nif_armature_props = context.armature.nif_armature
 
         layout = self.layout
         row = layout.column()

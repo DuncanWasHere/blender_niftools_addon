@@ -150,7 +150,7 @@ class ExportBlockRegistry:
         longname = ""
         if b_obj:
             try:
-                longname = b_obj.nif_object.longname
+                longname = b_obj.nif_bone.longname
             except:
                 pass
             if not longname:

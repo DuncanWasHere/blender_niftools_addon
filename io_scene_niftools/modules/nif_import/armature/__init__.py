@@ -208,8 +208,8 @@ class Armature:
         # pass them to the matrix utility
         math.set_bone_orientation(forward, up)
         # store axis orientation for export
-        b_armature_data.niftools.axis_forward = forward
-        b_armature_data.niftools.axis_up = up
+        b_armature_data.nif_armature.axis_forward = forward
+        b_armature_data.nif_armature.axis_up = up
         b_armature_obj = Object.create_b_obj(n_armature, b_armature_data)
         b_armature_obj.show_in_front = True
 

@@ -48,7 +48,10 @@ class ObjectProperty:
         """Import object flags and node types."""
 
         # Store object flags
-        b_obj.nif_object.flags = n_block.flags
+        if hasattr(b_obj, 'nif_object'):
+            b_obj.nif_object.flags = n_block.flags
+        elif hasattr(b_obj, 'nif_bone'):
+            b_obj.nif_bone.flags = n_block.flags
 
         if not issubclass(type(n_block), NifClasses.NiNode):
             return
