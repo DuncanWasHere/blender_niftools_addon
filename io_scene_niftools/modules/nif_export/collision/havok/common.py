@@ -66,7 +66,7 @@ class BhkCollisionCommon(CollisionCommon):
         if b_col_obj.data.materials:
             for b_mat in b_col_obj.data.materials:
                 try:
-                    n_hav_mat_list.append(self.HAVOK_MATERIALS[b_mat.name])
+                    n_hav_mat_list.append(self.HAVOK_MATERIALS[b_mat.name.upper()])
                 except KeyError:
                     NifLog.warn(f"Unknown Havok material '{b_mat.name}' for object {b_col_obj.name}! "
                                 f"Defaulting to '{n_default_material}'")
