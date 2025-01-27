@@ -123,7 +123,10 @@ class BSShaderProperty(BSShader):
                                                   n_bs_lighting_shader_property.skin_tint_color.b, 1)
 
         # Map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
-        b_shader_node.inputs[2].default_value = 1/(n_bs_lighting_shader_property.glossiness + 0.1)
+        if not n_bs_lighting_shader_property.glossiness == 0:
+            b_shader_node.inputs[2].default_value = (1 - (1 / (n_bs_lighting_shader_property.glossiness / 4))) ** 2
+        else:
+            b_shader_node.inputs[2].default_value = 0
 
         b_shader_node.inputs[4].default_value = n_bs_lighting_shader_property.alpha
 

@@ -144,7 +144,10 @@ class MaterialProperty:
          n_ni_material_property.emissive_color.b, 1)
 
         # Map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
-        b_shader_node.inputs[2].default_value = 1/(n_ni_material_property.glossiness + 0.1)
+        if not n_ni_material_property.glossiness == 0:
+            b_shader_node.inputs[2].default_value = (1 - (1 / (n_ni_material_property.glossiness / 4))) ** 2
+        else:
+            b_shader_node.inputs[2].default_value = 0
 
         b_shader_node.inputs[4].default_value = n_ni_material_property.alpha
 
