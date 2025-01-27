@@ -157,8 +157,7 @@ class BSShaderProperty:
         n_bs_shader_no_lighting_property.shader_type = NifClasses.BSShaderType[
             b_mat.nif_shader.bsspplp_shaderobjtype]
 
-        n_ni_texturing_property = self.ni_texturing_property_helper.export_ni_texturing_property(b_mat)
-        n_ni_geometry.add_property(n_ni_texturing_property)
+        n_ni_texturing_property = self.ni_texturing_property_helper.export_ni_texturing_property(b_mat, n_ni_geometry)
 
         BSShaderProperty.export_shader_flags(b_mat, n_bs_shader_no_lighting_property)
 
