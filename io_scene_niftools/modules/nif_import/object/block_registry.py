@@ -37,6 +37,8 @@
 #
 # ***** END LICENSE BLOCK *****
 
+import bpy
+
 from io_scene_niftools.utils.consts import BIP_01, BIP01_L, B_L_SUFFIX, BIP01_R, B_R_SUFFIX, NPC_L, NPC_R, NPC_SUFFIX, \
     BRACE_R, B_R_POSTFIX, B_L_POSTFIX, CLOSE_BRACKET, BRACE_L, OPEN_BRACKET
 from io_scene_niftools.utils.logging import NifLog
@@ -73,7 +75,10 @@ class BlockRegistry:
     def store_longname(b_obj, n_name):
         """Save original name as object property, for export"""
         if b_obj.name != n_name:
-            b_obj.nif_bone.longname = n_name
+            if isinstance(b_obj, bpy.types.Bone):
+                b_obj.nif_bone.longname = n_name
+            else:
+                b_obj.nif_object.longname = n_name
             NifLog.debug(f"Stored long name for {b_obj.name}")
 
     @staticmethod

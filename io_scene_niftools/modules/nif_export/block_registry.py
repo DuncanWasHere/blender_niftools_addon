@@ -1,5 +1,5 @@
 """Class methods to block_store objects between nif and blender objects."""
-
+import bpy.types
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.
@@ -150,7 +150,10 @@ class ExportBlockRegistry:
         longname = ""
         if b_obj:
             try:
-                longname = b_obj.nif_bone.longname
+                if isinstance(b_obj, bpy.types.Bone):
+                    longname = b_obj.nif_bone.longname
+                else:
+                    longname = b_obj.nif_object.longname
             except:
                 pass
             if not longname:
