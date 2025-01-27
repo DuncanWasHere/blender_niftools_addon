@@ -49,8 +49,6 @@ class MaterialProperty:
     """Main interface class for importing NIF property blocks into Blender materials."""
 
     def __init__(self):
-
-        # TODO: Merge BSShaderProperty and BSShaderLightingProperty and refactor texture classes
         self.shader_property_helper = None
         self.texture_property = None
         self.node_wrapper = NodeWrapper.get()
@@ -67,6 +65,10 @@ class MaterialProperty:
         self.import_material_property.register(NifClasses.BSShaderNoLightingProperty, self.__import_bs_shader_property)
         self.import_material_property.register(NifClasses.BSLightingShaderProperty, self.__import_bs_shader_property)
         self.import_material_property.register(NifClasses.BSEffectShaderProperty, self.__import_bs_shader_property)
+        self.import_material_property.register(NifClasses.SkyShaderProperty, self.__import_bs_shader_property)
+        self.import_material_property.register(NifClasses.TallGrassShaderProperty, self.__import_bs_shader_property)
+        self.import_material_property.register(NifClasses.TileShaderProperty, self.__import_bs_shader_property)
+        self.import_material_property.register(NifClasses.WaterShaderProperty, self.__import_bs_shader_property)
 
     def import_material_properties(self, n_ni_geometry, b_obj):
         """Main function for handling material import."""
@@ -110,7 +112,7 @@ class MaterialProperty:
         for n_ni_property in n_ni_property_list:
             self.import_material_property(n_ni_property, b_obj)
 
-    def __import_material_property(self, n_property_block):
+    def __import_material_property(self, n_property_block, b_obj):
         """Base method for unsupported blocks."""
 
         NifLog.warn(f"Unknown property block found : {n_property_block.name:s}.")
@@ -131,9 +133,6 @@ class MaterialProperty:
 
         b_shader_node.inputs[22].default_value = (n_ni_material_property.diffuse_color.r, n_ni_material_property.diffuse_color.g,
          n_ni_material_property.diffuse_color.b, 1)
-
-        b_shader_node.inputs[14].default_value = (n_ni_material_property.specular_color.r, n_ni_material_property.specular_color.g,
-         n_ni_material_property.specular_color.b, 1)
 
         b_shader_node.inputs[14].default_value = (n_ni_material_property.specular_color.r, n_ni_material_property.specular_color.g,
          n_ni_material_property.specular_color.b, 1)
@@ -207,4 +206,4 @@ class MaterialProperty:
 
         NifLog.debug("Importing BSShaderProperty block.")
 
-        # self.shader_property_helper.import_bs_shader_property(n_bs_shader_property, b_obj.active_material)
+        self.shader_property_helper.import_bs_shader_property(n_bs_shader_property, b_obj.active_material)

@@ -102,9 +102,6 @@ class MaterialProperty:
             (n_ni_material_property.specular_color.r, n_ni_material_property.specular_color.g,
              n_ni_material_property.specular_color.b, _) = b_shader_node.inputs[14].default_value
 
-            (n_ni_material_property.specular_color.r, n_ni_material_property.specular_color.g,
-             n_ni_material_property.specular_color.b, _) = b_shader_node.inputs[14].default_value
-
             if b_shader_node.inputs[27].is_linked:
                 b_color_node = b_shader_node.inputs[27].links[0].from_node
                 if isinstance(b_color_node, bpy.types.ShaderNodeMix):
