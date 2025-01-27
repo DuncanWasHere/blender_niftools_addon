@@ -50,7 +50,7 @@ class BsInvMarkerAdd(Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        bs_inv = context.object.niftools.bs_inv
+        bs_inv = context.object.nif_object.bs_inv
         bs_inv_item = bs_inv.add()
         bs_inv_item.name = "INV"
         bs_inv_item.bs_inv_x = 0
@@ -67,7 +67,7 @@ class BsInvMarkerRemove(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        bs_inv = context.object.niftools.bs_inv
+        bs_inv = context.object.nif_object.bs_inv
         item = len(bs_inv) - 1
         bs_inv.remove(item)
         return {'FINISHED'}

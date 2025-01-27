@@ -116,7 +116,7 @@ class BSShaderProperty:
 
         # TODO [shader]: Get emissive properties from shader nodes
         #BSShaderProperty.set_color3_property(n_bs_lighting_shader_property.emissive_color,
-        #                                     b_mat.niftools.emissive_color)
+        #                                     b_mat.nif_material.emissive_color)
         # bsshader.emissive_multiple = b_mat.emit
 
         # TODO [shader]: Get roughness properties from shader nodes

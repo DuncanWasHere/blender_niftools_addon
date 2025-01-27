@@ -52,7 +52,7 @@ class BSXExtraDataAdd(Operator):
     def execute(self, context):
         b_obj = context.active_object
         extradata = properties.object.BSXFlags
-        b_obj.niftools.extra_data_store.extra_data.add()
+        b_obj.nif_object.extra_data_store.extra_data.add()
         return {'FINISHED'}
 
 
@@ -64,7 +64,7 @@ class UPBExtraDataAdd(Operator):
 
     def execute(self, context):
         b_obj = context.active_object
-        b_obj.niftools.extra_data_store.extra_data.add()
+        b_obj.nif_object.extra_data_store.extra_data.add()
         return {'FINISHED'}
 
 
@@ -76,7 +76,7 @@ class SampleExtraDataAdd(Operator):
 
     def execute(self, context):
         b_obj = context.active_object
-        b_obj.niftools.extra_data_store.extra_data.add()
+        b_obj.nif_object.extra_data_store.extra_data.add()
         return {'FINISHED'}
 
 
@@ -88,8 +88,8 @@ class NiExtraDataRemove(Operator):
 
     def execute(self, context):
         b_obj = context.active_object
-        item = b_obj.niftools.extra_data_store.extra_data_index
-        b_obj.niftools.extra_data_store.extra_data.remove(item)
+        item = b_obj.nif_object.extra_data_store.extra_data_index
+        b_obj.nif_object.extra_data_store.extra_data.remove(item)
         return {'FINISHED'}
 
 
