@@ -113,7 +113,7 @@ class MaterialProperty:
 
             # Map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
             if not b_shader_node.inputs[2].default_value == 0:
-                n_ni_material_property.glossiness = 4 / (1 - b_shader_node.inputs[2].default_value ** 0.5)
+                n_ni_material_property.glossiness = 2 / (1 - b_shader_node.inputs[2].default_value ** 0.5)
             else:
                 n_ni_material_property.glossiness = 0
 

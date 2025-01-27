@@ -131,21 +131,23 @@ class MaterialProperty:
 
         b_shader_node = b_mat.node_tree.nodes["Principled BSDF"]
 
-        b_shader_node.inputs[26].default_value = (n_ni_material_property.ambient_color.r, n_ni_material_property.ambient_color.g,
-         n_ni_material_property.ambient_color.b, 1)
+        if not (bpy.context.scene.niftools_scene.is_skyrim or bpy.context.scene.niftools_scene.is_fo3):
 
-        b_shader_node.inputs[22].default_value = (n_ni_material_property.diffuse_color.r, n_ni_material_property.diffuse_color.g,
-         n_ni_material_property.diffuse_color.b, 1)
+            b_shader_node.inputs[26].default_value = (n_ni_material_property.ambient_color.r, n_ni_material_property.ambient_color.g,
+             n_ni_material_property.ambient_color.b, 1)
 
-        b_shader_node.inputs[14].default_value = (n_ni_material_property.specular_color.r, n_ni_material_property.specular_color.g,
-         n_ni_material_property.specular_color.b, 1)
+            b_shader_node.inputs[22].default_value = (n_ni_material_property.diffuse_color.r, n_ni_material_property.diffuse_color.g,
+             n_ni_material_property.diffuse_color.b, 1)
+
+            b_shader_node.inputs[14].default_value = (n_ni_material_property.specular_color.r, n_ni_material_property.specular_color.g,
+             n_ni_material_property.specular_color.b, 1)
 
         b_shader_node.inputs[27].default_value = (n_ni_material_property.emissive_color.r, n_ni_material_property.emissive_color.g,
          n_ni_material_property.emissive_color.b, 1)
 
         # Map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
         if not n_ni_material_property.glossiness == 0:
-            b_shader_node.inputs[2].default_value = (1 - (1 / (n_ni_material_property.glossiness / 4))) ** 2
+            b_shader_node.inputs[2].default_value = (1 - (1 / (n_ni_material_property.glossiness / 2))) ** 2
         else:
             b_shader_node.inputs[2].default_value = 0
 

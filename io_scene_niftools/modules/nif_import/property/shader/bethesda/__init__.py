@@ -124,7 +124,7 @@ class BSShaderProperty(BSShader):
 
         # Map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
         if not n_bs_lighting_shader_property.glossiness == 0:
-            b_shader_node.inputs[2].default_value = (1 - (1 / (n_bs_lighting_shader_property.glossiness / 4))) ** 2
+            b_shader_node.inputs[2].default_value = (1 - (1 / (n_bs_lighting_shader_property.glossiness / 2))) ** 2
         else:
             b_shader_node.inputs[2].default_value = 0
 
