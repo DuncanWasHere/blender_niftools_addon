@@ -1,8 +1,5 @@
 """This script contains helper methods for texture pathing."""
 
-import operator
-import os.path
-import traceback
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.
@@ -39,12 +36,18 @@ import traceback
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
+
+
 from functools import reduce
 
 import bpy
 from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
+
+import operator
+import os.path
+import traceback
 
 
 class TextureLoader:
