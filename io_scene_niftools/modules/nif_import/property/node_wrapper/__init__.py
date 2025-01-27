@@ -74,14 +74,22 @@ class NodeWrapper:
             NodeWrapper.__instance = self
 
             self.texture_loader = TextureLoader()
-            self.b_shader_tree = None
             self.b_mat = None
-            self.output = None
-            self.diffuse_pass = None
-            self.b_principled_bsdf = None
-            # raw texture nodes
-            self.diffuse_texture = None
-            self.vcol = None
+            self.b_shader_tree = None
+
+            # Shader Nodes
+            self.b_mat_output = None # Material Output
+            self.b_principled_bsdf = None # Principled BSDF
+            self.b_glossy_bsdf = None # Glossy BSDF
+            self.b_add_shader = None # Add Shader
+            self.b_normal = None # Normal Map
+            self.b_color_attribute = None # Color Attribute
+            self.b_emissive_pass = None # Mix Color (for material emissive color)
+            self.b_diffuse_pass = None # Mix Color (for color attribute)
+            self.b_texture_coordinate = None # Texture Coordinate (for environment map)
+
+            # Texture Nodes
+            self.b_textures = []
 
     @staticmethod
     def uv_node_name(uv_index):
@@ -167,25 +175,30 @@ class NodeWrapper:
             self.b_shader_tree.links.new(uv_node.outputs[0], split_node.inputs[0])
         pass
 
-    def clear_default_nodes(self):
+    def clear_nodes(self):
+        """Clear existing shader nodes from the node tree and restart with minimal setup."""
+
         self.b_mat.use_nodes = True
         self.b_shader_tree = self.b_mat.node_tree
-        # clear default nodes
+
+        # Remove existing shader nodes
         for node in self.b_shader_tree.nodes:
             self.b_shader_tree.nodes.remove(node)
-        # self.tree.update()
-        # bpy.context.view_layer.update()
 
-        self.output = self.b_shader_tree.nodes.new('ShaderNodeOutputMaterial')
+        self.b_glossy_bsdf = None
+        self.b_add_shader = None
+        self.b_normal = None
+        self.b_color_attribute = None
+        self.b_emissive_pass = None
+        self.b_diffuse_pass = None
+        self.b_texture_coordinate = None
 
-        # shaders
+        self.b_textures = []
+
+        # Add basic shader nodes
         self.b_principled_bsdf = self.b_shader_tree.nodes.new('ShaderNodeBsdfPrincipled')
-
-        # image passes
-        self.diffuse_pass = None
-
-        # raw texture nodes
-        self.diffuse_texture = None
+        self.b_mat_output = self.b_shader_tree.nodes.new('ShaderNodeOutputMaterial')
+        self.b_shader_tree.links.new(self.b_principled_bsdf.outputs[0], self.b_mat_output.inputs[0])
 
     def connect_to_pass(self, b_node_pass, b_texture_node, texture_type="Detail"):
         """Connect to an image premixing pass"""
@@ -210,19 +223,19 @@ class NodeWrapper:
 
     def connect_vertex_colors_to_pass(self, ):
         # if ob.data.vertex_colors:
-        self.vcol = self.b_shader_tree.nodes.new('ShaderNodeVertexColor')
-        self.vcol.layer_name = "RGBA"
-        self.diffuse_pass = self.connect_to_pass(self.diffuse_pass, self.vcol, texture_type="Vertex_Color")
+        self.b_color_attribute = self.b_shader_tree.nodes.new('ShaderNodeVertexColor')
+        self.b_color_attribute.layer_name = "RGBA"
+        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, self.b_color_attribute, texture_type="Vertex_Color")
 
     def connect_to_output(self, has_vcol=False):
         if has_vcol:
             self.connect_vertex_colors_to_pass()
 
-        if self.diffuse_pass:
-            self.b_shader_tree.links.new(self.diffuse_pass.outputs[0], self.b_principled_bsdf.inputs[0])
+        if self.b_diffuse_pass:
+            self.b_shader_tree.links.new(self.b_diffuse_pass.outputs[0], self.b_principled_bsdf.inputs[0])
         # transparency
         if self.b_mat.blend_method == "OPAQUE":
-            self.b_shader_tree.links.new(self.b_principled_bsdf.outputs[0], self.output.inputs[0])
+            self.b_shader_tree.links.new(self.b_principled_bsdf.outputs[0], self.b_mat_output.inputs[0])
         else:
             transp = self.b_shader_tree.nodes.new('ShaderNodeBsdfTransparent')
             alpha_mixer = self.b_shader_tree.nodes.new('ShaderNodeMixShader')
@@ -232,18 +245,18 @@ class NodeWrapper:
                 mixAAA.inputs[0].default_value = 1
                 mixAAA.blend_type = "MULTIPLY"
                 self.b_shader_tree.links.new(self.diffuse_texture.outputs[1], mixAAA.inputs[1])
-                self.b_shader_tree.links.new(self.vcol.outputs[1], mixAAA.inputs[2])
+                self.b_shader_tree.links.new(self.b_color_attribute.outputs[1], mixAAA.inputs[2])
                 self.b_shader_tree.links.new(mixAAA.outputs[0], alpha_mixer.inputs[0])
             elif self.diffuse_texture:
                 self.b_shader_tree.links.new(self.diffuse_texture.outputs[1], alpha_mixer.inputs[0])
             elif has_vcol:
-                self.b_shader_tree.links.new(self.vcol.outputs[1], alpha_mixer.inputs[0])
+                self.b_shader_tree.links.new(self.b_color_attribute.outputs[1], alpha_mixer.inputs[0])
 
             self.b_shader_tree.links.new(transp.outputs[0], alpha_mixer.inputs[1])
             self.b_shader_tree.links.new(self.b_principled_bsdf.outputs[0], alpha_mixer.inputs[2])
-            self.b_shader_tree.links.new(alpha_mixer.outputs[0], self.output.inputs[0])
+            self.b_shader_tree.links.new(alpha_mixer.outputs[0], self.b_mat_output.inputs[0])
 
-        nodes_iterate(self.b_shader_tree, self.output)
+        nodes_iterate(self.b_shader_tree, self.b_mat_output)
 
     def create_and_link(self, slot_name, n_tex_info):
         """"""
@@ -281,7 +294,7 @@ class NodeWrapper:
     def link_base_node(self, b_texture_node):
         self.diffuse_texture = b_texture_node
         b_texture_node.label = TEX_SLOTS.BASE
-        self.diffuse_pass = self.connect_to_pass(self.diffuse_pass, b_texture_node)
+        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node)
 
     def link_bump_map_node(self, b_texture_node):
         b_texture_node.label = TEX_SLOTS.BUMP_MAP
@@ -401,19 +414,19 @@ class NodeWrapper:
 
     def link_decal_0_node(self, b_texture_node):
         b_texture_node.label = TEX_SLOTS.DECAL_0
-        self.diffuse_pass = self.connect_to_pass(self.diffuse_pass, b_texture_node, texture_type="Decal")
+        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node, texture_type="Decal")
 
     def link_decal_1_node(self, b_texture_node):
         b_texture_node.label = TEX_SLOTS.DECAL_1
-        self.diffuse_pass = self.connect_to_pass(self.diffuse_pass, b_texture_node, texture_type="Decal")
+        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node, texture_type="Decal")
 
     def link_decal_2_node(self, b_texture_node):
         b_texture_node.label = TEX_SLOTS.DECAL_2
-        self.diffuse_pass = self.connect_to_pass(self.diffuse_pass, b_texture_node, texture_type="Decal")
+        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node, texture_type="Decal")
 
     def link_detail_node(self, b_texture_node):
         b_texture_node.label = TEX_SLOTS.DETAIL
-        self.diffuse_pass = self.connect_to_pass(self.diffuse_pass, b_texture_node, texture_type="Detail")
+        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node, texture_type="Detail")
 
     def link_dark_node(self, b_texture_node):
         b_texture_node.label = TEX_SLOTS.DARK
