@@ -255,10 +255,12 @@ class NifImport(NifCommon):
 
             # import extra node data, such as node type
             ObjectProperty().import_object_properties(n_block, b_obj)
-            ObjectProperty().import_extra_data(n_block, b_obj)
-            NiTypes.import_root_collision(n_block, b_obj)
-            NiTypes.import_billboard(n_block, b_obj)
-            NiTypes.import_range_lod_data(n_block, b_obj, b_children)
+
+            if not isinstance(b_obj, bpy.types.Bone):
+                ObjectProperty().import_extra_data(n_block, b_obj)
+                NiTypes.import_root_collision(n_block, b_obj)
+                NiTypes.import_billboard(n_block, b_obj)
+                NiTypes.import_range_lod_data(n_block, b_obj, b_children)
 
             if NifOp.props.animation:
                 self.transform_anim.import_controller_manager(n_block, b_obj, b_armature)

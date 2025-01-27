@@ -55,7 +55,7 @@ class BonePanel(Panel):
         return context.bone is not None
 
     def draw(self, context):
-        nif_bone_props = context.bone.niftools
+        nif_bone_props = context.bone.nif_bone
 
         row = self.layout.column()
 
