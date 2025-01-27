@@ -137,7 +137,7 @@ class MaterialProperty:
         b_shader_node.inputs[14].default_value = (n_ni_material_property.specular_color.r, n_ni_material_property.specular_color.g,
          n_ni_material_property.specular_color.b, 1)
 
-        # map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
+        # Map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
         b_shader_node.inputs[2].default_value = min(1, n_ni_material_property.glossiness / 128)
 
         b_shader_node.inputs[4].default_value = n_ni_material_property.alpha

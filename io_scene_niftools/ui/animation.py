@@ -56,12 +56,12 @@ class AnimationPanel(Panel):
     def draw(self, context):
         layout = self.layout
 
-        col_setting = context.active_action.nif_animation
+        animation_setting = context.active_action.nif_animation
 
         box = layout.box()
-        box.prop(col_setting, "weight", text='Weight')  # weight prop
-        box.prop(col_setting, "frequency", text='Frequency')  # frequency prop
-        box.prop(col_setting, "cycle_type", text='Cycle Type')  # cycle type prop
+        box.prop(animation_setting, "weight", text='Weight')  # weight prop
+        box.prop(animation_setting, "frequency", text='Frequency')  # frequency prop
+        box.prop(animation_setting, "cycle_type", text='Cycle Type')  # cycle type prop
 
 
 classes = [

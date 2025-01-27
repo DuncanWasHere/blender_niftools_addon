@@ -61,25 +61,25 @@ class CollisionPanel(Panel):
     def draw(self, context):
         layout = self.layout
 
-        col_setting = context.active_object.nif_collision
+        collision_setting = context.active_object.nif_collision
 
         box = layout.box()
-        box.prop(col_setting, "collision_layer", text='Collision Layer')
-        box.prop(col_setting, "col_filter", text='Col Filter')
-        box.prop(col_setting, "inertia_tensor", text='Inertia Tensor')
-        box.prop(col_setting, "center", text='Center')
-        box.prop(col_setting, "mass", text='Mass')
-        box.prop(col_setting, "max_linear_velocity", text='Max Linear Velocity')
-        box.prop(col_setting, "max_angular_velocity", text='Max Angular Velocity')
-        box.prop(col_setting, "penetration_depth", text='Penetration Depth')
-        box.prop(col_setting, "motion_system", text='Motion System')
-        box.prop(col_setting, "deactivator_type", text='Deactivator Type')
-        box.prop(col_setting, "solver_deactivation", text='Solver Deactivator')
-        box.prop(col_setting, "quality_type", text='Quality Type')
-        box.prop(col_setting, "body_flags", text='React to Wind')
-        box.prop(col_setting, "use_blender_properties", text='Use Blender Properties')
-        box.prop(col_setting, "solid", text='Solid')
-        box.prop(col_setting, "shrink_offset", text='Shrink Offset')
+        box.prop(collision_setting, "collision_layer", text='Collision Layer')
+        box.prop(collision_setting, "col_filter", text='Col Filter')
+        box.prop(collision_setting, "inertia_tensor", text='Inertia Tensor')
+        box.prop(collision_setting, "center", text='Center')
+        box.prop(collision_setting, "mass", text='Mass')
+        box.prop(collision_setting, "max_linear_velocity", text='Max Linear Velocity')
+        box.prop(collision_setting, "max_angular_velocity", text='Max Angular Velocity')
+        box.prop(collision_setting, "penetration_depth", text='Penetration Depth')
+        box.prop(collision_setting, "motion_system", text='Motion System')
+        box.prop(collision_setting, "deactivator_type", text='Deactivator Type')
+        box.prop(collision_setting, "solver_deactivation", text='Solver Deactivator')
+        box.prop(collision_setting, "quality_type", text='Quality Type')
+        box.prop(collision_setting, "body_flags", text='React to Wind')
+        box.prop(collision_setting, "use_blender_properties", text='Use Blender Properties')
+        box.prop(collision_setting, "solid", text='Solid')
+        box.prop(collision_setting, "shrink_offset", text='Shrink Offset')
         box.operator("niftools.shrink_hull", text='Shrink Hull')
 
 

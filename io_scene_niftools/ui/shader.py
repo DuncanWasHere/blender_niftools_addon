@@ -61,33 +61,85 @@ class ShaderPanel(Panel):
     def draw(self, context):
         layout = self.layout
 
-        col_setting = context.active_object.active_material.nif_shader
+        shader_setting = context.active_object.active_material.nif_shader
 
         box = layout.box()
 
-        box.prop(col_setting, "bs_shadertype", text="Shader Type")
+        box.prop(shader_setting, "bs_shadertype", text="Shader Type")
 
-        if col_setting.bs_shadertype and not (col_setting.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty')):
-            box.prop(col_setting, "bsspplp_shaderobjtype", text="BS Shader PP Lighting Type")
+        if not shader_setting.bs_shadertype in ('None', 'BSLightingShaderProperty', 'BSEffectShaderProperty'):
+            box.prop(shader_setting, "bsspplp_shaderobjtype", text="BS Shader PP Lighting Type")
 
+        elif shader_setting.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty'):
+            box.prop(shader_setting, "bslsp_shaderobjtype", text="BS Lighting Shader Type")
+
+            box.prop(shader_setting, "lighting_effect_1", text="Lighting Effect 1")
+            box.prop(shader_setting, "lighting_effect_2", text="Lighting Effect 2")
+
+class ShaderFlags1Panel(Panel):
+    bl_idname = "NIFTOOLS_PT_ShaderFlags1Panel"
+    bl_label = "Shader Flags 1"
+    bl_parent_id = "NIFTOOLS_PT_ShaderPanel"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "material"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object.active_material.nif_shader.bs_shadertype == 'None':
+            return True
+        return False
+
+    def draw(self, context):
+        layout = self.layout
+
+        shader_setting = context.active_object.active_material.nif_shader
+
+        box = layout.box()
+
+        if not (shader_setting.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty')):
             for property_name in sorted(NifClasses.BSShaderFlags.__members__):
-                box.prop(col_setting, property_name)
-            for property_name in sorted(NifClasses.BSShaderFlags2.__members__):
-                box.prop(col_setting, property_name)
+                box.prop(shader_setting, property_name)
 
-        elif col_setting.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty'):
-            box.prop(col_setting, "bslsp_shaderobjtype", text="BS Lighting Shader Type")
-
-            box.prop(col_setting, "lighting_effect_1", text="Lighting Effect 1")
-            box.prop(col_setting, "lighting_effect_2", text="Lighting Effect 2")
-
+        elif shader_setting.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty'):
             for property_name in sorted(NifClasses.SkyrimShaderPropertyFlags1.__members__):
-                box.prop(col_setting, property_name)
+                box.prop(shader_setting, property_name)
+
+class ShaderFlags2Panel(Panel):
+    bl_idname = "NIFTOOLS_PT_ShaderFlags2Panel"
+    bl_label = "Shader Flags 2"
+    bl_parent_id = "NIFTOOLS_PT_ShaderPanel"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "material"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object.active_material.nif_shader.bs_shadertype == 'None':
+            return True
+        return False
+
+    def draw(self, context):
+        layout = self.layout
+
+        shader_setting = context.active_object.active_material.nif_shader
+
+        box = layout.box()
+
+        if not shader_setting.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty'):
+            for property_name in sorted(NifClasses.BSShaderFlags2.__members__):
+                box.prop(shader_setting, property_name)
+
+        elif shader_setting.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty'):
             for property_name in sorted(NifClasses.SkyrimShaderPropertyFlags2.__members__):
-                box.prop(col_setting, property_name)
+                box.prop(shader_setting, property_name)
 
 classes = [
-    ShaderPanel
+    ShaderPanel,
+    ShaderFlags1Panel,
+    ShaderFlags2Panel
 ]
 
 def register():

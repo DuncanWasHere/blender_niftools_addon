@@ -111,7 +111,7 @@ class MaterialProperty:
                 (n_ni_material_property.emissive_color.r, n_ni_material_property.emissive_color.g,
                  n_ni_material_property.emissive_color.b, _) = b_shader_node.inputs[27].default_value
 
-            # map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
+            # Map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
             n_ni_material_property.glossiness = b_shader_node.inputs[2].default_value * 128
 
             n_ni_material_property.alpha = b_shader_node.inputs[4].default_value

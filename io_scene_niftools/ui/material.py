@@ -85,16 +85,16 @@ class AlphaPanel(Panel):
     def draw(self, context):
         layout = self.layout
 
-        col_setting = context.active_object.active_material.nif_alpha
+        material_setting = context.active_object.active_material.nif_alpha
 
         box = layout.box()
-        box.prop(col_setting, "enable_blending", text='Enable Blending')
-        box.prop(col_setting, "source_blend_mode", text='Source Blend Mode')
-        box.prop(col_setting, "destination_blend_mode", text='Destination Blend Mode')
-        box.prop(col_setting, "enable_testing", text='Enable Testing')
-        box.prop(col_setting, "alpha_test_function", text='Alpha Test Function')
-        box.prop(col_setting, "alpha_test_threshold", text='Alpha Test Threshold')
-        box.prop(col_setting, "no_sorter", text='No Sorter')
+        box.prop(material_setting, "enable_blending", text='Enable Blending')
+        box.prop(material_setting, "source_blend_mode", text='Source Blend Mode')
+        box.prop(material_setting, "destination_blend_mode", text='Destination Blend Mode')
+        box.prop(material_setting, "enable_testing", text='Enable Testing')
+        box.prop(material_setting, "alpha_test_function", text='Alpha Test Function')
+        box.prop(material_setting, "alpha_test_threshold", text='Alpha Test Threshold')
+        box.prop(material_setting, "no_sorter", text='No Sorter')
 
 classes = [
     MaterialPanel,
