@@ -234,16 +234,16 @@ class NodeWrapper:
         if self.b_diffuse_pass:
             self.b_shader_tree.links.new(self.b_diffuse_pass.outputs[0], self.b_principled_bsdf.inputs[0])
 
-            if self.b_textures[0] and has_vcol:
+            if self.b_textures[0] and self.b_mat.nif_material.use_alpha and has_vcol and self.b_mat.nif_shader.vertex_alpha:
                 mixAAA = self.b_shader_tree.nodes.new('ShaderNodeMixRGB')
                 mixAAA.inputs[0].default_value = 1
                 mixAAA.blend_type = "MULTIPLY"
                 self.b_shader_tree.links.new(self.b_textures[0].outputs[1], mixAAA.inputs[1])
                 self.b_shader_tree.links.new(self.b_color_attribute.outputs[1], mixAAA.inputs[2])
                 self.b_shader_tree.links.new(mixAAA.outputs[0], self.b_principled_bsdf.inputs[4])
-            elif self.b_textures[0]:
+            elif self.b_textures[0] and self.b_mat.nif_material.use_alpha:
                 self.b_shader_tree.links.new(self.b_textures[0].outputs[1], self.b_principled_bsdf.inputs[4])
-            elif has_vcol:
+            elif has_vcol and self.b_mat.nif_shader.vertex_alpha:
                 self.b_shader_tree.links.new(self.b_color_attribute.outputs[1], self.b_principled_bsdf.inputs[4])
 
         nodes_iterate(self.b_shader_tree, self.b_mat_output)
