@@ -110,6 +110,8 @@ class MaterialProperty:
         self.node_wrapper.b_mat = b_mat
         self.node_wrapper.clear_nodes()
 
+        b_mat.use_backface_culling = True
+
         for n_ni_property in n_ni_property_list:
             self.import_material_property(n_ni_property, b_obj)
 
