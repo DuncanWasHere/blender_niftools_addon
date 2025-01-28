@@ -37,19 +37,22 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
 from io_scene_niftools.utils.consts import TEX_SLOTS
 from io_scene_niftools.utils.logging import NifLog
+from io_scene_niftools.modules.nif_import.property.node_wrapper import NodeWrapper
 
 
-class NiTextureProp:
+class NiTexturingProperty:
     __instance = None
 
     def __init__(self):
         self.slots = {}
         for slot_name in vars(TEX_SLOTS).values():
             self.slots[slot_name] = None
+        self.nodes_wrapper = NodeWrapper.get()
 
-    def import_nitextureprop_textures(self, n_texture_desc, nodes_wrapper):
+    def import_ni_texturing_property(self, n_ni_textur):
         # NifLog.debug(f"Importing {n_texture_desc}")
         # go over all valid texture slots
         for slot_name, _ in self.slots.items():
@@ -61,4 +64,4 @@ class NiTextureProp:
             if has_tex:
                 NifLog.debug(f"Texdesc has active {slot_name}")
                 n_tex = getattr(n_texture_desc, field_name)
-                nodes_wrapper.create_and_link(slot_name, n_tex)
+                self.nodes_wrapper.create_and_link(slot_name, n_tex)

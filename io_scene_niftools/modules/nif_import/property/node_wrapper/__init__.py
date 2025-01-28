@@ -287,6 +287,10 @@ class NodeWrapper:
         b_texture_node.label = TEX_SLOTS.BASE
         self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node)
 
+        if bpy.context.scene.niftools_scene.game == 'OBLIVION':
+            base_name, extension = b_texture_node.image.name.rsplit(".", 1)
+            self.create_and_link("normal", f"{base_name}_n.{extension}")
+
     def link_bump_map_node(self, b_texture_node):
         b_texture_node.label = TEX_SLOTS.BUMP_MAP
         # # Influence mapping

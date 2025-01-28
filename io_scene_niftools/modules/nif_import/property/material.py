@@ -41,6 +41,8 @@ import bpy
 
 from io_scene_niftools.modules.nif_import.property.node_wrapper import NodeWrapper
 from io_scene_niftools.modules.nif_import.property.shader.bethesda import BSShaderProperty
+from io_scene_niftools.modules.nif_import.property.texture.types.nitexturingproperty import NiTexturingProperty
+from io_scene_niftools.utils.consts import TEX_SLOTS
 from io_scene_niftools.utils.logging import NifLog
 from nifgen.formats.nif import classes as NifClasses
 from functools import singledispatch
@@ -51,7 +53,7 @@ class MaterialProperty:
 
     def __init__(self):
         self.shader_property_helper = BSShaderProperty()
-        self.texture_property = None
+        self.texture_property = NiTexturingProperty()
         self.node_wrapper = NodeWrapper.get()
 
         self.import_material_property = singledispatch(self.__import_material_property)
@@ -212,7 +214,14 @@ class MaterialProperty:
 
         NifLog.debug("Importing NiTexturingProperty block.")
 
-        # self.texture_property.import_ni_texturing_property(n_ni_texturing_property, b_obj.active_material)
+        for slot_name in vars(TEX_SLOTS).values():
+            slot_lower = slot_name.lower().replace(' ', '_')
+            field_name = f"{slot_lower}_texture"
+            has_tex = getattr(n_ni_texturing_property, "has_" + field_name, None)
+            if has_tex:
+                NifLog.debug(f"Texdesc has active {slot_name}")
+                n_tex = getattr(n_ni_texturing_property, field_name)
+                self.node_wrapper.create_and_link(slot_name, n_tex)
 
     def __import_bs_shader_property(self, n_bs_shader_property, b_obj):
         """Import a BSShaderProperty block into a Blender material."""
