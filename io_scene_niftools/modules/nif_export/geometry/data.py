@@ -357,7 +357,7 @@ class GeometryData:
             data_flags.has_uv = len(b_uv_layers) > 0
             if len(b_uv_layers) > 1:
                 NifLog.warn(f"More than one UV layers for game that doesn't support it, only using first UV layer")
-                has_uv = True
+            has_uv = data_flags.has_uv
         else:
             data_flags = n_geom.data.data_flags
             data_flags.num_uv_sets = len(b_uv_layers)
