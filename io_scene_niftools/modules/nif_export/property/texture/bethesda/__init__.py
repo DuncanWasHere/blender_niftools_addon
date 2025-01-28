@@ -39,7 +39,7 @@
 
 
 from io_scene_niftools.modules.nif_export.property.texture.common import TextureCommon
-from io_scene_niftools.utils.consts import TEX_SLOTS
+from io_scene_niftools.utils.consts import TEX_SLOTS, BS_TEX_SLOTS
 from io_scene_niftools.utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
 
@@ -86,11 +86,11 @@ class BSShaderTextureSet(TextureCommon):
         n_bs_shader_texture_set.reset_field("textures")
         n_bs_shader_texture_set.textures[:len(existing_textures)] = existing_textures
 
-        if self.slots[TEX_SLOTS.DECAL_0]:
-            n_bs_shader_texture_set.textures[6] = TextureCommon.export_texture_filename(self.slots[TEX_SLOTS.DECAL_0])
+        # if self.slots[TEX_SLOTS.SUBSURFACE_TINT_MAP]:
+            # n_bs_shader_texture_set.textures[6] = TextureCommon.export_texture_filename(self.slots[BS_TEX_SLOTS.SUBSURFACE_TINT_MAP])
 
-        if self.slots[TEX_SLOTS.GLOSS]:
-            n_bs_shader_texture_set.textures[7] = TextureCommon.export_texture_filename(self.slots[TEX_SLOTS.GLOSS])
+        # if self.slots[TEX_SLOTS.BACKLIGHT_MAP]:
+            # n_bs_shader_texture_set.textures[7] = TextureCommon.export_texture_filename(self.slots[BS_TEX_SLOTS.BACKLIGHT_MAP])
 
         # get the offset, scale and UV wrapping mode and set them
         self.export_uv_transform(n_bs_lighting_shader_property)

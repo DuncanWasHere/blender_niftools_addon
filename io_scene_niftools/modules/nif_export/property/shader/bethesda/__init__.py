@@ -81,8 +81,10 @@ class BSShaderProperty:
         # Emissive
         BSShaderProperty.set_color3_property(n_bs_effect_shader_property.base_color, b_mat.nif_material.emissive_alpha)
         n_bs_effect_shader_property.base_color.a = b_mat.nif_material.emissive_alpha.v
-        # TODO [shader] Expose a emission multiplier value
-        # bsshader.base_color_scale = b_mat.emit
+
+        if b_mat.use_nodes:
+            b_shader_node = b_mat.node_tree.nodes["Principled BSDF"]
+            n_bs_effect_shader_property.emissive_multiple = b_shader_node.inputs[28].default_value
 
         BSShaderProperty.export_shader_flags(b_mat, n_bs_effect_shader_property)
 
@@ -109,13 +111,16 @@ class BSShaderProperty:
         # TODO [shader]: Expose intensity value
         # b_mat.diffuse_intensity = 1.0
 
-        n_bs_lighting_shader_property.lighting_effect_1 = b_mat.nif_material.lightingeffect1
-        n_bs_lighting_shader_property.lighting_effect_2 = b_mat.nif_material.lightingeffect2
+        n_bs_lighting_shader_property.lighting_effect_1 = b_mat.nif_shader.lighting_effect_1
+        n_bs_lighting_shader_property.lighting_effect_2 = b_mat.nif_shader.lighting_effect_2
 
         # TODO [shader]: Get emissive properties from shader nodes
         #BSShaderProperty.set_color3_property(n_bs_lighting_shader_property.emissive_color,
         #                                     b_mat.nif_material.emissive_color)
-        # bsshader.emissive_multiple = b_mat.emit
+
+        if b_mat.use_nodes:
+            b_shader_node = b_mat.node_tree.nodes["Principled BSDF"]
+            n_bs_lighting_shader_property.emissive_multiple = b_shader_node.inputs[28].default_value
 
         # TODO [shader]: Get roughness properties from shader nodes
         #n_bs_lighting_shader_property.glossiness = 1 / b_mat.roughness - 1 if b_mat.roughness != 0 else FLOAT_MAX

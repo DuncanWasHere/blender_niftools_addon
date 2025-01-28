@@ -130,7 +130,7 @@ class BSShaderProperty():
 
         b_shader_node.inputs[4].default_value = n_bs_lighting_shader_property.alpha
 
-        b_shader_node.inputs[28].default_value = n_bs_lighting_shader_property.emissive_mult
+        b_shader_node.inputs[28].default_value = n_bs_lighting_shader_property.emissive_multiple
 
         # TODO: Add color mult shader node for emissive color
 
@@ -170,7 +170,7 @@ class BSShaderProperty():
 
         b_shader_node.inputs[4].default_value = n_bs_effect_shader_property.alpha
 
-        b_shader_node.inputs[28].default_value = n_bs_effect_shader_property.emissive_mult
+        b_shader_node.inputs[28].default_value = n_bs_effect_shader_property.emissive_multiple
 
         # TODO: Add color mult shader node for emissive color
 

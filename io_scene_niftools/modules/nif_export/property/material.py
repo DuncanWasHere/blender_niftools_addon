@@ -62,8 +62,6 @@ class MaterialProperty:
         a new one if a material property with these settings is not found."""
         # don't export material properties for these games
 
-        b_shader_node = b_mat.node_tree.nodes["Principled BSDF"]
-
         if bpy.context.scene.niftools_scene.is_skyrim():
             return
 
@@ -93,6 +91,9 @@ class MaterialProperty:
         n_ni_material_property.flags = b_mat.nif_material.material_flags
 
         if b_mat.use_nodes:
+
+            b_shader_node = b_mat.node_tree.nodes["Principled BSDF"]
+
             (n_ni_material_property.ambient_color.r, n_ni_material_property.ambient_color.g,
              n_ni_material_property.ambient_color.b, _) = b_shader_node.inputs[26].default_value
 
