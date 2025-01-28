@@ -400,8 +400,40 @@ class BhkCollision(Collision):
         self.set_b_collider(b_col_obj, radius, bounds_type="MESH")
         return b_col_obj
 
-    def import_bhk_nitristrips_shape(self, n_bhk_nitristrips_shape):
-        return reduce(operator.add, (self.import_bhk_shape(strips) for strips in n_bhk_nitristrips_shape.strips_data))
+    def import_bhk_nitristrips_shape(self, n_bhk_ni_tri_strips_shape):
+        """Import a BhkPackedNiTriStrips block as a Triangle-Mesh collision object."""
+
+        NifLog.debug(f"Importing {n_bhk_ni_tri_strips_shape.__class__.__name__}")
+
+        # Create mesh for each sub shape
+        all_verts = []
+        all_faces = []
+        material_indices = []
+        vertex_offset = 0
+        subshapes = n_bhk_ni_tri_strips_shape.strips_data
+
+        for subshape in subshapes:
+
+            verts = [(v.x, v.y, v.z) for v in subshape.vertices]
+            faces = list(subshape.get_triangles())
+
+            # Extend global lists with this subshape's data
+            all_verts.extend(verts)
+            all_faces.extend([(v1 + vertex_offset, v2 + vertex_offset, v3 + vertex_offset) for v1, v2, v3 in faces])
+            vertex_offset += subshape.num_vertices
+
+        # Create a single mesh object with all vertices and faces
+        b_col_obj = Object.mesh_from_data("collision_poly", all_verts, all_faces)
+        b_mesh = b_col_obj.data
+
+        b_mat = collision.get_material(n_bhk_ni_tri_strips_shape.material.material.name)
+        b_mesh.materials.append(b_mat)
+
+        radius = min(vert.co.length for vert in b_mesh.vertices)
+
+        self.set_b_collider(b_col_obj, radius, bounds_type="MESH")
+
+        return b_col_obj
 
     def import_nitristrips(self, n_nitristrips):
         """Import a NiTriStrips block as a Triangle-Mesh collision object."""
@@ -411,5 +443,4 @@ class BhkCollision(Collision):
         faces = list(n_nitristrips.get_triangles())
         b_col_obj = Object.mesh_from_data("collision_poly", verts, faces)
         # TODO [collision] self.havok_mat!
-        self.set_b_collider(b_col_obj, n_nitristrips.bounding_sphere.radius, bounds_type="MESH")
         return b_col_obj
