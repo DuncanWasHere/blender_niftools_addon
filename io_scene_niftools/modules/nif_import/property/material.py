@@ -39,8 +39,6 @@
 
 from functools import singledispatch
 
-from io_scene_niftools.modules.nif_import.property.texture.types.nitexturingproperty import NiTexturingProperty
-
 import bpy
 from io_scene_niftools.modules.nif_import.property.node_wrapper import NodeWrapper
 from io_scene_niftools.modules.nif_import.property.shader.bethesda import BSShaderProperty
@@ -54,7 +52,6 @@ class MaterialProperty:
 
     def __init__(self):
         self.shader_property_helper = BSShaderProperty()
-        self.texture_property = NiTexturingProperty()
         self.node_wrapper = NodeWrapper.get()
 
         self.import_material_property = singledispatch(self.__import_material_property)
