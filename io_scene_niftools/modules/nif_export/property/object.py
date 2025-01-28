@@ -124,15 +124,15 @@ class ObjectProperty:
     def export_vertex_color_property(self, n_node, flags=1, vertex_mode=0, lighting_mode=1):
         """Return existing vertex color property with given flags, or create new one
         if an alpha property with required flags is not found."""
-        return self.get_matching_block("NiVertexColorProperty", flags=flags, vertex_mode=vertex_mode,
-                                       lighting_mode=lighting_mode)
+        n_node.add_property(self.get_matching_block("NiVertexColorProperty", flags=flags, vertex_mode=vertex_mode,
+                                       lighting_mode=lighting_mode))
 
     def export_z_buffer_property(self, n_node, flags=15, function=3):
         """Return existing z-buffer property with given flags, or create new one
         if an alpha property with required flags is not found."""
         if bpy.context.scene.niftools_scene.game in ('EMPIRE_EARTH_II',):
             function = 1
-        return self.get_matching_block("NiZBufferProperty", flags=flags, function=function)
+        n_node.add_property(self.get_matching_block("NiZBufferProperty", flags=flags, function=function))
 
     def export_alpha_property(self, b_mat, n_node):
         """Return existing alpha property with given flags, or create new one
@@ -159,18 +159,18 @@ class ObjectProperty:
             # add NiTriShape's specular property
             # but NOT for sid meier's railroads and other extra shader
             # games (they use specularity even without this property)
-            if bpy.context.scene.niftools_scene.game in self.ni_texturing_property_helper.USED_EXTRA_SHADER_TEXTURES:
+            if bpy.context.scene.niftools_scene.game in self.texture_property_helper.USED_EXTRA_SHADER_TEXTURES:
                 return
             eps = NifOp.props.epsilon
             if (b_mat.specular_color.r > eps) or (b_mat.specular_color.g > eps) or (b_mat.specular_color.b > eps):
-                return self.get_matching_block("NiSpecularProperty", flags=flags)
+                n_node.add_property(self.get_matching_block("NiSpecularProperty", flags=flags))
 
     def export_wireframe_property(self, b_obj, n_node, flags=0x0001):
         """Return existing wire property with given flags, or create new one
         if an wire property with required flags is not found."""
         for b_mod in b_obj.modifiers:
             if b_mod.type == "WIREFRAME":
-                return self.get_matching_block("NiWireframeProperty", flags=flags)
+                n_node.add_property(self.get_matching_block("NiWireframeProperty", flags=flags))
 
     def export_stencil_property(self, b_mat, n_node, flags=None):
         """Return existing stencil property with given flags, or create new one
@@ -181,7 +181,7 @@ class ObjectProperty:
         if bpy.context.scene.niftools_scene.is_fo3():
             flags = 19840
         # search for duplicate
-        return self.get_matching_block("NiStencilProperty", flags=flags)
+        n_node.add_property(self.get_matching_block("NiStencilProperty", flags=flags))
 
     def export_ni_string_extra_data_upb(self, n_node, b_obj):
         """Export UPB NiStringExtraData if not optimizer junk."""
