@@ -39,11 +39,9 @@
 
 
 import bpy
-from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.property.shader.bethesda import BSShaderProperty
 from io_scene_niftools.modules.nif_export.property.texture.texture import NiTexturingProperty
 from io_scene_niftools.utils.consts import USED_EXTRA_SHADER_TEXTURES
-from io_scene_niftools.utils.logging import NifLog, NifError
 
 
 class TextureProperty:

@@ -1,4 +1,5 @@
 """This module contains helper methods to import Mesh information."""
+
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2025 NIF File Format Library and Tools contributors.
@@ -40,7 +41,6 @@ import numpy as np
 
 import io_scene_niftools.utils.logging
 from io_scene_niftools.modules.nif_import.animation.morph import MorphAnimation
-from io_scene_niftools.modules.nif_import.geometry import mesh
 from io_scene_niftools.modules.nif_import.geometry.vertex import Vertex
 from io_scene_niftools.modules.nif_import.geometry.vertex.groups import VertexGroup
 from io_scene_niftools.modules.nif_import.property.material import MaterialProperty

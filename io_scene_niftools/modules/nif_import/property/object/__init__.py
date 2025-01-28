@@ -59,6 +59,8 @@ class ObjectProperty:
         # Store type of node
         if isinstance(n_block, NifClasses.BSFadeNode):
             b_obj.nif_object.nodetype = 'BSFadeNode'
+        elif isinstance(n_block, NifClasses.RootCollisionNode):
+            b_obj.nif_object.nodetype = 'RootCollisionNode'
         elif isinstance(n_block, NifClasses.NiLODNode):
             b_obj.nif_object.nodetype = 'NiLODNode'
         elif isinstance(n_block, NifClasses.NiBillboardNode):

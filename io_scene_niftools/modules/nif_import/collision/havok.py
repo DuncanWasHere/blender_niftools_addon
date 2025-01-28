@@ -38,8 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 
-import operator
-from functools import reduce, singledispatch
+from functools import singledispatch
 
 import bpy
 import mathutils

@@ -38,16 +38,15 @@
 # ***** END LICENSE BLOCK *****
 
 
+import operator
+import os.path
+import traceback
 from functools import reduce
 
 import bpy
 from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
-
-import operator
-import os.path
-import traceback
 
 
 class TextureLoader:

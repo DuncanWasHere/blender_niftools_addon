@@ -49,6 +49,7 @@ from io_scene_niftools.modules.nif_export.geometry.skinned import SkinnedGeometr
 from io_scene_niftools.modules.nif_export.property.object import ObjectProperty
 from io_scene_niftools.modules.nif_export.property.texture.texture import NiTexturingProperty
 from io_scene_niftools.utils import math
+from io_scene_niftools.utils.consts import USED_EXTRA_SHADER_TEXTURES
 from io_scene_niftools.utils.logging import NifLog, NifError
 from io_scene_niftools.utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
@@ -209,7 +210,7 @@ class Geometry:
         if b_uv_layers and has_normals:
             default_use_tangents = 'BULLY_SE'
             if self.target_game in default_use_tangents or self.nif_scene.is_bs() or (
-                    self.target_game in self.texture_property_helper.USED_EXTRA_SHADER_TEXTURES):
+                    self.target_game in USED_EXTRA_SHADER_TEXTURES):
                 use_tangents = True
 
         # Should vertex colors be exported?

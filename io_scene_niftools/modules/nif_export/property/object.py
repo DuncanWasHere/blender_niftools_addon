@@ -41,7 +41,6 @@
 from math import pi
 
 import bpy
-
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.property.material import MaterialProperty
 from io_scene_niftools.modules.nif_export.property.texture import TextureProperty

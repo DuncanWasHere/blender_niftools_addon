@@ -155,7 +155,8 @@ class ObjectProperty(PropertyGroup):
             ('BSMultiBoundNode', 'BSMultiBoundNode', "", 7),
             ('BSOrderedNode', 'BSOrderedNode', "", 8),
             ('BSValueNode', 'BSValueNode', "", 9),
-            ('BSMasterParticleSystem', 'BSMasterParticleSystem', "", 10)),
+            ('BSMasterParticleSystem', 'BSMasterParticleSystem', "", 10),
+            ('RootCollisionNode', 'RootCollisionNode', "", 11)),
         default='NiNode',
     )
 

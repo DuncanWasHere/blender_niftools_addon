@@ -64,6 +64,7 @@ class BhkMOPPShape(BhkCollisionCommon):
         n_bhk_mopp_bv_tree_shape = self.__export_bhk_mopp_bv_tree_shape(b_col_obj, n_bhk_rigid_body)
 
         # Export the shape block
+        # TODO: Add export support for bhkNiTriStripsShape for Oblivion (if needed?)
         n_bhk_packed_ni_tri_strips_shape = self.__export_bhk_packed_ni_tri_strips_shape(b_col_obj,
                                                                                         n_bhk_mopp_bv_tree_shape)
 

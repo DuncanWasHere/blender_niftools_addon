@@ -41,18 +41,18 @@
 from functools import singledispatch
 
 from io_scene_niftools import NifLog
-from io_scene_niftools.modules.nif_import.property.shader import BSShader
+from io_scene_niftools.modules.nif_import.property.node_wrapper import NodeWrapper
 from io_scene_niftools.modules.nif_import.property.texture.types.bsshadertextureset import BSShaderTextureSet
 from nifgen.formats.nif import classes as NifClasses
 
 
-class BSShaderProperty(BSShader):
+class BSShaderProperty():
     """Main interface class for importing Bethesda shader property blocks."""
 
     __instance = None
 
     def __init__(self):
-        super().__init__()
+        self.node_wrapper = NodeWrapper.get()
 
         self.texture_helper = BSShaderTextureSet.get()
 
@@ -106,7 +106,7 @@ class BSShaderProperty(BSShader):
         self.texture_helper.import_bs_shader_texture_set(n_bs_lighting_shader_property, b_mat)
 
         x_scale, y_scale, x_offset, y_offset, clamp_x, clamp_y = self.__get_uv_transform(n_bs_lighting_shader_property)
-        self._nodes_wrapper.global_uv_offset_scale(x_scale, y_scale, x_offset, y_offset, clamp_x, clamp_y)
+        self.node_wrapper.global_uv_offset_scale(x_scale, y_scale, x_offset, y_offset, clamp_x, clamp_y)
 
         b_shader_node = b_mat.node_tree.nodes["Principled BSDF"]
 
@@ -134,8 +134,8 @@ class BSShaderProperty(BSShader):
 
         # TODO: Add color mult shader node for emissive color
 
-        self._b_mat.nif_shader.lighting_effect_1 = n_bs_lighting_shader_property.lighting_effect_1
-        self._b_mat.nif_shader.lighting_effect_2 = n_bs_lighting_shader_property.lighting_effect_2
+        b_mat.nif_shader.lighting_effect_1 = n_bs_lighting_shader_property.lighting_effect_1
+        b_mat.nif_shader.lighting_effect_2 = n_bs_lighting_shader_property.lighting_effect_2
 
     def __import_bs_effect_shader_property(self, n_bs_effect_shader_property, b_mat):
 
@@ -149,7 +149,7 @@ class BSShaderProperty(BSShader):
         self.texture_helper.import_bs_shader_texture_set(n_bs_effect_shader_property, b_mat)
 
         x_scale, y_scale, x_offset, y_offset, clamp_x, clamp_y = self.__get_uv_transform(n_bs_effect_shader_property)
-        self._nodes_wrapper.global_uv_offset_scale(x_scale, y_scale, x_offset, y_offset, clamp_x, clamp_y)
+        self.node_wrapper.global_uv_offset_scale(x_scale, y_scale, x_offset, y_offset, clamp_x, clamp_y)
 
         b_shader_node = b_mat.node_tree.nodes["Principled BSDF"]
 
@@ -174,8 +174,8 @@ class BSShaderProperty(BSShader):
 
         # TODO: Add color mult shader node for emissive color
 
-        self._b_mat.nif_shader.lighting_effect_1 = n_bs_effect_shader_property.lighting_effect_1
-        self._b_mat.nif_shader.lighting_effect_2 = n_bs_effect_shader_property.lighting_effect_2
+        b_mat.nif_shader.lighting_effect_1 = n_bs_effect_shader_property.lighting_effect_1
+        b_mat.nif_shader.lighting_effect_2 = n_bs_effect_shader_property.lighting_effect_2
 
         # TODO: Add animation controller import
 
@@ -262,3 +262,52 @@ class BSShaderProperty(BSShader):
             clamp_y = False
 
         return x_scale, y_scale, x_offset, b_y_offset, clamp_x, clamp_y
+
+    # TODO [texture] Implement clamp on image wrapping
+    @staticmethod
+    def import_uv_offset(b_mat, shader_prop):
+        for texture_slot in b_mat.texture_slots:
+            if texture_slot:
+                texture_slot.offset.x = shader_prop.uv_offset.u
+                texture_slot.offset.y = shader_prop.uv_offset.v
+
+    # TODO [texture] Implement clamp on image wrapping
+    @staticmethod
+    def import_uv_scale(b_mat, shader_prop):
+        for texture_slot in b_mat.texture_slots:
+            if texture_slot:
+                texture_slot.scale.x = shader_prop.uv_scale.u
+                texture_slot.scale.y = shader_prop.uv_scale.v
+
+    # TODO [texture] Implement clamp on image wrapping
+    @staticmethod
+    def import_clamp(b_mat, shader_prop):
+        clamp = shader_prop.texture_clamp_mode
+        for texture_slot in b_mat.texture_slots:
+            if texture_slot:
+                if clamp == 3:
+                    texture_slot.image.use_clamp_x = False
+                    texture_slot.image.use_clamp_y = False
+                if clamp == 2:
+                    texture_slot.image.use_clamp_x = False
+                    texture_slot.image.use_clamp_y = True
+                if clamp == 1:
+                    texture_slot.image.use_clamp_x = True
+                    texture_slot.image.use_clamp_y = False
+                if clamp == 0:
+                    texture_slot.image.use_clamp_x = True
+                    texture_slot.image.use_clamp_y = True
+
+    # TODO [Shader] Alpha property
+    @staticmethod
+    def set_alpha_bsshader(b_mat, shader_property):
+        NifLog.debug("Alpha prop detected")
+        b_mat.use_transparency = True
+        b_mat.alpha = (1 - shader_property.alpha)
+        b_mat.transparency_method = 'Z_TRANSPARENCY'  # enable z-buffered transparency
+
+    @staticmethod
+    def import_shader_flags(b_mat, flags):
+        for name in type(flags).__members__:
+            if getattr(flags, name):
+                b_mat.nif_shader[name] = True

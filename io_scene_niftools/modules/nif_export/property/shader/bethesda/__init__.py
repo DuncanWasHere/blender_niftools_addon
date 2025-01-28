@@ -42,8 +42,6 @@ import io_scene_niftools.utils.logging
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.property.texture.bethesda import BSShaderTextureSet
 from io_scene_niftools.modules.nif_export.property.texture.texture import NiTexturingProperty
-from io_scene_niftools.utils.consts import FLOAT_MAX
-from io_scene_niftools.utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
 
 
