@@ -53,7 +53,7 @@ bl_info = {
     "description": "Import and export files in the NetImmerse/Gamebryo formats (.nif, .kf, .egm)",
     "author": "NifTools Team",
     "blender": (4, 3, 2),
-    "version": (0, 1, 6),  # Can't read from VERSION (Blender wants it hardcoded)
+    "version": (0, 2, 0),  # Can't read from VERSION (Blender wants it hardcoded)
     "api": 39257,
     "location": "File > Import-Export",
     "wiki_url": "https://blender-niftools-addon.readthedocs.io/",
