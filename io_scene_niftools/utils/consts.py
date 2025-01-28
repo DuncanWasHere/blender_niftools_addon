@@ -97,6 +97,12 @@ BS_TEX_SLOTS.ENVIRONMENT_MASK = "Environment Mask"
 BS_TEX_SLOTS.SUBSURFACE_TINT_MAP = "Subsurface Tint Map"
 BS_TEX_SLOTS.BACKLIGHT_MAP = "Backlight Map"
 
+# Default ordering of Extra data blocks for different games
+USED_EXTRA_SHADER_TEXTURES = {
+    'SID_MEIER_S_RAILROADS': (3, 0, 4, 1, 5, 2),
+    'CIVILIZATION_IV': (3, 0, 1, 2)
+}
+
 # fcurve data types for blender
 QUAT = "rotation_quaternion"
 EULER = "rotation_euler"

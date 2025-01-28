@@ -42,6 +42,7 @@ import bpy
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.property.shader.bethesda import BSShaderProperty
 from io_scene_niftools.modules.nif_export.property.texture.texture import NiTexturingProperty
+from io_scene_niftools.utils.consts import USED_EXTRA_SHADER_TEXTURES
 from io_scene_niftools.utils.logging import NifLog, NifError
 
 
@@ -52,17 +53,14 @@ class TextureProperty:
         self.bs_shader_property_helper = BSShaderProperty()
         self.ni_texturing_property_helper = NiTexturingProperty.get()
 
-    def export_texture_properties(self, b_mat, n_node):
+    def export_texture_properties(self, b_mat, n_ni_geometry):
         """Main function for handling texture property export."""
 
         if bpy.context.scene.niftools_scene.is_fo3() or bpy.context.scene.niftools_scene.is_skyrim():
-            self.bs_shader_property_helper.export_bs_shader_property(n_node, b_mat)
+            self.bs_shader_property_helper.export_bs_shader_property(n_ni_geometry, b_mat)
         else:
-            if bpy.context.scene.niftools_scene.game in self.ni_texturing_property_helper.USED_EXTRA_SHADER_TEXTURES:
+            if bpy.context.scene.niftools_scene.game in USED_EXTRA_SHADER_TEXTURES:
                 # Sid Meier's Railroads and Civ4: set shader slots in extra data
-                self.ni_texturing_property_helper.add_shader_integer_extra_datas(n_node)
+                self.ni_texturing_property_helper.add_shader_integer_extra_datas(n_ni_geometry)
 
-            n_ni_texturing_property = self.ni_texturing_property_helper.export_ni_texturing_property(b_mat,
-                applymode=self.ni_texturing_property_helper.get_n_apply_mode_from_b_blend_type('MIX'))
-
-            n_node.add_property(n_ni_texturing_property)
+            self.ni_texturing_property_helper.export_ni_texturing_property(b_mat, n_ni_geometry)

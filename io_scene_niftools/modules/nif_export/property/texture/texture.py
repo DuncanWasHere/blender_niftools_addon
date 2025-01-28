@@ -41,7 +41,7 @@
 import bpy
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.property.texture.common import TextureCommon
-from io_scene_niftools.utils.consts import TEX_SLOTS
+from io_scene_niftools.utils.consts import TEX_SLOTS, USED_EXTRA_SHADER_TEXTURES
 from io_scene_niftools.utils.logging import NifLog, NifError
 from io_scene_niftools.utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
@@ -58,12 +58,6 @@ class NiTexturingProperty(TextureCommon):
         "EnvironmentIntensityIndex",
         "LightCubeMapIndex",
         "ShadowTextureIndex"]
-
-    # Default ordering of Extra data blocks for different games
-    USED_EXTRA_SHADER_TEXTURES = {
-        'SID_MEIER_S_RAILROADS': (3, 0, 4, 1, 5, 2),
-        'CIVILIZATION_IV': (3, 0, 1, 2)
-    }
 
     __instance = None
 
@@ -82,9 +76,10 @@ class NiTexturingProperty(TextureCommon):
             NiTexturingProperty()
         return NiTexturingProperty.__instance
 
-    def export_ni_texturing_property(self, b_mat, n_ni_geometry, n_bs_shader_property=None, applymode=None):
+    def export_ni_texturing_property(self, b_mat, n_ni_geometry, n_bs_shader_property=None):
         """Export and return a NiTexturingProperty block."""
 
+        applymode = self.get_n_apply_mode_from_b_blend_type('MIX')
         self.determine_texture_types(b_mat)
 
         n_ni_texturing_property = NifClasses.NiTexturingProperty(NifData.data)
@@ -220,7 +215,7 @@ class NiTexturingProperty(TextureCommon):
 
     def add_shader_integer_extra_datas(self, trishape):
         """Add extra data blocks for shader indices."""
-        for shaderindex in self.USED_EXTRA_SHADER_TEXTURES[bpy.context.scene.niftools_scene.game]:
+        for shaderindex in USED_EXTRA_SHADER_TEXTURES[bpy.context.scene.niftools_scene.game]:
             shader_name = self.EXTRA_SHADER_TEXTURES[shaderindex]
             trishape.add_integer_extra_data(shader_name, shaderindex)
 

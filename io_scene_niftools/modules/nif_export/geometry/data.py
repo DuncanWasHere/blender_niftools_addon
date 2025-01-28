@@ -351,16 +351,19 @@ class GeometryData:
             for n_v, b_v in zip(n_geom.data.vertex_colors, vertex_information['COLOR']):
                 n_v.r, n_v.g, n_v.b, n_v.a = b_v
         # uv_sets
+        has_uv = False
         if bpy.context.scene.niftools_scene.nif_version == 0x14020007 and bpy.context.scene.niftools_scene.user_version_2:
             data_flags = n_geom.data.bs_data_flags
             data_flags.has_uv = len(b_uv_layers) > 0
             if len(b_uv_layers) > 1:
                 NifLog.warn(f"More than one UV layers for game that doesn't support it, only using first UV layer")
+                has_uv = True
         else:
             data_flags = n_geom.data.data_flags
             data_flags.num_uv_sets = len(b_uv_layers)
+            has_uv = data_flags.num_uv_sets
 
-        if data_flags.has_uv:
+        if has_uv:
             n_geom.data.reset_field("uv_sets")
             uv_coords = vertex_information['UV']
             for j, n_uv_set in enumerate(n_geom.data.uv_sets):

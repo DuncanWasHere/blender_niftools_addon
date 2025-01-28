@@ -45,6 +45,7 @@ import bpy
 from io_scene_niftools.modules.nif_export.block_registry import block_store
 from io_scene_niftools.modules.nif_export.property.material import MaterialProperty
 from io_scene_niftools.modules.nif_export.property.texture import TextureProperty
+from io_scene_niftools.utils.consts import USED_EXTRA_SHADER_TEXTURES
 from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
@@ -159,7 +160,7 @@ class ObjectProperty:
             # add NiTriShape's specular property
             # but NOT for sid meier's railroads and other extra shader
             # games (they use specularity even without this property)
-            if bpy.context.scene.niftools_scene.game in self.texture_property_helper.USED_EXTRA_SHADER_TEXTURES:
+            if bpy.context.scene.niftools_scene.game in USED_EXTRA_SHADER_TEXTURES:
                 return
             eps = NifOp.props.epsilon
             if (b_mat.specular_color.r > eps) or (b_mat.specular_color.g > eps) or (b_mat.specular_color.b > eps):
