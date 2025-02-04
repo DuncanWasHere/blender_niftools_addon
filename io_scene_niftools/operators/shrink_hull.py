@@ -30,13 +30,13 @@ class OperatorShrinkHull(Operator):
         # Offset each vertex along its normal
         for vert in bm.verts:
             if vert.select:  # Process only selected vertices
-                vert.co -= vert.normal * obj.nifcollision.shrink_offset
+                vert.co -= vert.normal * obj.nif_collision.shrink_offset
 
         # Update the mesh and return to object mode
         bmesh.update_edit_mesh(obj.data)
         bpy.ops.object.mode_set(mode='OBJECT')
 
-        self.report({'INFO'}, f"Shrank collision hull by {obj.nifcollision.shrink_offset}")
+        self.report({'INFO'}, f"Shrank collision hull by {obj.nif_collision.shrink_offset}")
         return {'FINISHED'}
 
 
