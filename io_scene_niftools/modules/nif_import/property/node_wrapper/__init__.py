@@ -311,32 +311,32 @@ class NodeWrapper:
         b_texture_node.image.colorspace_settings.name = 'Non-Color'
 
         # Create Y-invert node (because NIF normal maps are +X -Y +Z)
-        nodes = self.b_shader_tree.nodes
-        links = self.b_shader_tree.links
+        b_nodes = self.b_shader_tree.nodes
+        b_links = self.b_shader_tree.links
         group_name = "InvertY"
 
         if group_name in bpy.data.node_groups:
-            node_group = bpy.data.node_groups[group_name]
+            b_node_group = bpy.data.node_groups[group_name]
         else:
             # The InvertY node group does not yet exist, create it
-            node_group = bpy.data.node_groups.new(group_name, "ShaderNodeTree")
-            group_nodes = node_group.nodes
+            b_node_group = bpy.data.node_groups.new(group_name, "ShaderNodeTree")
+            b_group_nodes = b_node_group.nodes
 
             # Add the input and output nodes
-            input_node = group_nodes.new('NodeGroupInput')
-            input_node.location = (-300, 0)
-            group_output = group_nodes.new('NodeGroupOutput')
-            group_output.location = (300, 0)
+            b_input_node = b_group_nodes.new('NodeGroupInput')
+            b_input_node.location = (-300, 0)
+            b_group_output = b_group_nodes.new('NodeGroupOutput')
+            b_group_output.location = (300, 0)
 
             # Define the inputs and outputs for the node group using the new API
-            interface = node_group.interface
-            input_socket = interface.new_socket(
+            b_interface = b_node_group.interface
+            b_input_socket = b_interface.new_socket(
                 name="Input",
                 socket_type='NodeSocketColor',
                 in_out='INPUT',
                 description="Input color for the group"
             )
-            output_socket = interface.new_socket(
+            b_output_socket = b_interface.new_socket(
                 name="Output",
                 socket_type='NodeSocketColor',
                 in_out='OUTPUT',
@@ -344,41 +344,56 @@ class NodeWrapper:
             )
 
             # Set up the node group internals
-            separate_node = group_nodes.new("ShaderNodeSeparateRGB")
-            separate_node.location = (-150, 100)
+            b_separate_node = b_group_nodes.new("ShaderNodeSeparateRGB")
+            b_separate_node.location = (-150, 100)
 
-            invert_node = group_nodes.new("ShaderNodeInvert")
-            invert_node.location = (0, 100)
+            b_invert_node = b_group_nodes.new("ShaderNodeInvert")
+            b_invert_node.location = (0, 100)
 
-            combine_node = group_nodes.new("ShaderNodeCombineRGB")
-            combine_node.location = (150, 100)
+            b_combine_node = b_group_nodes.new("ShaderNodeCombineRGB")
+            b_combine_node.location = (150, 100)
 
             # Link the nodes within the group
-            group_links = node_group.links
-            group_links.new(separate_node.outputs['R'], combine_node.inputs['R'])  # Red
-            group_links.new(separate_node.outputs['G'], invert_node.inputs['Color'])  # Green (invert)
-            group_links.new(invert_node.outputs['Color'], combine_node.inputs['G'])  # Green (inverted)
-            group_links.new(separate_node.outputs['B'], combine_node.inputs['B'])  # Blue
+            b_group_links = b_node_group.links
+            b_group_links.new(b_separate_node.outputs['R'], b_combine_node.inputs['R'])  # Red
+            b_group_links.new(b_separate_node.outputs['G'], b_invert_node.inputs['Color'])  # Green (invert)
+            b_group_links.new(b_invert_node.outputs['Color'], b_combine_node.inputs['G'])  # Green (inverted)
+            b_group_links.new(b_separate_node.outputs['B'], b_combine_node.inputs['B'])  # Blue
 
             # Link the input and output nodes to the group sockets
-            group_links.new(input_node.outputs[input_socket.name], separate_node.inputs['Image'])
-            group_links.new(combine_node.outputs['Image'], group_output.inputs[output_socket.name])
+            b_group_links.new(b_input_node.outputs[b_input_socket.name], b_separate_node.inputs['Image'])
+            b_group_links.new(b_combine_node.outputs['Image'], b_group_output.inputs[b_output_socket.name])
 
         # Add the group node to the main node tree and link it
-        group_node = nodes.new('ShaderNodeGroup')
-        group_node.node_tree = node_group
-        group_node.location = (-300, 300)
+        b_group_node = b_nodes.new('ShaderNodeGroup')
+        b_group_node.node_tree = b_node_group
+        b_group_node.location = (-300, 300)
 
-        links.new(group_node.inputs['Input'], b_texture_node.outputs['Color'])
+        b_links.new(b_group_node.inputs['Input'], b_texture_node.outputs['Color'])
 
         if self.b_mat.nif_shader.model_space_normals:
-            links.new(self.b_principled_bsdf.inputs[5], group_node.outputs['Output'])
+            b_links.new(self.b_principled_bsdf.inputs[5], b_group_node.outputs['Output'])
         else:
             # Create tangent normal map converter and link to it
-            tangent_converter = nodes.new("ShaderNodeNormalMap")
-            tangent_converter.location = (0, 300)
-            links.new(tangent_converter.inputs['Color'], group_node.outputs['Output'])
-            links.new(self.b_principled_bsdf.inputs[5], tangent_converter.outputs['Normal'])
+            b_tangent_converter = b_nodes.new("ShaderNodeNormalMap")
+            b_tangent_converter.location = (0, 300)
+            b_links.new(b_tangent_converter.inputs['Color'], b_group_node.outputs['Output'])
+            b_links.new(self.b_principled_bsdf.inputs['Normal'], b_tangent_converter.outputs['Normal'])
+
+        # Create Float Curve node to invert the roughness values
+        b_curve_node = b_nodes.new("ShaderNodeFloatCurve")
+        b_curve_node.location = (-200, -200)
+
+        # Configure the float curve to invert the values (1 - x mapping)
+        curve = b_curve_node.mapping.curves[0]
+        curve.points[0].location = (0.0, 1.0)  # Maps 0 -> 1 (low alpha → high roughness)
+        curve.points[1].location = (1.0, 0.0)  # Maps 1 -> 0 (high alpha → low roughness)
+
+        # Link alpha output of texture to the curve node
+        b_links.new(b_curve_node.inputs['Value'], b_texture_node.outputs['Alpha'])
+
+        # Link the curve node output to Roughness input
+        b_links.new(self.b_principled_bsdf.inputs['Roughness'], b_curve_node.outputs['Value'])
 
     def link_glow_node(self, b_texture_node):
         b_texture_node.label = TEX_SLOTS.GLOW

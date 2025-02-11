@@ -112,8 +112,8 @@ class MaterialProperty:
                 (n_ni_material_property.emissive_color.r, n_ni_material_property.emissive_color.g,
                  n_ni_material_property.emissive_color.b, _) = b_shader_node.inputs[27].default_value
 
-            # Map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
-            glossiness = (1 - b_shader_node.inputs[2].default_value ** 0.5)
+            # Map specular IOR level (0.0 - 1.0) to glossiness (0.0 - 128.0)
+            glossiness = (1 - b_shader_node.inputs['Specular IOR Level'].default_value ** 0.5)
             if not glossiness == 0:
                 n_ni_material_property.glossiness = 2 / glossiness
             else:

@@ -122,15 +122,15 @@ class BSShaderProperty():
                                                   n_bs_lighting_shader_property.skin_tint_color.g,
                                                   n_bs_lighting_shader_property.skin_tint_color.b, 1)
 
-        # Map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
+        # Map glossiness (0.0 - 128.0) to specular IOR level (0.0 - 1.0)
         if not n_bs_lighting_shader_property.glossiness == 0:
-            b_shader_node.inputs[2].default_value = (1 - (1 / (n_bs_lighting_shader_property.glossiness / 2))) ** 2
+            b_shader_node.inputs['Specular IOR Level'].default_value = (1 - (1 / (n_bs_lighting_shader_property.glossiness / 2))) ** 2
         else:
-            b_shader_node.inputs[2].default_value = 0
+            b_shader_node.inputs['Specular IOR Level'].default_value = 0
 
-        b_shader_node.inputs[4].default_value = n_bs_lighting_shader_property.alpha
+        b_shader_node.inputs['Alpha'].default_value = n_bs_lighting_shader_property.alpha
 
-        b_shader_node.inputs[28].default_value = n_bs_lighting_shader_property.emissive_multiple
+        b_shader_node.inputs['Emission Strength'].default_value = n_bs_lighting_shader_property.emissive_multiple
 
         # TODO: Add color mult shader node for emissive color
 
@@ -165,12 +165,15 @@ class BSShaderProperty():
                                                   n_bs_effect_shader_property.skin_tint_color.g,
                                                   n_bs_effect_shader_property.skin_tint_color.b, 1)
 
-        # Map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
-        b_shader_node.inputs[2].default_value = min(1, n_bs_effect_shader_property.glossiness / 128)
+        # Map glossiness (0.0 - 128.0) to specular IOR level (0.0 - 1.0)
+        if not n_bs_effect_shader_property.glossiness == 0:
+            b_shader_node.inputs['Specular IOR Level'].default_value = (1 - (1 / (n_bs_effect_shader_property.glossiness / 2))) ** 2
+        else:
+            b_shader_node.inputs['Specular IOR Level'].default_value = 0
 
-        b_shader_node.inputs[4].default_value = n_bs_effect_shader_property.alpha
+        b_shader_node.inputs['Alpha'].default_value = n_bs_effect_shader_property.alpha
 
-        b_shader_node.inputs[28].default_value = n_bs_effect_shader_property.emissive_multiple
+        b_shader_node.inputs['Emission Strength'].default_value = n_bs_effect_shader_property.emissive_multiple
 
         # TODO: Add color mult shader node for emissive color
 

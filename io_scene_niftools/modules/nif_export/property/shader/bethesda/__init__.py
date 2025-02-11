@@ -86,6 +86,13 @@ class BSShaderProperty:
             b_shader_node = b_mat.node_tree.nodes["Principled BSDF"]
             n_bs_effect_shader_property.emissive_multiple = b_shader_node.inputs[28].default_value
 
+            # Map specular IOR level (0.0 - 1.0) to glossiness (0.0 - 128.0)
+            glossiness = (1 - b_shader_node.inputs['Specular IOR Level'].default_value ** 0.5)
+            if not glossiness == 0:
+                n_bs_effect_shader_property.glossiness = 2 / glossiness
+            else:
+                n_bs_effect_shader_property.glossiness = 0
+
         BSShaderProperty.export_shader_flags(b_mat, n_bs_effect_shader_property)
 
         n_ni_geometry.shader_property = n_bs_effect_shader_property
@@ -122,8 +129,12 @@ class BSShaderProperty:
             b_shader_node = b_mat.node_tree.nodes["Principled BSDF"]
             n_bs_lighting_shader_property.emissive_multiple = b_shader_node.inputs[28].default_value
 
-        # TODO [shader]: Get roughness properties from shader nodes
-        #n_bs_lighting_shader_property.glossiness = 1 / b_mat.roughness - 1 if b_mat.roughness != 0 else FLOAT_MAX
+            # Map specular IOR level (0.0 - 1.0) to glossiness (0.0 - 128.0)
+            glossiness = (1 - b_shader_node.inputs['Specular IOR Level'].default_value ** 0.5)
+            if not glossiness == 0:
+                n_bs_lighting_shader_property.glossiness = 2 / glossiness
+            else:
+                n_bs_lighting_shader_property.glossiness = 0
 
         # TODO [shader]: Get specular properties from shader nodes
         #BSShaderProperty.set_color3_property(n_bs_lighting_shader_property.specular_color, b_mat.specular_color)

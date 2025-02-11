@@ -147,15 +147,15 @@ class MaterialProperty:
         b_shader_node.inputs[27].default_value = (n_ni_material_property.emissive_color.r, n_ni_material_property.emissive_color.g,
          n_ni_material_property.emissive_color.b, 1)
 
-        # Map roughness [0,1] to glossiness (MW -> 0.0 - 128.0)
+        # Map glossiness (0.0 - 128.0) to specular IOR level (0.0 - 1.0)
         if not n_ni_material_property.glossiness == 0:
-            b_shader_node.inputs[2].default_value = (1 - (1 / (n_ni_material_property.glossiness / 2))) ** 2
+            b_shader_node.inputs['Specular IOR Level'].default_value = (1 - (1 / (n_ni_material_property.glossiness / 2))) ** 2
         else:
-            b_shader_node.inputs[2].default_value = 0
+            b_shader_node.inputs['Specular IOR Level'].default_value = 0
 
-        b_shader_node.inputs[4].default_value = n_ni_material_property.alpha
+        b_shader_node.inputs['Alpha'].default_value = n_ni_material_property.alpha
 
-        b_shader_node.inputs[28].default_value = n_ni_material_property.emissive_mult
+        b_shader_node.inputs['Emission Strength'].default_value = n_ni_material_property.emissive_mult
 
         # TODO: Add color mult shader node for emissive color
 
