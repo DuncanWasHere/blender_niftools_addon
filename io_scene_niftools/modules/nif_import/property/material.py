@@ -131,33 +131,35 @@ class MaterialProperty:
         b_mat = b_obj.active_material
         b_mat.nif_material.material_flags = n_ni_material_property.flags
 
-        b_shader_node = b_mat.node_tree.nodes["Principled BSDF"]
+        b_principled_bsdf = self.node_wrapper.b_principled_bsdf
 
         if not (bpy.context.scene.niftools_scene.is_skyrim or bpy.context.scene.niftools_scene.is_fo3):
 
-            b_shader_node.inputs[26].default_value = (n_ni_material_property.ambient_color.r, n_ni_material_property.ambient_color.g,
+            b_principled_bsdf.inputs[26].default_value = (n_ni_material_property.ambient_color.r, n_ni_material_property.ambient_color.g,
              n_ni_material_property.ambient_color.b, 1)
 
-            b_shader_node.inputs[22].default_value = (n_ni_material_property.diffuse_color.r, n_ni_material_property.diffuse_color.g,
+            b_principled_bsdf.inputs[22].default_value = (n_ni_material_property.diffuse_color.r, n_ni_material_property.diffuse_color.g,
              n_ni_material_property.diffuse_color.b, 1)
 
-            b_shader_node.inputs[14].default_value = (n_ni_material_property.specular_color.r, n_ni_material_property.specular_color.g,
+            b_principled_bsdf.inputs[14].default_value = (n_ni_material_property.specular_color.r, n_ni_material_property.specular_color.g,
              n_ni_material_property.specular_color.b, 1)
 
-        b_shader_node.inputs[27].default_value = (n_ni_material_property.emissive_color.r, n_ni_material_property.emissive_color.g,
-         n_ni_material_property.emissive_color.b, 1)
+        b_principled_bsdf.inputs[27].default_value = (n_ni_material_property.emissive_color.r,
+                                                      n_ni_material_property.emissive_color.g,
+                                                      n_ni_material_property.emissive_color.b, 1)
+
+        self.node_wrapper.emissive_color = (n_ni_material_property.emissive_color.r,
+                                            n_ni_material_property.emissive_color.g,
+                                            n_ni_material_property.emissive_color.b, 1)
 
         # Map glossiness (0.0 - 128.0) to specular IOR level (0.0 - 1.0)
-        if not n_ni_material_property.glossiness == 0:
-            b_shader_node.inputs['Specular IOR Level'].default_value = (1 - (1 / (n_ni_material_property.glossiness / 2))) ** 2
-        else:
-            b_shader_node.inputs['Specular IOR Level'].default_value = 0
+        b_principled_bsdf.inputs['Specular IOR Level'].default_value = 1 - (n_ni_material_property.glossiness / 128)
 
-        b_shader_node.inputs['Alpha'].default_value = n_ni_material_property.alpha
+        b_principled_bsdf.inputs['Alpha'].default_value = n_ni_material_property.alpha
 
-        b_shader_node.inputs['Emission Strength'].default_value = n_ni_material_property.emissive_mult
+        b_principled_bsdf.inputs['Emission Strength'].default_value = n_ni_material_property.emissive_mult
 
-        # TODO: Add color mult shader node for emissive color
+
 
     def __import_ni_alpha_property(self, n_ni_alpha_property, b_obj):
         """Import a NiAlphaProperty block into a Blender material."""

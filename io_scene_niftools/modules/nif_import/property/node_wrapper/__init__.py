@@ -45,6 +45,7 @@ from io_scene_niftools.utils.logging import NifLog
 from io_scene_niftools.utils.nodes import nodes_iterate
 from nifgen.formats.nif import classes as NifClasses
 
+
 """Names (ordered by default index) of shader texture slots for Sid Meier's Railroads and similar games."""
 EXTRA_SHADER_TEXTURES = [
     "EnvironmentMapIndex",
@@ -61,6 +62,7 @@ class NodeWrapper:
     @staticmethod
     def get():
         """Static access method."""
+
         if NodeWrapper.__instance is None:
             NodeWrapper()
         return NodeWrapper.__instance
@@ -77,19 +79,24 @@ class NodeWrapper:
             self.b_mat = None
             self.b_shader_tree = None
 
+            self.emissive_color = (0.0, 0.0, 0.0, 1.0)
+
             # Shader Nodes
             self.b_mat_output = None # Material Output
             self.b_principled_bsdf = None # Principled BSDF
             self.b_glossy_bsdf = None # Glossy BSDF
-            self.b_add_shader = None # Add Shader
-            self.b_normal = None # Normal Map
+            self.b_normal_map = None # Normal Map
             self.b_color_attribute = None # Color Attribute
-            self.b_emissive_pass = None # Mix Color (for material emissive color)
-            self.b_diffuse_pass = None # Mix Color (for color attribute)
-            self.b_texture_coordinate = None # Texture Coordinate (for environment map)
+            self.b_diffuse_pass = None # Mix Color
+            self.b_specular_pass = None # Float Curve
+            self.b_gloss_pass = None # Mix Color
+            self.b_emissive_pass = None # Mix Color
+            self.b_normal_pass = None # Invert Y
+            self.b_parallax_pass = None # Vector Displacement
+            self.b_environment_pass = None # Texture Coordinate
 
             # Texture Nodes
-            self.b_textures = [None] * 8
+            self.b_textures = [None] * 10
 
     @staticmethod
     def uv_node_name(uv_index):
@@ -97,6 +104,7 @@ class NodeWrapper:
 
     def set_uv_map(self, b_texture_node, uv_index=0, reflective=False):
         """Attaches a vector node describing the desired coordinate transforms to the texture node's UV input."""
+
         if reflective:
             uv = self.b_shader_tree.nodes.new('ShaderNodeTexCoord')
             self.b_shader_tree.links.new(uv.outputs[6], b_texture_node.inputs[0])
@@ -130,14 +138,14 @@ class NodeWrapper:
 
         for uv_index, uv_node in uv_nodes.items():
             # for each of those, create a new uv output node and relink
-            split_node = self.b_shader_tree.nodes.new("ShaderNodeSeparateXYZ")
+            split_node = self.b_shader_tree.nodes.new('ShaderNodeSeparateXYZ')
             split_node.name = f"Separate UV{uv_index}"
             split_node.label = split_node.name
-            combine_node = self.b_shader_tree.nodes.new("ShaderNodeCombineXYZ")
+            combine_node = self.b_shader_tree.nodes.new('ShaderNodeCombineXYZ')
             combine_node.name = f"Combine UV{uv_index}"
             combine_node.label = combine_node.name
 
-            x_node = self.b_shader_tree.nodes.new("ShaderNodeMath")
+            x_node = self.b_shader_tree.nodes.new('ShaderNodeMath')
             x_node.name = f"X offset and scale UV{uv_index}"
             x_node.label = x_node.name
             x_node.operation = 'MULTIPLY_ADD'
@@ -149,7 +157,7 @@ class NodeWrapper:
             self.b_shader_tree.links.new(split_node.outputs[0], x_node.inputs[0])
             self.b_shader_tree.links.new(x_node.outputs[0], combine_node.inputs[0])
 
-            y_node = self.b_shader_tree.nodes.new("ShaderNodeMath")
+            y_node = self.b_shader_tree.nodes.new('ShaderNodeMath')
             y_node.name = f"Y offset and scale UV{uv_index}"
             y_node.label = y_node.name
             y_node.operation = 'MULTIPLY_ADD'
@@ -187,11 +195,15 @@ class NodeWrapper:
 
         self.b_glossy_bsdf = None
         self.b_add_shader = None
-        self.b_normal = None
+        self.b_normal_map = None
         self.b_color_attribute = None
-        self.b_emissive_pass = None
         self.b_diffuse_pass = None
-        self.b_texture_coordinate = None
+        self.b_specular_pass = None
+        self.b_gloss_pass = None
+        self.b_emissive_pass = None
+        self.b_normal_pass = None
+        self.b_parallax_pass = None
+        self.b_environment_pass = None
 
         self.b_textures = [None] * 8
 
@@ -201,7 +213,8 @@ class NodeWrapper:
         self.b_shader_tree.links.new(self.b_principled_bsdf.outputs[0], self.b_mat_output.inputs[0])
 
     def connect_to_pass(self, b_node_pass, b_texture_node, texture_type="Detail"):
-        """Connect to an image premixing pass"""
+        """Connect to an image premixing pass."""
+
         # connect if the pass has been established, ie. the base texture already exists
         if b_node_pass:
             rgb_mixer = self.b_shader_tree.nodes.new('ShaderNodeMixRGB')
@@ -248,78 +261,260 @@ class NodeWrapper:
 
         nodes_iterate(self.b_shader_tree, self.b_mat_output)
 
-    def create_and_link(self, slot_name, n_tex_info):
+    def create_and_link(self, slot_name, n_texture):
 
         slot_name_lower = slot_name.lower().replace(' ', '_')
 
         import_func_name = f"link_{slot_name_lower}_node"
         import_func = getattr(self, import_func_name, None)
         if not import_func:
-            NifLog.debug(f"Could not find texture linking function {import_func_name}")
+            NifLog.debug(f"Could not find texture linking function {import_func_name}.")
             return
-        b_texture = self.create_texture_slot(n_tex_info)
+        b_texture = self.create_texture_slot(slot_name_lower, n_texture)
         import_func(b_texture)
 
-    def create_texture_slot(self, n_tex_desc):
-        # todo [texture] refactor this to separate code paths?
-        # when processing a NiTextureProperty
-        if isinstance(n_tex_desc, NifClasses.TexDesc):
-            b_image = self.texture_loader.import_texture_source(n_tex_desc.source)
-            uv_layer_index = n_tex_desc.uv_set
-        # when processing a BS shader property - n_tex_desc is a bare string
+    def create_texture_slot(self, slot_name, n_texture):
+        """Create an image texture node from a NIF source texture."""
+
+        # TODO [texture]: Refactor this to separate code paths?
+        if isinstance(n_texture, NifClasses.TexDesc):
+            # When processing a NiTexturingProperty
+            b_image = self.texture_loader.import_texture_source(n_texture.source)
+            uv_layer_index = n_texture.uv_set
         else:
-            b_image = self.texture_loader.import_texture_source(n_tex_desc)
+            # When processing a BSShaderProperty - n_texture is a bare string
+            b_image = self.texture_loader.import_texture_source(n_texture)
             uv_layer_index = 0
 
         # create a texture node
-        b_texture_node = self.b_mat.node_tree.nodes.new('ShaderNodeTexImage')
+        if slot_name == "environment_map":
+            b_texture_node = self.b_mat.node_tree.nodes.new('ShaderNodeTexEnvironment')
+            self.set_uv_map(b_texture_node, uv_index=uv_layer_index, reflective=True)
+        else:
+            b_texture_node = self.b_mat.node_tree.nodes.new('ShaderNodeTexImage')
+            self.set_uv_map(b_texture_node, uv_index=uv_layer_index)
+
         b_texture_node.image = b_image
         b_texture_node.interpolation = "Smart"
-        # todo [texture] pass info about reflective coordinates
-        # UV mapping
-        self.set_uv_map(b_texture_node, uv_index=uv_layer_index, reflective=False)
 
-        # todo [texture] support clamping and interpolation settings
+        # TODO [texture]: Support clamping and interpolation settings
+
         return b_texture_node
 
     def link_base_node(self, b_texture_node):
+        """Link a base texture node to the shader tree."""
+
         self.b_textures[0] = b_texture_node
         b_texture_node.label = TEX_SLOTS.BASE
+
         self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node)
 
         if bpy.context.scene.niftools_scene.game == 'OBLIVION':
             base_name, extension = b_texture_node.image.name.rsplit(".", 1)
             self.create_and_link("normal", f"{base_name}_n.{extension}")
 
+    def link_dark_node(self, b_texture_node):
+        """Link a dark texture node to the shader tree."""
+
+        # TODO: Set this up
+
+        self.b_textures[1] = b_texture_node
+        b_texture_node.label = TEX_SLOTS.DARK
+
+    def link_detail_node(self, b_texture_node):
+        """Link a detail texture node to the shader tree."""
+
+        self.b_textures[2] = b_texture_node
+        b_texture_node.label = TEX_SLOTS.DETAIL
+
+        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node, texture_type="Detail")
+
+    def link_gloss_node(self, b_texture_node):
+        """Link a gloss texture node to the shader tree."""
+
+        self.b_textures[3] = b_texture_node
+        b_texture_node.label = TEX_SLOTS.GLOSS
+
+        self.create_specular_pass(b_texture_node)
+
+        self.create_gloss_pass(b_texture_node)
+
+    def link_glow_node(self, b_texture_node):
+        """Link a glow texture node to the shader tree."""
+
+        self.b_textures[4] = b_texture_node
+        b_texture_node.label = TEX_SLOTS.GLOW
+
+        self.create_emissive_pass(b_texture_node)
+
     def link_bump_map_node(self, b_texture_node):
+        """Link a bump map texture node to the shader tree."""
+
+        # TODO: Set this up
+
+        self.b_textures[5] = b_texture_node
         b_texture_node.label = TEX_SLOTS.BUMP_MAP
-        # # Influence mapping
-        # b_texture_node.texture.use_normal_map = False  # causes artifacts otherwise.
-        #
-        # # Influence
-        # # TODO [property][texture][flag][alpha] Figure out if this texture has alpha
-        # # if self.nif_import.ni_alpha_prop:
-        # #     b_texture_node.use_map_alpha = True
-        #
-        # b_texture_node.use_map_color_diffuse = False
-        # b_texture_node.use_map_normal = True
-        # b_texture_node.use_map_alpha = False
 
     def link_normal_node(self, b_texture_node):
+        """Link a normal texture node to the shader tree."""
+
+        self.b_textures[6] = b_texture_node
         b_texture_node.label = TEX_SLOTS.NORMAL
-        # Set to non-color data
         b_texture_node.image.colorspace_settings.name = 'Non-Color'
 
-        # Create Y-invert node (because NIF normal maps are +X -Y +Z)
+        self.create_normal_pass(b_texture_node)
+
+        if bpy.context.scene.niftools_scene.game == 'OBLIVION':
+            self.create_gloss_pass(b_texture_node)
+
+    def link_decal_0_node(self, b_texture_node):
+        """Link a decal 0 texture node to the shader tree."""
+
+        self.b_textures[7] = b_texture_node
+        b_texture_node.label = TEX_SLOTS.DECAL_0
+
+        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node, texture_type="Decal")
+
+    def link_decal_1_node(self, b_texture_node):
+        """Link a decal 1 texture node to the shader tree."""
+
+        self.b_textures[8] = b_texture_node
+        b_texture_node.label = TEX_SLOTS.DECAL_1
+
+        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node, texture_type="Decal")
+
+    def link_decal_2_node(self, b_texture_node):
+        """Link a decal 2 texture node to the shader tree."""
+
+        self.b_textures[9] = b_texture_node
+        b_texture_node.label = TEX_SLOTS.DECAL_2
+
+        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node, texture_type="Decal")
+
+    def link_diffuse_map_node(self, b_texture_node):
+        """Link a Bethesda diffuse map texture node to the shader tree."""
+
+        self.b_textures[0] = b_texture_node
+        b_texture_node.label = BS_TEX_SLOTS.DIFFUSE_MAP
+
+        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node)
+
+    def link_normal_map_node(self, b_texture_node):
+        """Link a Bethesda normal map texture node to the shader tree."""
+
+        self.b_textures[1] = b_texture_node
+        b_texture_node.label = BS_TEX_SLOTS.NORMAL_MAP
+        b_texture_node.image.colorspace_settings.name = "Non-Color"
+
+        self.create_normal_pass(b_texture_node)
+
+        self.create_gloss_pass(b_texture_node)
+
+    def link_glow_map_node(self, b_texture_node):
+        """Link a Bethesda glow map texture node to the shader tree."""
+
+        self.b_textures[2] = b_texture_node
+        b_texture_node.label = BS_TEX_SLOTS.GLOW_MAP
+
+        self.create_emissive_pass(b_texture_node)
+
+    def link_parallax_map_node(self, b_texture_node):
+        """Link a Bethesda parallax map texture node to the shader tree."""
+
+        self.b_textures[3] = b_texture_node
+        b_texture_node.label = BS_TEX_SLOTS.PARALLAX_MAP
+
+        self.create_parallax_pass(b_texture_node)
+
+    def link_environment_map_node(self, b_texture_node):
+        """Link a Bethesda environment map texture node to the shader tree."""
+
+        self.b_textures[4] = b_texture_node
+        b_texture_node.label = BS_TEX_SLOTS.ENVIRONMENT_MAP
+
+        self.create_environment_pass(b_texture_node)
+
+    def link_environment_mask_node(self, b_texture_node):
+        """Link a Bethesda environment mask texture node to the shader tree."""
+
+        self.b_textures[5] = b_texture_node
+        b_texture_node.label = BS_TEX_SLOTS.ENVIRONMENT_MASK
+
+        self.create_environment_mask_pass(b_texture_node)
+
+    def link_subsurface_tint_map_node(self, b_texture_node):
+        """Link a Bethesda subsurface map texture node to the shader tree."""
+
+        # TODO: Set this up
+
+        self.b_textures[6] = b_texture_node
+        b_texture_node.label = BS_TEX_SLOTS.SUBSURFACE_TINT_MAP
+
+    def link_backlight_map_node(self, b_texture_node):
+        """Link a Bethesda backlight map texture node to the shader tree."""
+
+        # TODO: Set this up
+
+        self.b_textures[7] = b_texture_node
+        b_texture_node.label = BS_TEX_SLOTS.BACKLIGHT_MAP
+
+    def create_specular_pass(self, b_texture_node):
+        """
+        Create a mix shader node to multiply specular map with
+        NiMaterialProperty/BSShaderProperty specular color.
+        """
+
+        self.b_specular_pass = self.b_shader_tree.nodes.new('ShaderNodeMixRGB')
+        self.b_specular_pass.inputs['Fac'].default_value = 1
+        self.b_specular_pass.blend_type = "MULTIPLY"
+
+        self.b_shader_tree.links.new(b_texture_node.outputs['Color'], self.b_specular_pass.inputs[1])
+        self.b_shader_tree.links.new(self.b_specular_pass.outputs['Color'], self.b_principled_bsdf.inputs['Specular Color'])
+
+    def create_gloss_pass(self, b_texture_node):
+        """Create a float curve shader node to invert gloss maps into roughness."""
+
+        # Create Float Curve node to invert the roughness values
+        b_curve_node = self.b_shader_tree.nodes.new('ShaderNodeFloatCurve')
+        b_curve_node.location = (-200, -200)
+
+        curve = b_curve_node.mapping.curves[0]
+        curve.points[0].location = (0.0, 1.0)  # Maps 0 -> 1 (low alpha → high roughness)
+        curve.points[1].location = (1.0, 0.5)  # Maps 1 -> 0.5 (high alpha → low roughness)
+
+        self.b_shader_tree.links.new(b_curve_node.inputs['Value'], b_texture_node.outputs['Alpha'])
+        self.b_shader_tree.links.new(self.b_principled_bsdf.inputs['Roughness'], b_curve_node.outputs['Value'])
+
+    def create_emissive_pass(self, b_texture_node):
+        """
+        Create a mix shader node to multiply glow map with
+        NiMaterialProperty/BSShaderProperty emissive color.
+        """
+
+        self.b_emissive_pass = self.b_shader_tree.nodes.new('ShaderNodeMixRGB')
+        self.b_emissive_pass.inputs['Fac'].default_value = 1
+        self.b_emissive_pass.blend_type = "MULTIPLY"
+
+        self.b_shader_tree.links.new(b_texture_node.outputs['Color'], self.b_emissive_pass.inputs[1])
+        self.b_shader_tree.links.new(self.b_emissive_pass.outputs['Color'], self.b_principled_bsdf.inputs['Emission Color'])
+
+        self.b_emissive_pass.inputs['Color2'].default_value = self.emissive_color
+
+    def create_normal_pass(self, b_texture_node):
+        """
+        Create a custom Y-inversion shader node for normal maps
+        (because NIF normal maps are +X -Y +Z).
+        """
+
         b_nodes = self.b_shader_tree.nodes
         b_links = self.b_shader_tree.links
-        group_name = "InvertY"
+        group_name = "Invert Y"
 
         if group_name in bpy.data.node_groups:
             b_node_group = bpy.data.node_groups[group_name]
         else:
             # The InvertY node group does not yet exist, create it
-            b_node_group = bpy.data.node_groups.new(group_name, "ShaderNodeTree")
+            b_node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
             b_group_nodes = b_node_group.nodes
 
             # Add the input and output nodes
@@ -344,13 +539,13 @@ class NodeWrapper:
             )
 
             # Set up the node group internals
-            b_separate_node = b_group_nodes.new("ShaderNodeSeparateRGB")
+            b_separate_node = b_group_nodes.new('ShaderNodeSeparateRGB')
             b_separate_node.location = (-150, 100)
 
-            b_invert_node = b_group_nodes.new("ShaderNodeInvert")
+            b_invert_node = b_group_nodes.new('ShaderNodeInvert')
             b_invert_node.location = (0, 100)
 
-            b_combine_node = b_group_nodes.new("ShaderNodeCombineRGB")
+            b_combine_node = b_group_nodes.new('ShaderNodeCombineRGB')
             b_combine_node.location = (150, 100)
 
             # Link the nodes within the group
@@ -375,150 +570,89 @@ class NodeWrapper:
             b_links.new(self.b_principled_bsdf.inputs[5], b_group_node.outputs['Output'])
         else:
             # Create tangent normal map converter and link to it
-            b_tangent_converter = b_nodes.new("ShaderNodeNormalMap")
+            b_tangent_converter = b_nodes.new('ShaderNodeNormalMap')
             b_tangent_converter.location = (0, 300)
             b_links.new(b_tangent_converter.inputs['Color'], b_group_node.outputs['Output'])
             b_links.new(self.b_principled_bsdf.inputs['Normal'], b_tangent_converter.outputs['Normal'])
 
-        # Create Float Curve node to invert the roughness values
-        b_curve_node = b_nodes.new("ShaderNodeFloatCurve")
-        b_curve_node.location = (-200, -200)
+    def create_parallax_pass(self, b_texture_node):
+        """Create a vector displacement shader node for parallax maps."""
 
-        # Configure the float curve to invert the values (1 - x mapping)
-        curve = b_curve_node.mapping.curves[0]
-        curve.points[0].location = (0.0, 1.0)  # Maps 0 -> 1 (low alpha → high roughness)
-        curve.points[1].location = (1.0, 0.0)  # Maps 1 -> 0 (high alpha → low roughness)
+        self.b_parallax_pass = self.b_shader_tree.nodes.new('ShaderNodeVectorDisplacement')
 
-        # Link alpha output of texture to the curve node
-        b_links.new(b_curve_node.inputs['Value'], b_texture_node.outputs['Alpha'])
+        self.b_shader_tree.links.new(b_texture_node.outputs['Color'], self.b_parallax_pass.inputs['Vector'])
+        self.b_shader_tree.links.new(self.b_parallax_pass.outputs['Displacement'], self.b_mat_output.inputs['Displacement'])
 
-        # Link the curve node output to Roughness input
-        b_links.new(self.b_principled_bsdf.inputs['Roughness'], b_curve_node.outputs['Value'])
+    def create_environment_pass(self, b_texture_node):
+        """Create a glossy BSDF shader node for environment maps."""
 
-    def link_glow_node(self, b_texture_node):
-        b_texture_node.label = TEX_SLOTS.GLOW
-        # # Influence mapping
-        # b_texture_node.texture.use_alpha = False
-        #
-        # # Influence
-        # # TODO [property][texture][flag][alpha] Figure out if this texture has alpha
-        # # if self.nif_import.ni_alpha_prop:
-        # #     b_texture_node.use_map_alpha = True
-        #
-        # b_texture_node.use_map_color_diffuse = False
-        # b_texture_node.use_map_emit = True
+        self.b_glossy_bsdf = self.b_shader_tree.nodes.new('ShaderNodeBsdfGlossy')
+        self.b_environment_pass = self.b_shader_tree.nodes.new('ShaderNodeAddShader')
 
-    def link_gloss_node(self, b_texture_node):
-        b_texture_node.label = TEX_SLOTS.GLOSS
-        # # Influence mapping
-        # b_texture_node.texture.use_alpha = False
-        #
-        # # Influence
-        # # TODO [property][texture][flag][alpha] Figure out if this texture has alpha
-        # # if self.nif_import.ni_alpha_prop:
-        # #     b_texture_node.use_map_alpha = True
-        #
-        # b_texture_node.use_map_color_diffuse = False
-        # b_texture_node.use_map_specular = True
-        # b_texture_node.use_map_color_spec = True
+        self.b_shader_tree.links.new(b_texture_node.outputs['Color'], self.b_glossy_bsdf.inputs['Color'])
 
-    def link_decal_0_node(self, b_texture_node):
-        b_texture_node.label = TEX_SLOTS.DECAL_0
-        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node, texture_type="Decal")
+        self.b_shader_tree.links.new(self.b_principled_bsdf.outputs['BSDF'], self.b_environment_pass.inputs[0])
+        self.b_shader_tree.links.new(self.b_glossy_bsdf.outputs['BSDF'], self.b_environment_pass.inputs[1])
 
-    def link_decal_1_node(self, b_texture_node):
-        b_texture_node.label = TEX_SLOTS.DECAL_1
-        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node, texture_type="Decal")
+        self.b_shader_tree.links.new(self.b_environment_pass.outputs[0], self.b_mat_output.inputs[0])
 
-    def link_decal_2_node(self, b_texture_node):
-        b_texture_node.label = TEX_SLOTS.DECAL_2
-        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node, texture_type="Decal")
+    def create_environment_mask_pass(self, b_texture_node):
+        """
+        Create a custom Y-inversion shader node for normal maps
+        (because NIF normal maps are +X -Y +Z).
+        """
 
-    def link_detail_node(self, b_texture_node):
-        b_texture_node.label = TEX_SLOTS.DETAIL
-        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node, texture_type="Detail")
+        b_nodes = self.b_shader_tree.nodes
+        b_links = self.b_shader_tree.links
+        group_name = "Value Mask"
 
-    def link_dark_node(self, b_texture_node):
-        b_texture_node.label = TEX_SLOTS.DARK
-
-    def link_reflection_node(self, b_texture_node):
-        # Influence mapping
-
-        # Influence
-        # TODO [property][texture][flag][alpha] Figure out if this texture has alpha
-        # if self.nif_import.ni_alpha_prop:
-        #     b_texture_node.use_map_alpha = True
-
-        # b_texture_node.use_map_color_diffuse = True
-        # b_texture_node.use_map_emit = True
-        # b_texture_node.use_map_mirror = True
-        return
-
-    def link_environment_node(self, b_texture_node):
-        # Influence mapping
-
-        # Influence
-        # TODO [property][texture][flag][alpha] Figure out if this texture has alpha
-        # if self.nif_import.ni_alpha_prop:
-        #     b_texture_node.use_map_alpha = True
-
-        # b_texture_node.use_map_color_diffuse = True
-        # b_texture_node.blend_type = 'ADD'
-        return
-
-    def link_diffuse_map_node(self, b_texture_node):
-        self.b_textures[0] = b_texture_node
-        b_texture_node.label = BS_TEX_SLOTS.DIFFUSE_MAP
-        self.b_diffuse_pass = self.connect_to_pass(self.b_diffuse_pass, b_texture_node)
-
-    def link_normal_map_node(self, b_texture_node):
-        self.b_textures[1] = b_texture_node
-        self.link_normal_node(b_texture_node)
-        b_texture_node.label = BS_TEX_SLOTS.NORMAL_MAP
-
-    def link_glow_map_node(self, b_texture_node):
-        self.b_textures[2] = b_texture_node
-        self.link_glow_node(b_texture_node)
-        b_texture_node.label = BS_TEX_SLOTS.GLOW_MAP
-
-    def link_parallax_map_node(self, b_texture_node):
-        self.b_textures[3] = b_texture_node
-        self.link_detail_node(b_texture_node)
-        b_texture_node.label = BS_TEX_SLOTS.PARALLAX_MAP
-
-    def link_environment_map_node(self, b_texture_node):
-        self.b_textures[4] = b_texture_node
-        self.link_reflection_node(b_texture_node)
-        b_texture_node.label = BS_TEX_SLOTS.ENVIRONMENT_MAP
-
-    def link_environment_mask_node(self, b_texture_node):
-        self.b_textures[5] = b_texture_node
-        self.link_environment_node(b_texture_node)
-        b_texture_node.label = BS_TEX_SLOTS.ENVIRONMENT_MASK
-
-    def link_subsurface_tint_map_node(self, b_texture_node):
-        self.b_textures[6] = b_texture_node
-        self.link_environment_node(b_texture_node)
-        b_texture_node.label = BS_TEX_SLOTS.SUBSURFACE_TINT_MAP
-
-    def link_backlight_map_node(self, b_texture_node):
-        self.b_textures[7] = b_texture_node
-        self.link_environment_node(b_texture_node)
-        b_texture_node.label = BS_TEX_SLOTS.BACKLIGHT_MAP
-
-    @staticmethod
-    def get_b_blend_type_from_n_apply_mode(n_apply_mode):
-        # TODO [material] Check out n_apply_modes
-        if n_apply_mode == NifClasses.ApplyMode.APPLY_MODULATE:
-            return "MIX"
-        elif n_apply_mode == NifClasses.ApplyMode.APPLY_REPLACE:
-            return "COLOR"
-        elif n_apply_mode == NifClasses.ApplyMode.APPLY_DECAL:
-            return "OVERLAY"
-        elif n_apply_mode == NifClasses.ApplyMode.APPLY_HILIGHT:
-            return "LIGHTEN"
-        elif n_apply_mode == NifClasses.ApplyMode.APPLY_HILIGHT2:  # used by Oblivion for parallax
-            return "MULTIPLY"
+        if group_name in bpy.data.node_groups:
+            b_node_group = bpy.data.node_groups[group_name]
         else:
-            NifLog.warn(f"Unknown apply mode ({n_apply_mode}) in material, using blend type 'MIX'")
-            return "MIX"
+            # The InvertY node group does not yet exist, create it
+            b_node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+            b_group_nodes = b_node_group.nodes
+
+            # Add the input and output nodes
+            b_input_node = b_group_nodes.new('NodeGroupInput')
+            b_input_node.location = (-300, 0)
+            b_group_output = b_group_nodes.new('NodeGroupOutput')
+            b_group_output.location = (300, 0)
+
+            # Define the inputs and outputs for the node group using the new API
+            b_interface = b_node_group.interface
+            b_input_socket = b_interface.new_socket(
+                name="Input",
+                socket_type='NodeSocketColor',
+                in_out='INPUT',
+                description="Input color for the group"
+            )
+            b_output_socket = b_interface.new_socket(
+                name="Output",
+                socket_type='NodeSocketFloat',
+                in_out='OUTPUT',
+                description="Output color from the group"
+            )
+
+            # Set up the node group internals
+            b_invert_color = b_group_nodes.new('ShaderNodeInvert')
+            b_invert_color.location = (0, 100)
+
+            b_rgb_to_bw = b_group_nodes.new('ShaderNodeRGBToBW')
+            b_rgb_to_bw.location = (150, 100)
+
+            # Link the nodes within the group
+            b_group_links = b_node_group.links
+            b_group_links.new(b_invert_color.outputs['Color'], b_rgb_to_bw.inputs['Color'])
+
+            # Link the input and output nodes to the group sockets
+            b_group_links.new(b_input_node.outputs[b_input_socket.name], b_invert_color.inputs['Color'])
+            b_group_links.new(b_rgb_to_bw.outputs['Val'], b_group_output.inputs[b_output_socket.name])
+
+        # Add the group node to the main node tree and link it
+        b_group_node = b_nodes.new('ShaderNodeGroup')
+        b_group_node.node_tree = b_node_group
+        b_group_node.location = (-300, 300)
+
+        b_links.new(b_group_node.inputs['Input'], b_texture_node.outputs['Color'])
+        b_links.new(self.b_glossy_bsdf.inputs['Roughness'], b_group_node.outputs['Output'])

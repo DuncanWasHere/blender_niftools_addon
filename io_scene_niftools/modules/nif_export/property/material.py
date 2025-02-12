@@ -58,15 +58,16 @@ class MaterialProperty:
         self.material_anim = MaterialAnimation()
 
     def export_ni_material_property(self, b_mat, n_node):
-        """Return existing material property with given settings, or create
-        a new one if a material property with these settings is not found."""
-        # don't export material properties for these games
+        """
+        Return existing material property with given settings,
+        or create a new one if a material property with these settings is not found.
+        """
 
         if bpy.context.scene.niftools_scene.is_skyrim():
             return
 
         name = block_store.get_full_name(b_mat)
-        # create n_block
+
         n_ni_material_property = NifClasses.NiMaterialProperty(NifData.data)
 
         # list which determines whether the material name is relevant or not  only for particular names this holds,
@@ -103,14 +104,14 @@ class MaterialProperty:
             (n_ni_material_property.specular_color.r, n_ni_material_property.specular_color.g,
              n_ni_material_property.specular_color.b, _) = b_shader_node.inputs[14].default_value
 
-            if b_shader_node.inputs[27].is_linked:
-                b_color_node = b_shader_node.inputs[27].links[0].from_node
-                if isinstance(b_color_node, bpy.types.ShaderNodeMix):
+            if b_shader_node.inputs['Emission Color'].is_linked:
+                b_color_node = b_shader_node.inputs['Emission Color'].links[0].from_node
+                if isinstance(b_color_node, bpy.types.ShaderNodeMixRGB):
                     (n_ni_material_property.emissive_color.r, n_ni_material_property.emissive_color.g,
-                     n_ni_material_property.emissive_color.b, _) = b_color_node.inputs[7].default_value
+                     n_ni_material_property.emissive_color.b, _) = b_color_node.inputs['Color2'].default_value
             else:
                 (n_ni_material_property.emissive_color.r, n_ni_material_property.emissive_color.g,
-                 n_ni_material_property.emissive_color.b, _) = b_shader_node.inputs[27].default_value
+                 n_ni_material_property.emissive_color.b, _) = b_shader_node.inputs['Emission Color'].default_value
 
             # Map specular IOR level (0.0 - 1.0) to glossiness (0.0 - 128.0)
             glossiness = (1 - b_shader_node.inputs['Specular IOR Level'].default_value ** 0.5)
