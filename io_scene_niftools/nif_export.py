@@ -43,6 +43,7 @@ import os.path
 import bpy
 
 from io_scene_niftools.file_io import File
+from io_scene_niftools.file_io.config import Config
 
 from io_scene_niftools.nif_common import NifCommon
 
@@ -163,7 +164,7 @@ class NifExport(NifCommon):
         """
 
         for b_obj in bpy.context.scene.objects:
-            if b_obj.type in self.export_types:
+            if b_obj.type in self.export_types and b_obj.visible_get():
                 self.b_main_objects.append(b_obj)
 
                 if not b_obj.parent:
