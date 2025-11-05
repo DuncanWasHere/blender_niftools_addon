@@ -179,7 +179,7 @@ class Mesh:
     def map_vertex_colors_to_corners(b_mesh, vertex_colors):
         """Map vertex colors to face corners in a mesh."""
 
-        color_attr = b_mesh.color_attributes.new(name="RGBA", type="FLOAT_COLOR", domain="CORNER")
+        color_attr = b_mesh.color_attributes.new(name="RGBA", type="BYTE_COLOR", domain="CORNER")
 
         corner_colors = []
         for poly in b_mesh.polygons:

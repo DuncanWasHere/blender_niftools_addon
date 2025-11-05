@@ -50,7 +50,7 @@ class Vertex:
         # in Blender 3.2, vertex_colors was deprecated (https://wiki.blender.org/wiki/Reference/Release_Notes/3.2/Python_API)
         # so use Color attribute instead when 3.2 or greater
         if bpy.app.version >= (3, 2, 0):
-            b_mesh.color_attributes.new(name="RGBA", type="FLOAT_COLOR", domain="POINT")
+            b_mesh.color_attributes.new(name="RGBA", type="BYTE_COLOR", domain="POINT")
             b_mesh.color_attributes[-1].data.foreach_set("color",
                                                          [channel for color in vertex_colors for channel in color])
         else:
