@@ -74,7 +74,8 @@ class CollisionProperties(PropertyGroup):
     collision_layer: EnumProperty(
         name='Collision layer',
         description='Collision layer string (game-specific)',
-        items=game_specific_col_layer_items
+        items=game_specific_col_layer_items,
+        default=1
     )
 
     col_filter: IntProperty(
@@ -121,7 +122,7 @@ class CollisionProperties(PropertyGroup):
 
     motion_system: EnumProperty(
         name='Motion System',
-        description='Havok Motion System settings for bhkRigidBody(t)',
+        description='Havok Motion System settings for bhkRigidBody(T)',
         items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.HkMotionType)],
         default='MO_SYS_FIXED',
     )
@@ -153,9 +154,15 @@ class CollisionProperties(PropertyGroup):
         default=False,
     )
 
+    force_bhk_rigid_body_t: BoolProperty(
+        name='Force bhkRigidBodyT',
+        description='Force the export to use a bhkRigidBodyT for this shape even if there are no transforms (needed for constraints)',
+        default=False,
+    )
+
     use_blender_properties: BoolProperty(
-        name='Use Blender Properties',
-        description='Whether or not to export collision settings via blender properties',
+        name='Recalculate Inertia Tensor',
+        description='Whether or not to recalculate inertia tensor based on blender mass and mesh geometry',
         default=False,
     )
 

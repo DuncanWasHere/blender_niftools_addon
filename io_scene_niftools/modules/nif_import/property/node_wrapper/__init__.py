@@ -364,8 +364,11 @@ class NodeWrapper:
 
         self.create_normal_pass(b_texture_node)
 
-        if bpy.context.scene.niftools_scene.game == 'OBLIVION':
+        if bpy.context.scene.niftools_scene.game == 'OBLIVION' and self.image_has_alpha(b_texture_node):
             self.create_gloss_pass(b_texture_node)
+        else:
+            self.b_principled_bsdf.inputs['Roughness'].default_value = 1.0
+            self.b_principled_bsdf.inputs['IOR'].default_value = 1.0
 
     def link_decal_0_node(self, b_texture_node):
         """Link a decal 0 texture node to the shader tree."""
@@ -408,7 +411,12 @@ class NodeWrapper:
 
         self.create_normal_pass(b_texture_node)
 
-        self.create_gloss_pass(b_texture_node)
+        # Specularity is only enabled if normal map isn't fully opaque
+        if self.image_has_alpha(b_texture_node.image):
+            self.create_gloss_pass(b_texture_node)
+        else:
+            self.b_principled_bsdf.inputs['Roughness'].default_value = 1.0
+            self.b_principled_bsdf.inputs['IOR'].default_value = 1.0
 
     def link_glow_map_node(self, b_texture_node):
         """Link a Bethesda glow map texture node to the shader tree."""
@@ -480,7 +488,7 @@ class NodeWrapper:
 
         curve = b_curve_node.mapping.curves[0]
         curve.points[0].location = (0.0, 1.0)  # Maps 0 -> 1 (low alpha → high roughness)
-        curve.points[1].location = (1.0, 0.5)  # Maps 1 -> 0.5 (high alpha → low roughness)
+        curve.points[1].location = (1.0, 0.0)  # Maps 1 -> 0 (high alpha → low roughness)
 
         self.b_shader_tree.links.new(b_curve_node.inputs['Value'], b_texture_node.outputs['Alpha'])
         self.b_shader_tree.links.new(self.b_principled_bsdf.inputs['Roughness'], b_curve_node.outputs['Value'])
@@ -597,10 +605,7 @@ class NodeWrapper:
         self.b_shader_tree.links.new(self.b_environment_pass.outputs[0], self.b_mat_output.inputs[0])
 
     def create_environment_mask_pass(self, b_texture_node):
-        """
-        Create a custom Y-inversion shader node for normal maps
-        (because NIF normal maps are +X -Y +Z).
-        """
+        """Create a custom value mask shader node for environment masks."""
 
         b_nodes = self.b_shader_tree.nodes
         b_links = self.b_shader_tree.links
@@ -609,7 +614,7 @@ class NodeWrapper:
         if group_name in bpy.data.node_groups:
             b_node_group = bpy.data.node_groups[group_name]
         else:
-            # The InvertY node group does not yet exist, create it
+            # The Value Mask node group does not yet exist, create it
             b_node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
             b_group_nodes = b_node_group.nodes
 
@@ -656,3 +661,12 @@ class NodeWrapper:
 
         b_links.new(b_group_node.inputs['Input'], b_texture_node.outputs['Color'])
         b_links.new(self.b_glossy_bsdf.inputs['Roughness'], b_group_node.outputs['Output'])
+
+    @staticmethod
+    def image_has_alpha(b_img):
+
+        # Load image pixels and check alpha values
+        b_img.scale(b_img.size[0], b_img.size[1])  # Ensure image data is available
+        pixels = list(b_img.pixels)  # Convert to a list (R, G, B, A sequence)
+
+        return any(pixels[i + 3] < 1.0 for i in range(0, len(pixels), 4))

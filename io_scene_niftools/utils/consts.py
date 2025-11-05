@@ -103,6 +103,12 @@ USED_EXTRA_SHADER_TEXTURES = {
     'CIVILIZATION_IV': (3, 0, 1, 2)
 }
 
+DEFAULT_USE_TANGENTS = {
+    'BULLY_SE'
+}
+
+DEFAULT_USE_TANGENTS.union(USED_EXTRA_SHADER_TEXTURES)
+
 # fcurve data types for blender
 QUAT = "rotation_quaternion"
 EULER = "rotation_euler"

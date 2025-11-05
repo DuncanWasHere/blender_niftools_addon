@@ -70,11 +70,20 @@ class ShaderPanel(Panel):
         if not shader_setting.bs_shadertype in ('None', 'BSLightingShaderProperty', 'BSEffectShaderProperty'):
             box.prop(shader_setting, "bsspplp_shaderobjtype", text="BS Shader PP Lighting Type")
 
-        elif shader_setting.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty'):
+        elif shader_setting.bs_shadertype == 'BSLightingShaderProperty':
             box.prop(shader_setting, "bslsp_shaderobjtype", text="BS Lighting Shader Type")
 
             box.prop(shader_setting, "lighting_effect_1", text="Lighting Effect 1")
             box.prop(shader_setting, "lighting_effect_2", text="Lighting Effect 2")
+
+        if shader_setting.bs_shadertype in ('BSShaderNoLightingProperty', 'BSEffectShaderProperty'):
+            box.prop(shader_setting, "falloff_start_angle", text="Falloff Start Angle")
+            box.prop(shader_setting, "falloff_stop_angle", text="Falloff Stop Angle")
+            box.prop(shader_setting, "falloff_start_opacity", text="Falloff Start Opacity")
+            box.prop(shader_setting, "falloff_stop_opacity", text="Falloff Stop Opacity")
+
+        if shader_setting.bs_shadertype == 'SkyShaderProperty':
+            box.prop(shader_setting, "sky_object_type", text="Sky Object Type")
 
 class ShaderFlags1Panel(Panel):
     bl_idname = "NIFTOOLS_PT_ShaderFlags1Panel"

@@ -98,6 +98,10 @@ class BSShaderTextureSet(TextureCommon):
     def export_bs_shader_pp_lighting_property_textures(self, n_bs_shader_pp_lighting_property):
         n_bs_shader_pp_lighting_property.texture_set = self.__export_bs_shader_texture_set()
 
+    def export_misc_shader_property_textures(self, n_shader_property):
+        if self.slots[TEX_SLOTS.BASE]:
+            n_shader_property.file_name = TextureCommon.export_texture_filename(self.slots[TEX_SLOTS.BASE])
+
     def __export_bs_shader_texture_set(self):
         n_bs_shader_texture_set = NifClasses.BSShaderTextureSet(NifData.data)
 

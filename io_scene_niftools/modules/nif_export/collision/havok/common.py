@@ -85,3 +85,23 @@ class BhkCollisionCommon(CollisionCommon):
             # Mass value should be set manually as it is not necessarily physically accurate
             n_bhk_rigid_body.update_mass_center_inertia(mass=n_bhk_rigid_body.rigid_body_info.mass,
                                                         solid=b_col_obj.nif_collision.solid)
+
+    def __export_bhk_transform_shape(self, b_col_obj, n_hav_mat, radius=0.1):
+        """
+        Export and return a bhkTransformShape.
+        Note: should generally never be used. Function will remain here for completeness.
+        """
+
+        n_bhk_transform_shape = block_store.create_block("bhkTransformShape", b_col_obj)
+        n_bhk_transform_shape.material.material = n_hav_mat
+        n_bhk_transform_shape.radius = radius
+
+        matrix = math.get_object_bind(b_col_obj)
+        row0 = list(matrix[0])
+        row1 = list(matrix[1])
+        row2 = list(matrix[2])
+        row3 = list(matrix[3])
+        n_bhk_transform_shape.transform.set_rows(row0, row1, row2, row3)
+        n_bhk_transform_shape.apply_scale(1.0 / self.HAVOK_SCALE)
+
+        return n_bhk_transform_shape

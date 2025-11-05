@@ -58,7 +58,7 @@ class ShaderProperty(PropertyGroup):
             ('BSEffectShaderProperty', 'BS Effect Shader Property', "", 4),
             ('BSShaderNoLightingProperty', 'BS Shader No Lighting Property', "", 5),
             ('SkyShaderProperty', 'Sky Shader Property', "", 6),
-            ('TallGrasShaderProperty', 'Tall Grass Shader Property', "", 7),
+            ('TallGrassShaderProperty', 'Tall Grass Shader Property', "", 7),
             ('TileShaderProperty', 'Tile Shader Property', "", 8),
             ('WaterShaderProperty', 'Water Shader Property', "", 9)
         )
@@ -75,7 +75,12 @@ class ShaderProperty(PropertyGroup):
         name='BS Lighting Shader Object Type',
         description='Type of object linked to shader',
         items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.BSLightingShaderType)],
-        # default = 'SHADER_DEFAULT'
+    )
+
+    sky_object_type: EnumProperty(
+        name='Sky Object Type',
+        description='Type of sky object linked to shader',
+        items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.SkyObjectType)],
     )
 
     lighting_effect_1: FloatProperty(
@@ -90,6 +95,29 @@ class ShaderProperty(PropertyGroup):
         default = 0
     )
 
+    falloff_start_angle: FloatProperty(
+        name='Falloff Start Angle',
+        description='At this cosine of angle, falloff will be equal to Falloff Start Opacity',
+        default = 1
+    )
+
+    falloff_stop_angle: FloatProperty(
+        name='Falloff Stop Angle',
+        description='At this cosine of angle, falloff will be equal to Falloff Stop Opacity',
+        default = 1
+    )
+
+    falloff_start_opacity: FloatProperty(
+        name='Falloff Start Opacity',
+        description='Alpha falloff multiplier at start angle',
+        default = 1
+    )
+
+    falloff_stop_opacity: FloatProperty(
+        name='Falloff Stop Opacity',
+        description='Alpha falloff multiplier at end angle',
+        default = 1
+    )
 
 def prettify_prop_name(property_name):
     replacers = [('Hd', 'HD'), ('Lod', 'LOD')]

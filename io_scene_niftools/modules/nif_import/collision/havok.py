@@ -129,6 +129,9 @@ class BhkCollision(Collision):
         # Attach rigid body to Blender object
         self._import_bhk_rigid_body(n_bhk_rigid_body_t, b_col_obj)
 
+        # Force the export to preserve the bhkRigidBodyT even if there are no transforms
+        b_col_obj.nif_collision.force_bhk_rigid_body_t = True
+
         # Return Blender object with the rigid body attached
         return b_col_obj
 

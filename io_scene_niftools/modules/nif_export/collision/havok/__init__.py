@@ -136,8 +136,8 @@ class BhkCollision(BhkCollisionCommon):
         A bhkRigidBodyT block will be created if needed.
         """
 
-        # Export a bhkRigidBodyT only for primitives that need them
-        if b_col_shape in ('BOX', 'SPHERE') and not b_col_obj.matrix_world.is_identity:
+        # Export a bhkRigidBodyT only if needed
+        if not b_col_obj.matrix_world.is_identity or b_col_obj.nif_collision.force_bhk_rigid_body_t:
             n_bhk_rigid_body = block_store.create_block("bhkRigidBodyT", b_col_obj)
             translation = b_col_obj.matrix_world.to_translation()
             n_bhk_rigid_body.rigid_body_info.translation = NifClasses.Vector4.from_value(

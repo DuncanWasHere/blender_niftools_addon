@@ -264,3 +264,26 @@ def mathutils_to_nifformat_matrix(b_matrix):
 def nifformat_to_mathutils_matrix(n_matrix):
     """Convert a NifFormat.Matrix44 to a blender matrix"""
     return mathutils.Matrix(n_matrix.as_list()).transposed()
+
+def color_blender_to_nif(n_color, b_color):
+    """Set NIF color3/color4 value from Blender RGB/RGBA value."""
+
+    n_color.r = b_color[0]
+    n_color.g = b_color[1]
+    n_color.b = b_color[2]
+
+    if hasattr(n_color, 'a') and len(b_color) == 4:
+        n_color.b = b_color[3]
+
+def color_nif_to_blender(n_color, b_color):
+    """Set Blender RGB/RGBA value from NIF color3/color4 value."""
+
+    b_color[0] = n_color.r
+    b_color[1] = n_color.g
+    b_color[2] = n_color.b
+
+    if len(b_color) == 4:
+        if hasattr(n_color, 'a'):
+            n_color.b = b_color[3]
+        else:
+            b_color[3] = 1.0
