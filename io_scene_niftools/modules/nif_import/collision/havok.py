@@ -164,7 +164,7 @@ class BhkCollision(Collision):
         b_r_body.deactivate_angular_velocity = mathutils.Vector([ang_vel.w, ang_vel.x, ang_vel.y, ang_vel.z]).magnitude
 
         # Custom NIF properties
-        b_col_obj.nif_collision.collision_layer = str(n_rigid_body_info.havok_filter.layer.value)
+        b_col_obj.nif_collision.collision_layer = str(n_bhk_rigid_body.havok_filter.layer.value)
 
         b_col_obj.nif_collision.col_filter = n_bhk_rigid_body.havok_filter.flags
 
