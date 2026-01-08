@@ -43,7 +43,6 @@ import os.path
 import bpy
 
 from io_scene_niftools.file_io import File
-from io_scene_niftools.file_io.config import Config
 
 from io_scene_niftools.nif_common import NifCommon
 
