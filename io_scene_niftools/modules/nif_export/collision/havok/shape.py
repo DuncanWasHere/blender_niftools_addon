@@ -216,9 +216,13 @@ class BhkShape(BhkCollisionCommon):
         n_bhk_convex_vertices_shape.material.material = n_hav_mat
         n_bhk_convex_vertices_shape.radius = 0.1  # This is hardcoded in the engine
 
-        # Note: we apply transforms to convex shapes directly. No need for bhkConvexTransformShape or bhkRigidBodyT
+        # Note: We no longer apply transforms to convex shapes directly because they are needed for constraints.
+        # They are instead applied to the parent BhkRigidBodyT.
         b_mesh = b_col_obj.data
         b_transform_mat = math.get_object_bind(b_col_obj)
+
+        # Here we override the object transform matrix with identity because we're too lazy to update the code below.
+        b_transform_mat.identity()
 
         b_rot_quat = b_transform_mat.decompose()[1]
         b_scale_vec = b_transform_mat.decompose()[0]
