@@ -3,7 +3,7 @@ from io_scene_niftools.modules.nif_import.property.node_wrapper import NodeWrapp
 from io_scene_niftools.utils.consts import TEX_SLOTS, BS_TEX_SLOTS
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2025 NIF File Format Library and Tools contributors.
+# Copyright © 2026 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without

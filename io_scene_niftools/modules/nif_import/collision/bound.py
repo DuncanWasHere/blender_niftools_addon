@@ -2,7 +2,7 @@
 
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2025 NIF File Format Library and Tools contributors.
+# Copyright © 2026 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -42,7 +42,7 @@ from io_scene_niftools.modules.nif_import.collision import Collision
 from io_scene_niftools.modules.nif_import.object import Object
 # ***** BEGIN LICENSE BLOCK *****
 #
-# Copyright © 2025 NIF File Format Library and Tools contributors.
+# Copyright © 2026 NIF File Format Library and Tools contributors.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
