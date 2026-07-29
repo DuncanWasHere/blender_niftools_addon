@@ -2,7 +2,7 @@ schema_version = "1.0.0"
 
 id = "io_scene_niftools"
 name = "NifTools (Unofficial)"
-version = "1.0.0"
+version = "1.0.1"
 tagline = "Import and export files in NetImmerse/Gamebryo/Bethesda formats"
 maintainer = "NifTools Team <https://github.com/niftools>"
 type = "add-on"
