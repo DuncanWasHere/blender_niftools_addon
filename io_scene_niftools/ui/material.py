@@ -41,7 +41,6 @@
 import bpy
 from bpy.types import Panel
 
-from ..modules.nif_import.property.node_wrapper import get_shader_group_node
 from ..utils.decorators import register_classes, unregister_classes
 
 
@@ -102,13 +101,10 @@ class AlphaPanel(Panel):
         box.prop(material_setting, "enable_blending", text='Enable Blending')
         box.prop(material_setting, "source_blend_mode", text='Source Blend Mode')
         box.prop(material_setting, "destination_blend_mode", text='Destination Blend Mode')
+        box.prop(material_setting, "enable_testing", text='Enable Testing')
         box.prop(material_setting, "alpha_test_function", text='Alpha Test Function')
+        box.prop(material_setting, "alpha_test_threshold", text='Alpha Test Threshold')
         box.prop(material_setting, "no_sorter", text='No Sorter')
-
-        b_group_node = get_shader_group_node(b_mat)
-        if b_group_node is None:
-            box.prop(material_setting, "enable_testing", text='Enable Testing')
-            box.prop(material_setting, "alpha_test_threshold", text='Alpha Test Threshold')
 
 classes = [
     MaterialPanel,

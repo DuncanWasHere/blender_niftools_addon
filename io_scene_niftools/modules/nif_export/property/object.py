@@ -44,7 +44,6 @@ import bpy
 from ....modules.nif_export.block_registry import block_store
 from ....modules.nif_export.property.material import MaterialProperty
 from ....modules.nif_export.property.texture import TextureProperty
-from ....modules.nif_export.property.texture.common import TextureCommon
 from ....properties.object import BSX_FLAG_BITS
 from ....modules.nif_export.animation.common import has_animation
 from ....utils.consts import USED_EXTRA_SHADER_TEXTURES
@@ -176,15 +175,10 @@ class ObjectProperty:
             n_ni_alpha_property.flags.test_func = NifClasses.TestFunction[b_mat.nif_alpha.alpha_test_function]
             n_ni_alpha_property.flags.no_sorter = b_mat.nif_alpha.no_sorter
 
-            # the alpha test is shown in the shader tree, so the node group holds it
-            b_group_node = TextureCommon.get_fallout_group_node(b_mat)
-            if b_group_node and "Alpha Test" in b_group_node.inputs:
-                n_ni_alpha_property.flags.alpha_test = b_group_node.inputs["Alpha Test"].default_value > 0.0
-                n_ni_alpha_property.threshold = round(
-                    b_group_node.inputs["Alpha Test Threshold"].default_value * 255.0)
-            else:
-                n_ni_alpha_property.flags.alpha_test = b_mat.nif_alpha.enable_testing
-                n_ni_alpha_property.threshold = b_mat.nif_alpha.alpha_test_threshold
+            # The shader sockets mirror these panel properties for the viewport;
+            # export reads the same source of truth used by the blending fields.
+            n_ni_alpha_property.flags.alpha_test = b_mat.nif_alpha.enable_testing
+            n_ni_alpha_property.threshold = b_mat.nif_alpha.alpha_test_threshold
 
     def export_specular_property(self, b_mat, n_node, flags=0x0001):
         """Return existing specular property with given flags, or create new one

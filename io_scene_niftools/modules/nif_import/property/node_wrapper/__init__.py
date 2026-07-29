@@ -196,10 +196,10 @@ def apply_alpha_links(b_mat, b_group_node):
     """
     Link or unlink the alpha channels according to the use alpha toggle.
 
-    The toggle decides whether the material gets a NiAlphaProperty at all, so with it off
-    nothing about the texture's alpha channel should reach the surface. Doing this every
-    time the settings change, rather than once while importing, is what makes the toggle
-    work in both directions instead of only reflecting how the material was imported.
+    The toggle decides whether the material gets a NiAlphaProperty at all. Diffuse alpha
+    is therefore linked only while it is enabled. No-lighting vertex alpha remains wired
+    structurally, as it is part of the vertex-colour input in the game shader, while the
+    group's Alpha Enabled switch still decides whether Blender uses it as transparency.
 
     The images themselves are read as channel packed, so their colour is the same either
     way and only the linking has to change.
@@ -208,10 +208,16 @@ def apply_alpha_links(b_mat, b_group_node):
     b_tree = b_mat.node_tree
     use_alpha = b_mat.nif_alpha.use_alpha
 
-    # (alpha socket, the socket whose source node carries that alpha, extra condition)
+    # PP shader doesn't use vertex alpha.
+    # The vertex alpha flag isn't automatically set by the engine,
+    # but the vertex colors flag IS, and it does the same thing... so nevermind that.
+    use_vertex_alpha = (
+        b_mat.nif_shader.bs_shadertype == 'BSShaderNoLightingProperty')
+
+    # (alpha socket, the socket whose source node carries that alpha, link condition)
     for socket_name, source_name, wanted in (
-            ("Diffuse Alpha", "Diffuse Map", True),
-            ("Vertex Alpha", "Vertex Color", bool(b_mat.nif_shader.get("vertex_alpha")))):
+            ("Diffuse Alpha", "Diffuse Map", use_alpha),
+            ("Vertex Alpha", "Vertex Color", use_vertex_alpha)):
         b_socket = b_group_node.inputs.get(socket_name)
         if b_socket is None:
             continue
@@ -220,7 +226,7 @@ def apply_alpha_links(b_mat, b_group_node):
             b_tree.links.remove(b_link)
         b_socket.default_value = 1.0
 
-        if not (use_alpha and wanted):
+        if not wanted:
             continue
 
         b_source = b_group_node.inputs.get(source_name)
@@ -247,8 +253,12 @@ def apply_alpha_property(b_mat, b_group_node=None):
     apply_alpha_links(b_mat, b_group_node)
 
     b_alpha = b_mat.nif_alpha
-    alpha_property = bool(b_mat.nif_alpha.use_alpha)
-    alpha_test = alpha_property and b_group_node.inputs["Alpha Test"].default_value > 0.0
+    alpha_property = bool(b_alpha.use_alpha)
+    alpha_test = alpha_property and b_alpha.enable_testing
+
+    b_group_node.inputs["Alpha Test"].default_value = 1.0 if b_alpha.enable_testing else 0.0
+    b_group_node.inputs["Alpha Test Threshold"].default_value = (
+        b_alpha.alpha_test_threshold / 255.0)
 
     # The blend factors decide what the surface does to what is behind it.
     # ONE, ZERO writes the colour straight out, so the surface is opaque however
@@ -512,7 +522,7 @@ def create_shader_group(shader_type):
     phong = bool(NifOp.use_phong_specular)
     # Include an internal revision so blend files containing an older copy of this shared
     # group are rebuilt after its rendering math changes.
-    variant = f"{'phong' if phong else 'glossy'}-2"
+    variant = f"{'phong' if phong else 'glossy'}-5"
     b_group = get_or_rebuild_group(shader_type, [name for name, _type, _default in sockets], variant)
     if b_group.nodes:
         # already built and up to date
