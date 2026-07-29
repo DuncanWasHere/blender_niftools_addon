@@ -2,7 +2,9 @@ This modified Blender NifTools Add-on is distributed under the GNU General Publi
 
 This software incorporates code from the NIF File Format Library and Tools project that is licensed under the BSD 3-Clause License. The applicable copyright notice, license conditions, and disclaimer are reproduced in NIFTOOLS-LICENSE.rst and remain applicable to that code.
 
-Nothing in this notice removes or restricts the permissions previously granted under the BSD 3-Clause License.
+Uses meshoptimizer under MIT License. Copyright © 2016-2026, Arseny Kapoulkine
+
+Nothing in this notice removes or restricts the permissions previously granted under the BSD 3-Clause License or MIT License.
 
 GNU GENERAL PUBLIC LICENSE
 Version 3, 29 June 2007
