@@ -37,6 +37,8 @@
 #
 # ***** END LICENSE BLOCK *****
 
+import math
+
 import numpy as np
 
 import bpy
@@ -45,6 +47,11 @@ from .....utils.singleton import NifOp
 
 
 class Vertex:
+    @staticmethod
+    def normalize_vertex_color_component(component):
+        """Clamp a NIF vertex color component to the normalized range."""
+        return max(0.0, min(1.0, component))
+
     @staticmethod
     def map_vertex_colors(b_mesh, vertex_colors):
         color_attr = b_mesh.color_attributes.new(name="Color", type="FLOAT_COLOR", domain="CORNER")
@@ -60,10 +67,13 @@ class Vertex:
         # Without converting them, the tint is far too weak and washed out.
         flat_colors = []
         for color in corner_colors:
-            b_color = mathutils.Color((color.r, color.g, color.b))
+            b_color = mathutils.Color(tuple(
+                Vertex.normalize_vertex_color_component(component)
+                for component in (color.r, color.g, color.b)
+            ))
             flat_colors.extend(b_color.from_srgb_to_scene_linear())
             # alpha is a plain factor and is never gamma encoded
-            flat_colors.append(color.a)
+            flat_colors.append(Vertex.normalize_vertex_color_component(color.a))
         color_attr.data.foreach_set("color", flat_colors)
 
     @staticmethod
@@ -72,9 +82,15 @@ class Vertex:
         for uv_i, uv_set in enumerate(uv_sets):
             name = f"UVMap{uv_i}" if uv_i > 0 else "UVMap"
             b_mesh.uv_layers.new(name=name)
-            b_mesh.uv_layers[-1].data.foreach_set("uv",
-                                                  [coord for uv in [uv_set[loop.vertex_index] for loop in b_mesh.loops]
-                                                   for coord in (uv.u, 1.0 - uv.v)])
+            flat_uvs = []
+            for loop in b_mesh.loops:
+                uv = uv_set[loop.vertex_index]
+                # Some shipped NIFs contain non-finite UVs. Replace only the broken
+                # components so they can be exported again without disturbing valid UVs.
+                u = uv.u if math.isfinite(uv.u) else 0.0
+                v = uv.v if math.isfinite(uv.v) else 0.0
+                flat_uvs.extend((u, 1.0 - v))
+            b_mesh.uv_layers[-1].data.foreach_set("uv", flat_uvs)
 
     @staticmethod
     def map_normals(b_mesh, normals):
