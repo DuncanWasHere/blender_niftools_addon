@@ -163,20 +163,12 @@ def sync_shader_group(b_mat, shader_type):
 
 
 ADDITIVE_NODE = "Additive Blending"
+ALPHA_FUNCTION_INDEX = {
+    member.name: index for index, member in enumerate(NifClasses.AlphaFunction)}
 
 
-def apply_additive_blending(b_mat, b_group_node, additive):
-    """Connect the NIF shader group without corrupting its texture alpha.
-
-    Blender 5's EEVEE viewport has no material setting for arbitrary source and
-    destination framebuffer blend factors. The previous approximation added a second
-    Transparent BSDF to a group that already performs alpha transparency. That could
-    yield a zero-alpha material in Material Preview while its emission remained visible
-    in Rendered mode, and it made low-alpha atlas backgrounds accumulate as rectangles.
-
-    Use ordinary alpha blending for the Blender preview. The exact NIF blend factors
-    remain on ``nif_alpha`` and are exported unchanged.
-    """
+def connect_shader_output(b_mat, b_group_node):
+    """Connect the NIF shader group and remove obsolete outer blend nodes."""
 
     b_tree = b_mat.node_tree
     b_output = next((n for n in b_tree.nodes if n.type == 'OUTPUT_MATERIAL'), None)
@@ -270,11 +262,17 @@ def apply_alpha_property(b_mat, b_group_node=None):
     blend_is_additive = blend_enabled and destination == 'ONE'
     smooth_alpha = blend_enabled and not blend_is_opaque
 
-    apply_additive_blending(b_mat, b_group_node, blend_is_additive)
+    connect_shader_output(b_mat, b_group_node)
 
     b_group_node.inputs["Alpha Enabled"].default_value = 1.0 if alpha_property else 0.0
     if "Alpha Blend" in b_group_node.inputs:
         b_group_node.inputs["Alpha Blend"].default_value = 1.0 if smooth_alpha else 0.0
+    if "Blend Enabled" in b_group_node.inputs:
+        b_group_node.inputs["Blend Enabled"].default_value = 1.0 if blend_enabled else 0.0
+        b_group_node.inputs["Source Blend Mode"].default_value = float(
+            ALPHA_FUNCTION_INDEX[source])
+        b_group_node.inputs["Destination Blend Mode"].default_value = float(
+            ALPHA_FUNCTION_INDEX[destination])
 
     if alpha_test and b_alpha.alpha_test_function != 'TEST_GREATER':
         NifLog.warn(f"Alpha test function '{b_alpha.alpha_test_function}' cannot be shown in Blender, "
@@ -287,8 +285,9 @@ def apply_alpha_property(b_mat, b_group_node=None):
     # used for its smooth result, at the price of blended surfaces being sorted per object
     # rather than per fragment. Overlapping transparent surfaces can therefore draw in the
     # wrong order. Switching such a material to Dithered in its settings resolves it.
-    if smooth_alpha and not alpha_test:
-        # additive surfaces have to stay blended, as they must let the background through
+    if smooth_alpha:
+        # Factor blending has to stay blended even when alpha testing is also enabled
+        # The shader group performs the test before applying the blend equation
         render_method = 'BLENDED'
     else:
         render_method = 'DITHERED'
@@ -462,6 +461,16 @@ def create_shader_group(shader_type):
         ("Alpha Test Threshold", 'NodeSocketFloat', 0.5),
     ]
 
+    if shader_type == 'BSShaderNoLightingProperty':
+        # Mirror alpha panel properties to provide best approximate blending
+        sockets += [
+            ("Blend Enabled", 'NodeSocketFloat', 0.0),
+            ("Source Blend Mode", 'NodeSocketFloat',
+             float(ALPHA_FUNCTION_INDEX['SRC_ALPHA'])),
+            ("Destination Blend Mode", 'NodeSocketFloat',
+             float(ALPHA_FUNCTION_INDEX['INV_SRC_ALPHA'])),
+        ]
+
     lit_sockets = [
         ("Normal Map", 'NodeSocketColor', (0.5, 0.5, 1, 1)),
         # the normal map alpha channel is the gloss map: it scales the specular
@@ -522,7 +531,7 @@ def create_shader_group(shader_type):
     phong = bool(NifOp.use_phong_specular)
     # Include an internal revision so blend files containing an older copy of this shared
     # group are rebuilt after its rendering math changes.
-    variant = f"{'phong' if phong else 'glossy'}-5"
+    variant = f"{'phong' if phong else 'glossy'}-6"
     b_group = get_or_rebuild_group(shader_type, [name for name, _type, _default in sockets], variant)
     if b_group.nodes:
         # already built and up to date
@@ -550,11 +559,11 @@ def create_shader_group(shader_type):
                 socket.default_value = value
         return b_mix
 
-    def new_math(operation, in_1, in_2=None, use_clamp=False):
+    def new_math(operation, in_1, in_2=None, in_3=None, use_clamp=False):
         b_math = b_nodes.new('ShaderNodeMath')
         b_math.operation = operation
         b_math.use_clamp = use_clamp
-        for socket, value in zip(b_math.inputs, (in_1, in_2)):
+        for socket, value in zip(b_math.inputs, (in_1, in_2, in_3)):
             if isinstance(value, bpy.types.NodeSocket):
                 b_links.new(value, socket)
             elif value is not None:
@@ -794,11 +803,143 @@ def create_shader_group(shader_type):
 
     # opacity
     b_transparent = b_nodes.new('ShaderNodeBsdfTransparent')
-    b_mix_shader = b_nodes.new('ShaderNodeMixShader')
-    b_links.new(b_alpha_final.outputs[0], b_mix_shader.inputs[0])
-    b_links.new(b_transparent.outputs[0], b_mix_shader.inputs[1])
-    b_links.new(b_shaded.outputs[0], b_mix_shader.inputs[2])
-    b_links.new(b_mix_shader.outputs[0], b_output.inputs["Shader"])
+    b_standard_surface = b_nodes.new('ShaderNodeMixShader')
+    b_links.new(b_alpha_final.outputs[0], b_standard_surface.inputs[0])
+    b_links.new(b_transparent.outputs[0], b_standard_surface.inputs[1])
+    b_links.new(b_shaded.outputs[0], b_standard_surface.inputs[2])
+    b_final_surface = b_standard_surface
+
+    if "Blend Enabled" in group_in:
+        # D3D/NIF framebuffer blending is:
+        #
+        #   result = source_colour * source_factor
+        #          + destination_colour * destination_factor
+        #
+        # An Emission closure supplies the source term and a coloured Transparent
+        # closure supplies the destination term. Add Shader then reproduces additive,
+        # alpha, premultiplied-alpha, multiply, and screen combinations in Material
+        # Preview as well as Rendered mode. In particular ONE/ONE makes black add zero
+        # while leaving the destination completely visible.
+        source_mode = group_in["Source Blend Mode"]
+        destination_mode = group_in["Destination Blend Mode"]
+
+        def mode_is(mode_socket, mode_name):
+            return new_math(
+                'COMPARE', mode_socket,
+                float(ALPHA_FUNCTION_INDEX[mode_name]), 0.1).outputs[0]
+
+        def selected_factor(mode_socket, values):
+            total = (0, 0, 0, 1)
+            for mode_name, value in values.items():
+                selected = mode_is(mode_socket, mode_name)
+                term = new_mix('MULTIPLY', value, selected)
+                total = new_mix(
+                    'ADD',
+                    total.outputs[0] if isinstance(total, bpy.types.ShaderNodeMixRGB) else total,
+                    term.outputs[0])
+            return total.outputs[0]
+
+        # The no-lighting shader is emission, so its strength is part of the source
+        # framebuffer colour before the blend factors are applied.
+        b_source_rgb = new_mix(
+            'MULTIPLY', b_base_rgb.outputs[0], group_in["Emissive Mult"])
+        b_inv_source_rgb = new_mix(
+            'SUBTRACT', (1, 1, 1, 1), b_source_rgb.outputs[0])
+        b_inv_source_alpha = new_math('SUBTRACT', 1.0, b_alpha_blended.outputs[0])
+
+        # Factors that depend only on the source are exact. Destination alpha is not
+        # exposed to Blender material nodes, so it is treated as one, matching the
+        # usual opaque scene framebuffer. DEST_COLOR and INV_DEST_COLOR are folded
+        # algebraically into the transparent destination term below.
+        b_source_factor = selected_factor(source_mode, {
+            'ONE': (1, 1, 1, 1),
+            'ZERO': (0, 0, 0, 1),
+            'SRC_COLOR': b_source_rgb.outputs[0],
+            'INV_SRC_COLOR': b_inv_source_rgb.outputs[0],
+            'DEST_COLOR': (0, 0, 0, 1),
+            'INV_DEST_COLOR': (1, 1, 1, 1),
+            'SRC_ALPHA': b_alpha_blended.outputs[0],
+            'INV_SRC_ALPHA': b_inv_source_alpha.outputs[0],
+            'DEST_ALPHA': (1, 1, 1, 1),
+            'INV_DEST_ALPHA': (0, 0, 0, 1),
+            # min(source alpha, 1 - destination alpha), with destination alpha
+            # assumed to be one for Blender's opaque scene framebuffer.
+            'SRC_ALPHA_SATURATE': (0, 0, 0, 1),
+        })
+        b_source_term = new_mix(
+            'MULTIPLY', b_source_rgb.outputs[0], b_source_factor)
+
+        # A Transparent BSDF colour multiplies the colour already behind the surface,
+        # which is exactly the destination half of the framebuffer equation. The two
+        # destination-colour factors themselves cannot be sampled by a Blender material;
+        # treating DEST_COLOR as one and INV_DEST_COLOR as zero is the opaque-white
+        # approximation. All source-derived destination factors remain exact.
+        b_destination_factor = selected_factor(destination_mode, {
+            'ONE': (1, 1, 1, 1),
+            'ZERO': (0, 0, 0, 1),
+            'SRC_COLOR': b_source_rgb.outputs[0],
+            'INV_SRC_COLOR': b_inv_source_rgb.outputs[0],
+            'DEST_COLOR': (1, 1, 1, 1),
+            'INV_DEST_COLOR': (0, 0, 0, 1),
+            'SRC_ALPHA': b_alpha_blended.outputs[0],
+            'INV_SRC_ALPHA': b_inv_source_alpha.outputs[0],
+            'DEST_ALPHA': (1, 1, 1, 1),
+            'INV_DEST_ALPHA': (0, 0, 0, 1),
+            # min(source alpha, 1 - destination alpha), with destination alpha
+            # assumed to be one for Blender's opaque scene framebuffer.
+            'SRC_ALPHA_SATURATE': (0, 0, 0, 1),
+        })
+
+        # source * DEST_COLOR == destination * source, so it can be represented
+        # exactly by adding source colour to the destination multiplier. Likewise
+        # source * INV_DEST_COLOR == source - destination * source.
+        b_dest_color_fold = new_mix(
+            'MULTIPLY', b_source_rgb.outputs[0], mode_is(source_mode, 'DEST_COLOR'))
+        b_inv_dest_color_fold = new_mix(
+            'MULTIPLY', b_source_rgb.outputs[0], mode_is(source_mode, 'INV_DEST_COLOR'))
+        b_destination_factor = new_mix(
+            'ADD', b_destination_factor, b_dest_color_fold.outputs[0])
+        b_destination_factor = new_mix(
+            'SUBTRACT', b_destination_factor.outputs[0],
+            b_inv_dest_color_fold.outputs[0])
+
+        b_blend_source = b_nodes.new('ShaderNodeEmission')
+        b_blend_source.name = "NIF Blend Source"
+        b_links.new(b_source_term.outputs[0], b_blend_source.inputs['Color'])
+        b_blend_source.inputs['Strength'].default_value = 1.0
+
+        b_blend_destination = b_nodes.new('ShaderNodeBsdfTransparent')
+        b_blend_destination.name = "NIF Blend Destination"
+        b_links.new(
+            b_destination_factor.outputs[0], b_blend_destination.inputs['Color'])
+
+        b_blended_surface = b_nodes.new('ShaderNodeAddShader')
+        b_blended_surface.name = "NIF Framebuffer Blend"
+        b_links.new(b_blend_source.outputs[0], b_blended_surface.inputs[0])
+        b_links.new(b_blend_destination.outputs[0], b_blended_surface.inputs[1])
+
+        # Alpha testing discards a fragment before framebuffer blending. A failed
+        # fragment is therefore fully transparent with an untinted destination.
+        b_test_enabled_pass = new_math(
+            'MULTIPLY', group_in["Alpha Test"], b_alpha_passes.outputs[0])
+        b_test_mask = new_math(
+            'ADD', b_test_off_fac.outputs[0], b_test_enabled_pass.outputs[0])
+        b_test_failed = b_nodes.new('ShaderNodeBsdfTransparent')
+        b_blend_after_test = b_nodes.new('ShaderNodeMixShader')
+        b_links.new(b_test_mask.outputs[0], b_blend_after_test.inputs[0])
+        b_links.new(b_test_failed.outputs[0], b_blend_after_test.inputs[1])
+        b_links.new(b_blended_surface.outputs[0], b_blend_after_test.inputs[2])
+
+        # A NiAlphaProperty is still needed for transparency
+        b_use_factor_blend = new_math(
+            'MULTIPLY', group_in["Alpha Enabled"], group_in["Blend Enabled"])
+        b_factor_blend_select = b_nodes.new('ShaderNodeMixShader')
+        b_links.new(b_use_factor_blend.outputs[0], b_factor_blend_select.inputs[0])
+        b_links.new(b_standard_surface.outputs[0], b_factor_blend_select.inputs[1])
+        b_links.new(b_blend_after_test.outputs[0], b_factor_blend_select.inputs[2])
+        b_final_surface = b_factor_blend_select
+
+    b_links.new(b_final_surface.outputs[0], b_output.inputs["Shader"])
 
     nodes_iterate(b_group, b_output)
     return b_group
