@@ -39,27 +39,57 @@
 
 
 import bpy
-from bpy.props import (IntProperty,
+from bpy.props import (CollectionProperty,
+                       IntProperty,
                        EnumProperty,
                        StringProperty
                        )
 from bpy.types import PropertyGroup
 
+from ..properties.object import OBJECT_FLAG_BITS
 from ..utils.decorators import register_classes, unregister_classes
+from ..utils.flags import inject_bit_bools
 
 
 class BoneProperties(PropertyGroup):
+    # a bone is exported as a NiNode, so it carries the same flags as an object does
     flags: IntProperty(
         name='Bone Flag',
-        default=0
+        default=0,
+        override={"LIBRARY_OVERRIDABLE"},
     )
     priority: IntProperty(
         name='Bone Priority',
-        default=0
+        description='Priority to be set on the controlled block using this bone\'s animation data.',
+        default=0,
+        min=0,
+        max=127,
+        override={"LIBRARY_OVERRIDABLE"},
     )
     longname: StringProperty(
-        name='Nif Long Name'
+        name='Nif Long Name',
+        description='Name that the bone\'s corresponding NiNode will have upon export.',
     )
+
+
+inject_bit_bools(BoneProperties, 'flags', OBJECT_FLAG_BITS)
+
+
+class BoneLODBone(PropertyGroup):
+    """One bone reference inside a bone LOD group."""
+
+    bone: StringProperty(
+        name="Bone",
+        description="Bone belonging to this LOD group",
+        default='',
+    )
+
+
+class BoneLODGroup(PropertyGroup):
+    """One LOD level of a NiBSBoneLODController. Its index in the list is its level."""
+
+    bones: CollectionProperty(type=BoneLODBone)
+    active_bone_index: IntProperty(default=0)
 
 
 class ArmatureProperties(PropertyGroup):
@@ -87,9 +117,27 @@ class ArmatureProperties(PropertyGroup):
         default="Y",
     )
 
+    skeleton_id: IntProperty(
+        name="Skeleton ID",
+        description="Value of the SkeletonID NiIntegerExtraData on the nif root. Block not exported if 0",
+        default=0,
+        min=0,
+    )
+
+    bone_lod_groups: CollectionProperty(
+        name="Bone LOD Groups",
+        description="The bone groups of the NiBSBoneLODController. Each group's position in "
+                    "the list is its LOD level",
+        type=BoneLODGroup,
+    )
+
+    active_bone_lod_group_index: IntProperty(default=0)
+
 
 CLASSES = [
     BoneProperties,
+    BoneLODBone,
+    BoneLODGroup,
     ArmatureProperties
 ]
 

@@ -41,7 +41,9 @@
 from bpy.types import Panel
 from ..operators.shrink_hull import OperatorShrinkHull
 
+from ..properties.collision import COLLISION_OBJECT_FLAG_BITS, HAVOK_FILTER_FLAG_BITS
 from ..utils.decorators import register_classes, unregister_classes
+from ..utils.flags import draw_bit_bools
 
 
 class CollisionPanel(Panel):
@@ -65,7 +67,7 @@ class CollisionPanel(Panel):
 
         box = layout.box()
         box.prop(collision_setting, "collision_layer", text='Collision Layer')
-        box.prop(collision_setting, "col_filter", text='Col Filter')
+        box.prop(collision_setting, "broad_phase_type", text='Broad Phase Type')
         box.prop(collision_setting, "inertia_tensor", text='Inertia Tensor')
         box.prop(collision_setting, "center", text='Center')
         box.prop(collision_setting, "mass", text='Mass')
@@ -77,6 +79,10 @@ class CollisionPanel(Panel):
         box.prop(collision_setting, "solver_deactivation", text='Solver Deactivator')
         box.prop(collision_setting, "quality_type", text='Quality Type')
         box.prop(collision_setting, "body_flags", text='React to Wind')
+        box.prop(collision_setting, "use_blend_collision", text='Blend Collision')
+        if collision_setting.use_blend_collision:
+            box.prop(collision_setting, "heir_gain", text='Heir Gain')
+            box.prop(collision_setting, "vel_gain", text='Vel Gain')
         box.prop(collision_setting, "force_bhk_rigid_body_t", text='Force BhkRigidBodyT')
         box.prop(collision_setting, "use_blender_properties", text='Recalculate Inertia Tensor')
         box.prop(collision_setting, "solid", text='Solid')
@@ -84,8 +90,39 @@ class CollisionPanel(Panel):
         box.operator("niftools.shrink_hull", text='Shrink Hull')
 
 
+class CollisionObjectFlagsPanel(Panel):
+    bl_idname = "NIFTOOLS_PT_CollisionObjectFlagsPanel"
+    bl_label = "Collision Object Flags"
+    bl_parent_id = "NIFTOOLS_PT_CollisionPanel"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "physics"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        draw_bit_bools(self.layout, context.active_object.nif_collision, COLLISION_OBJECT_FLAG_BITS)
+
+
+class HavokFilterFlagsPanel(Panel):
+    bl_idname = "NIFTOOLS_PT_HavokFilterFlagsPanel"
+    bl_label = "Havok Filter Flags"
+    bl_parent_id = "NIFTOOLS_PT_CollisionPanel"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "physics"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        collision_setting = context.active_object.nif_collision
+
+        draw_bit_bools(self.layout, collision_setting, HAVOK_FILTER_FLAG_BITS)
+        self.layout.prop(collision_setting, "biped_part")
+
+
 classes = [
     CollisionPanel,
+    CollisionObjectFlagsPanel,
+    HavokFilterFlagsPanel,
     OperatorShrinkHull
 ]
 

@@ -41,6 +41,7 @@
 from functools import singledispatch
 
 import bpy
+import bmesh
 import mathutils
 from ....modules.nif_import import collision
 from ....modules.nif_import.collision import Collision
@@ -63,7 +64,7 @@ class BhkCollision(Collision):
                                  ]
 
     def __init__(self):
-        # Dictionary mapping bhkRigidBody objects to objects imported in Blender;
+        # Dictionary mapping bhkRigidBody objects to objects imported in Blender.
         # We use this dictionary to set the physics constraints (ragdoll, etc.)
         collision.DICT_HAVOK_OBJECTS = {}
 
@@ -84,6 +85,7 @@ class BhkCollision(Collision):
         self.process_bhk.register(NifClasses.BhkMoppBvTreeShape, self.import_bhk_mopp_bv_tree_shape)
         self.process_bhk.register(NifClasses.BhkListShape, self.import_bhk_list_shape)
         self.process_bhk.register(NifClasses.BhkSimpleShapePhantom, self.import_bhk_simple_shape_phantom)
+        self.process_bhk.register(NifClasses.BhkAabbPhantom, self.import_bhk_aabb_phantom)
 
     def process_bhk(self, n_bhk_shape):
         """Base method to warn user that this collision shape is not supported."""
@@ -123,8 +125,9 @@ class BhkCollision(Collision):
         b_trans = body_info.translation
         transform.translation = mathutils.Vector((b_trans.x, b_trans.y, b_trans.z)) * self.HAVOK_SCALE
 
-        # Apply transform
-        b_col_obj.matrix_local = b_col_obj.matrix_local @ transform
+        # Apply transform. The shape data lives inside the rigid body space,
+        # so the body transform comes first
+        self._apply_local_transform(b_col_obj, transform)
 
         # Attach rigid body to Blender object
         self._import_bhk_rigid_body(n_bhk_rigid_body_t, b_col_obj)
@@ -186,6 +189,8 @@ class BhkCollision(Collision):
         b_col_obj.nif_collision.solver_deactivation = n_rigid_body_info.solver_deactivation.name
         b_col_obj.nif_collision.quality_type = n_rigid_body_info.quality_type.name
 
+        b_col_obj.nif_collision.broad_phase_type = n_bhk_rigid_body.world_object_info.broad_phase_type.name
+
         b_col_obj.nif_collision.body_flags = n_bhk_rigid_body.body_flags
 
         # Apply NifSkope-like wireframe color
@@ -224,23 +229,68 @@ class BhkCollision(Collision):
         return b_col_obj
 
     def import_bhk_simple_shape_phantom(self, n_bhk_simple_shape_phantom):
-        """Imports a bhkSimpleShapePhantom block and applies the transform to the collision object"""
+        """Import a bhkSimpleShapePhantom, a shape that reports overlaps but does not collide."""
 
-        # import shapes
+        NifLog.debug(f"Importing {n_bhk_simple_shape_phantom.__class__.__name__}")
+
         b_col_obj = self.import_bhk_shape(n_bhk_simple_shape_phantom.shape)
-        NifLog.warn("Support for bhkSimpleShapePhantom is limited, transform is ignored")
-        # todo [pyffi/collision] current nifskope shows a transform, our nif xml doesn't, so ignore it for now
-        # # find transformation matrix
-        # transform = mathutils.Matrix(bhkshape.transform.as_list())
-        #
-        # # fix scale
-        # transform.translation = transform.translation * self.HAVOK_SCALE
-        #
-        # # apply transform
-        # for b_col_obj in collision_objs:
-        #     b_col_obj.matrix_local = b_col_obj.matrix_local @ transform
-        # return a list of transformed collision shapes
+        if b_col_obj is None:
+            return None
+
+        # Havok stores this as a 3x4 transform. The fourth row is padding and is
+        # often uninitialised in Bethesda files, so treating it as a regular NIF
+        # Matrix44 (and transposing it) turns padding such as -107374176 into an
+        # enormous Blender translation.
+        b_transform = self._get_havok_transform(n_bhk_simple_shape_phantom.transform)
+        self._apply_local_transform(b_col_obj, b_transform)
+
+        self._import_phantom(n_bhk_simple_shape_phantom, b_col_obj, 'bhkSimpleShapePhantom')
         return b_col_obj
+
+    def import_bhk_aabb_phantom(self, n_bhk_aabb_phantom):
+        """Import a bhkAabbPhantom, an overlap volume that is nothing but a box.
+
+        Unused by Fallout 3 and New Vegas, which only ever use shape phantoms, but the
+        format has it and Oblivion era files can carry one.
+        """
+
+        NifLog.debug(f"Importing {n_bhk_aabb_phantom.__class__.__name__}")
+
+        n_aabb = n_bhk_aabb_phantom.aabb
+        n_min, n_max = n_aabb.min, n_aabb.max
+        scale = self.HAVOK_SCALE
+        # the aabb is in world space, so the box is built around its own centre and moved
+        b_center = [(getattr(n_min, axis) + getattr(n_max, axis)) * 0.5 * scale
+                    for axis in ('x', 'y', 'z')]
+        b_radius = [(getattr(n_max, axis) - getattr(n_min, axis)) * 0.5 * scale
+                    for axis in ('x', 'y', 'z')]
+
+        b_col_obj = Object.box_from_extents("collision_aabb_phantom",
+                                            -b_radius[0], b_radius[0],
+                                            -b_radius[1], b_radius[1],
+                                            -b_radius[2], b_radius[2])
+        b_col_obj.location = b_center
+        self.set_b_collider(b_col_obj, radius=max(b_radius), n_obj=n_bhk_aabb_phantom,
+                            display_type='BOX')
+
+        self._import_phantom(n_bhk_aabb_phantom, b_col_obj, 'bhkAabbPhantom')
+        return b_col_obj
+
+    @staticmethod
+    def _import_phantom(n_bhk_phantom, b_col_obj, b_body_type):
+        """Store the fields a phantom shares with a rigid body, and mark its kind."""
+
+        nif_collision = b_col_obj.nif_collision
+        nif_collision.body_type = b_body_type
+        nif_collision.collision_layer = str(n_bhk_phantom.havok_filter.layer.value)
+        nif_collision.col_filter = n_bhk_phantom.havok_filter.flags
+        nif_collision.broad_phase_type = n_bhk_phantom.world_object_info.broad_phase_type.name
+
+        # a phantom has no mass or motion, so its Blender rigid body is only a carrier for
+        # the shape. Keeping it passive stops the simulation from doing anything with it
+        if b_col_obj.rigid_body:
+            b_col_obj.rigid_body.type = 'PASSIVE'
+            b_col_obj.rigid_body.kinematic = True
 
     def import_bhktransform(self, n_bhk_transform_shape):
         """Imports a BhkTransformShape block and applies the transform to the collision object."""
@@ -255,16 +305,32 @@ class BhkCollision(Collision):
     def _import_bhk_transform(self, n_bhk_transform_shape):
         # import shapes
         b_col_obj = self.import_bhk_shape(n_bhk_transform_shape.shape)
-        # find transformation matrix
-        transform = mathutils.Matrix(n_bhk_transform_shape.transform.as_list())
+        transform = self._get_havok_transform(n_bhk_transform_shape.transform)
 
-        # fix scale
-        transform.translation = transform.translation * self.HAVOK_SCALE
-
-        # apply transform
-        b_col_obj.matrix_local = b_col_obj.matrix_local @ transform
+        # A transform shape encloses its child, so its transform is applied first.
+        self._apply_local_transform(b_col_obj, transform)
         # return a list of transformed collision shapes
         return b_col_obj
+
+    def _get_havok_transform(self, n_transform):
+        """Convert Havok's 3x4 transform payload to an affine Blender matrix."""
+
+        transform = mathutils.Matrix(n_transform.as_list())
+        # Matrix44 is only the on-disk container here. Havok uses the upper three
+        # rows and leaves the final row as padding (commonly zero or garbage).
+        transform[3] = (0.0, 0.0, 0.0, 1.0)
+        transform.translation = transform.translation * self.HAVOK_SCALE
+        return transform
+
+    @staticmethod
+    def _apply_local_transform(b_col_obj, transform):
+        """Compose a transform without depending on a dependency-graph refresh."""
+
+        # matrix_local is evaluated state. On rigid-body objects Blender may not
+        # refresh it before the later parenting pass, which then preserves a stale
+        # identity matrix and loses this transform. matrix_basis is the stored local
+        # transform and is safe to compose immediately.
+        b_col_obj.matrix_basis = transform @ b_col_obj.matrix_basis
 
     def import_bhkbox_shape(self, n_bhk_box_shape):
         """Import a BhkBox block as a simple Box collision object."""
@@ -335,6 +401,26 @@ class BhkCollision(Collision):
             faces = []
 
         b_col_obj = Object.mesh_from_data("collision_convexpoly", verts, faces)
+
+
+        meid = b_col_obj.data
+        bm = bmesh.new()
+        bm.from_mesh(meid)
+
+        bm.normal_update()
+
+        bmesh.ops.dissolve_limit(
+            bm,
+            angle_limit=0.08726646,
+            use_dissolve_boundaries=False,
+            verts=bm.verts,
+            edges=bm.edges,
+        )
+
+        bm.to_mesh(meid)
+        bm.free()
+        meid.update()
+
         radius = n_bhk_convex_vertices_shape.radius * self.HAVOK_SCALE
         self.set_b_collider(b_col_obj, bounds_type="CONVEX_HULL", radius=radius, n_obj=n_bhk_convex_vertices_shape)
         return b_col_obj

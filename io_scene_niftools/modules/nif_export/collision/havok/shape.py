@@ -49,7 +49,8 @@ from .....utils.singleton import NifData
 class BhkShape(BhkCollisionCommon):
     """Class for exporting Havok primitive, convex, and list shape blocks."""
 
-    def export_bhk_shape(self, b_col_obj, n_bhk_rigid_body, n_hav_mat):
+    def export_bhk_shape(self, b_col_obj, n_bhk_rigid_body, n_hav_mat,
+                         use_transform_shape=False):
         """
         Export a tree of collision shape blocks and parent them to the given bhkRigidBody block.
         For each Blender object passed to this function, a new type of bhkShape block is created.
@@ -66,6 +67,11 @@ class BhkShape(BhkCollisionCommon):
         else:
             n_bhk_shape = self.__export_bhk_shape(b_col_obj, n_hav_mat)
             if n_bhk_shape:
+                if use_transform_shape:
+                    n_transform_shape = self.__export_bhk_transform_shape(
+                        b_col_obj, n_hav_mat)
+                    n_transform_shape.shape = n_bhk_shape
+                    n_bhk_shape = n_transform_shape
                 n_bhk_rigid_body.shape = n_bhk_shape
 
     def __export_bhk_list_shape(self, b_col_obj, n_bhk_rigid_body, n_hav_mat):
@@ -174,7 +180,11 @@ class BhkShape(BhkCollisionCommon):
 
         length = b_col_obj.dimensions.z - b_col_obj.dimensions.x
         radius = b_col_obj.dimensions.x / 2
-        matrix = math.get_object_bind(b_col_obj)
+        if b_col_obj.nif_collision.force_bhk_rigid_body_t:
+            # the bind is carried by the bhkRigidBodyT, so don't bake it into the capsule points too
+            matrix = mathutils.Matrix()
+        else:
+            matrix = math.get_object_bind(b_col_obj)
 
         length_half = length / 2
         # Calculate the direction unit vector

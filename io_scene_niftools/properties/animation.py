@@ -38,7 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from bpy.props import EnumProperty, FloatProperty
+from bpy.props import EnumProperty, FloatProperty, StringProperty
 from bpy.types import PropertyGroup
 from ..utils.decorators import register_classes, unregister_classes
 from nifgen.formats.nif import classes as NifClasses
@@ -46,6 +46,15 @@ from nifgen.formats.nif import classes as NifClasses
 
 class AnimationProperty(PropertyGroup):
     """Group of Havok related properties, which gets attached to objects through a property pointer."""
+
+    sequence_name: StringProperty(
+        name='Sequence',
+        description='Name of the NiControllerSequence this action belongs to. Every animated '
+                    'object needs its own action, so actions sharing a sequence name are '
+                    'exported as controlled blocks of a single sequence. Leave empty to use '
+                    'the action name',
+        default='',
+    )
 
     weight: FloatProperty(
         name='Weight',

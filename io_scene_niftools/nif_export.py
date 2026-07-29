@@ -39,6 +39,7 @@
 
 
 import os.path
+import traceback
 
 import bpy
 
@@ -46,16 +47,18 @@ from .file_io import File
 
 from .nif_common import NifCommon
 
-from .utils import math
+from .utils import decal, math
 from .utils.logging import NifLog, NifError
 from .utils.singleton import NifOp, EGMData, NifData
 
 from .modules.nif_export.animation import Animation
+from .modules.nif_export.animation.common import add_skeleton_controllers
 from .modules.nif_export.collision import Collision
 from .modules.nif_export.constraint import Constraint
-from .modules.nif_export.object import Object
+from .modules.nif_export.object import DICT_NAMES, Object
 from .modules.nif_export.particle import Particle
 from .modules.nif_export.scene import Scene
+from .modules.nif_export.types import is_skeleton
 from .modules.nif_export.block_registry import block_store
 
 from nifgen.formats.nif import classes as NifClasses
@@ -64,7 +67,9 @@ from nifgen.formats.nif import classes as NifClasses
 class NifExport(NifCommon):
     """Main NIF export class."""
 
-    export_types = ('EMPTY', 'MESH', 'ARMATURE')  # Only export empties, meshes, and armatures
+    # Empties, meshes and armatures become nodes and geometry
+    # Cameras and lights become the NiAVObject blocks that carry their own kind of data
+    export_types = ('EMPTY', 'MESH', 'ARMATURE', 'CAMERA', 'LIGHT')
 
     def __init__(self, operator, context):
         NifCommon.__init__(self, operator, context)
@@ -84,6 +89,8 @@ class NifExport(NifCommon):
         self.b_collision_objects = []
         self.b_constraint_objects = []
         self.b_particle_objects = []
+        self.b_force_field_objects = []
+        self.b_custom_property_objects = []
 
         # Common export properties
         self.target_game = None
@@ -96,30 +103,38 @@ class NifExport(NifCommon):
         """Main NIF export function."""
 
         block_store.block_to_obj = {}  # Clear data from last export attempt
+        block_store.obj_to_block = {}
+        DICT_NAMES.clear()
 
-        # Bpy functions are sensitive to the UI context; force it to object mode for now
+        # Bpy functions are sensitive to the UI context
+        # Force it to object mode for now
         if bpy.context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-        # Get output directory, filename, and file extension from UI; the file IO scripts will use this later
+        # Get output directory, filename, and file extension from UI
         NifLog.info(f"Preparing to write file at {NifOp.props.filepath}")
         directory = os.path.dirname(NifOp.props.filepath)
         file_base, file_ext = os.path.splitext(os.path.basename(NifOp.props.filepath))
 
         try:
             # Initialize NIF data that will be written to the file
-            self.__initialize_nif_data()
+            with NifLog.context("reading the scene version settings"):
+                self.__initialize_nif_data()
             if self.target_game == 'UNKNOWN':
                 raise NifError("You have not selected a game. Please select a game and "
                                "NIF version in the scene tab.")
 
             # Get exportable objects in the Blender scene
-            self.__find_export_objects()
+            with NifLog.context("collecting the objects to export"):
+                self.__find_export_objects()
             if not self.b_root_objects:
-                raise NifError("No valid objects to export!")
+                raise NifError("No valid objects to export! Check the export settings for which objects are "
+                               "included (selected, visible, renderable, or in the active collection).")
 
-            self.__validate_object_data()
-            self.__fix_bone_orientations()
+            with NifLog.context("validating the objects to export"):
+                self.__validate_object_data()
+            with NifLog.context("fixing bone orientations"):
+                self.__fix_bone_orientations()
 
             NifLog.info("Exporting...")
 
@@ -127,23 +142,48 @@ class NifExport(NifCommon):
             # Root node is exported as a meta root if multiple root objects are present
             # The name is fixed later to avoid confusing the exporter with duplicate names
             # Specialized objects not in b_exportable_objects are skipped for now
-            n_root_node = self.object_helper.export_objects(self.b_root_objects, self.b_main_objects,
-                                                            self.target_game, file_base)
+            with NifLog.context("exporting nodes and geometry"):
+                n_root_node = self.object_helper.export_objects(self.b_root_objects, self.b_main_objects,
+                                                                self.b_collision_objects, self.target_game,
+                                                                file_base)
 
             # Export remaining block type categories
-            self.collision_helper.export_collision(self.b_collision_objects)
-            # self.constraint_helper.export_constraints(self.b_constraint_objects, n_root_node)
-            self.particle_helper.export_particles(self.b_particle_objects, n_root_node)
-            self.animation_helper.export_animations(self.b_main_objects, n_root_node)
+            with NifLog.context("exporting collision"):
+                self.collision_helper.export_collision(self.b_collision_objects)
+            with NifLog.context("exporting constraints"):
+                self.constraint_helper.export_constraints(self.b_constraint_objects, n_root_node)
+            with NifLog.context("exporting particle systems"):
+                self.particle_helper.export_particles(self.b_particle_objects, self.b_force_field_objects, n_root_node)
+            with NifLog.context("exporting animations"):
+                if is_skeleton(self.b_root_objects):
+                    # Skeletons have weird dummy controllers on each bone
+                    # Idk what they're for but I'm too lazy to test, so we'll just do our best to replicate vanilla
+                    NifLog.info("Exporting skeleton controllers instead of a controller manager.")
+                    for b_armature in self.b_armatures:
+                        add_skeleton_controllers(b_armature)
+                else:
+                    # Particle emitter objects are intentionally excluded from the
+                    # regular geometry list, but their ParticleSettings can carry
+                    # controller-sequence action slots and must still be scanned.
+                    self.animation_helper.export_animations(
+                        self.b_main_objects + self.b_particle_objects, n_root_node)
 
-            self.correct_scale(n_root_node)  # Correct scale for NIF units
-            self.__generate_mopp_data()  # Generate MOPP data
+            with NifLog.context("applying scale correction"):
+                self.correct_scale(n_root_node)  # Correct scale for NIF units
+            with NifLog.context("generating MOPP data"):
+                self.__generate_mopp_data()  # Generate MOPP data
 
             NifData.data.roots = [n_root_node]
-            File.write_file(NifData.data, directory, file_base, file_ext)  # Write NIF file
+            with NifLog.context(f"writing '{file_base}{file_ext}'"):
+                File.write_file(NifData.data, directory, file_base, file_ext)  # Write NIF file
             self.n_root_blocks = [n_root_node]  # Save exported file (this is used by the test suite)
 
         except NifError:
+            # already reported in full when it was raised
+            return {'CANCELLED'}
+        except Exception as exception:
+            NifLog.error(NifLog.describe_failure(exception, "Export"))
+            traceback.print_exc()
             return {'CANCELLED'}
 
         NifLog.info("Export finished successfully.")
@@ -162,8 +202,28 @@ class NifExport(NifCommon):
         collision objects, constraints, and particle systems.
         """
 
-        for b_obj in bpy.context.scene.objects:
-            if b_obj.type in self.export_types and b_obj.visible_get():
+        objectsToSearch = set()
+
+        if NifOp.props.use_selected:
+            objectsToSearch.update(bpy.context.selected_objects)
+
+        if NifOp.props.use_visible:
+            objectsToSearch.update(bpy.context.visible_objects)
+
+        if NifOp.props.use_renderable:
+            objectsToSearch.update([obj for obj in bpy.context.scene.objects if obj.hide_render is False])
+
+        if NifOp.props.use_active_collection:
+            objectsToSearch.update(bpy.context.collection.objects)
+
+        # sorted, because the export options above collect into a set, and the order decides
+        # which root object stands in for the nif root when there is more than one of them
+        for b_obj in sorted(objectsToSearch, key=lambda b_search_obj: b_search_obj.name):
+            if (decal.is_decal_helper(b_obj)
+                    or b_obj.get("niftools_particle_preview")
+                    or b_obj.get("niftools_billboard_camera")):
+                continue
+            if b_obj.type in self.export_types:
                 self.b_main_objects.append(b_obj)
 
                 if not b_obj.parent:
@@ -179,8 +239,12 @@ class NifExport(NifCommon):
                     self.b_constraint_objects.append(b_obj)
                     self.b_main_objects.remove(b_obj)
                 elif b_obj.particle_systems:
+                    # the emitter mesh of a particle object is a stand-in for the nif emitter
+                    # volume, so the object is exported as a particle system, not as geometry
                     self.b_particle_objects.append(b_obj)
                     self.b_main_objects.remove(b_obj)
+                elif b_obj.field:
+                    self.b_force_field_objects.append(b_obj)
 
     def __validate_object_data(self):
         """

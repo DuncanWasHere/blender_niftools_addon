@@ -43,6 +43,7 @@ import tomllib
 
 import bpy
 
+from . import handlers
 from .utils import logging
 from .utils.decorators import register_modules, unregister_modules
 from .utils.logging import NifLog

@@ -55,6 +55,7 @@ class ExportBlockRegistry:
 
     def __init__(self):
         self._block_to_obj = {}
+        self._obj_to_block = {}
 
     @property
     def block_to_obj(self):
@@ -63,6 +64,14 @@ class ExportBlockRegistry:
     @block_to_obj.setter
     def block_to_obj(self, value):
         self._block_to_obj = value
+
+    @property
+    def obj_to_block(self):
+        return self._obj_to_block
+    
+    @obj_to_block.setter
+    def obj_to_block(self, value):
+        self._obj_to_block = value
 
     def register_block(self, block, b_obj=None):
         """Helper function to register a newly created block in the list of
@@ -74,8 +83,14 @@ class ExportBlockRegistry:
         if b_obj is None:
             NifLog.info(f"Exporting {block.__class__.__name__} block.")
         else:
-            NifLog.info(f"Exporting {b_obj.name} as {block.__class__.__name__} block.")
+            # not every registered source is a named ID: morph targets register the
+            # fcurve that drives them, which has a data path rather than a name
+            b_name = getattr(b_obj, "name", None) or getattr(b_obj, "data_path", b_obj)
+            NifLog.info(f"Exporting {b_name} as {block.__class__.__name__} block.")
+
         self._block_to_obj[block] = b_obj
+        self._obj_to_block[b_obj] = block
+
         return block
 
     def create_block(self, block_type, b_obj=None):

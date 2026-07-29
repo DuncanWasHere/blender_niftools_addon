@@ -38,11 +38,13 @@
 # ***** END LICENSE BLOCK *****
 
 
-from ..ui import animation, armature, collision, material, object, operators, shader, scene
+from ..ui import (animation, armature, camera, collision, light, material, object,
+                                  operators, shader, scene, particle_system)
 from ..utils.decorators import register_modules, unregister_modules
 
 
-MODS = [animation, armature, collision, material, object, operators, shader, scene]
+MODS = [animation, armature, camera, collision, light, material, object, operators, shader, scene,
+        particle_system]
 
 def register():
     register_modules(MODS, __name__)

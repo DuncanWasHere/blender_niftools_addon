@@ -40,6 +40,7 @@
 import os
 
 from .file_io.nif import NifFile as KFFile
+from .modules.nif_import import animation
 from .modules.nif_import.animation.transform import TransformAnimation
 from .nif_common import NifCommon
 from .utils import math
@@ -59,6 +60,7 @@ class KfImport(NifCommon):
         """Main KF import function."""
 
         try:
+            animation.clear()
             dirname = os.path.dirname(NifOp.props.filepath)
             kf_files = [os.path.join(dirname, file.name) for file in NifOp.props.files if
                         file.name.lower().endswith(".kf")]
@@ -69,15 +71,21 @@ class KfImport(NifCommon):
                 math.set_bone_orientation(b_armature.data.nif_armature.axis_forward, b_armature.data.nif_armature.axis_up)
                 # get nif space bind pose of armature here for all anims
                 self.transform_anim.get_bind_data(b_armature)
-            for kf_file in kf_files:
-                kfdata = KFFile.load_nif(kf_file)
 
+            kf_data = [KFFile.load_nif(kf_file) for kf_file in kf_files]
+            for kfdata in kf_data:
                 self.apply_scale(kfdata, NifOp.props.scale_correction)
 
-                # calculate and set frames per second
-                self.transform_anim.set_frames_per_second(kfdata.roots)
+            # Blender has one scene FPS, so estimate it from all selected KF files before
+            # inserting any keys rather than changing it between files.
+            self.transform_anim.set_frames_per_second(
+                [root for kfdata in kf_data for root in kfdata.roots])
+
+            for kfdata in kf_data:
                 for kf_root in kfdata.roots:
                     self.transform_anim.import_kf_root(kf_root, b_armature)
+
+            self.transform_anim.finalize()
 
         except NifError:
             return {'CANCELLED'}

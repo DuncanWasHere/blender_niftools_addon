@@ -38,8 +38,10 @@
 # ***** END LICENSE BLOCK *****
 
 
+import contextlib
 import inspect
 import logging
+import traceback
 
 from ..utils.consts import LOGGER_PYFFI, LOGGER_PLUGIN
 
@@ -60,25 +62,81 @@ class NifLog:
     # Injectable operator reference used to perform reporting, default to simple logging
     op = _MockOperator()
 
+    # Stack of descriptions of what the addon is currently doing, innermost last.
+    # Errors are reported together with this stack for readable logs.
+    context_stack = []
+
+    @staticmethod
+    @contextlib.contextmanager
+    def context(description):
+        """Describe the work done inside this block, for use in error messages."""
+
+        NifLog.context_stack.append(str(description))
+        try:
+            yield
+        finally:
+            NifLog.context_stack.pop()
+
+    @staticmethod
+    def context_trail():
+        """Return the current context stack as a readable string, or an empty string."""
+
+        return " > ".join(NifLog.context_stack)
+
+    @staticmethod
+    def describe_failure(exception, action):
+        """Build a descriptive message for an unexpected exception."""
+
+        message = [f"{action} failed"]
+        trail = NifLog.context_trail()
+        if trail:
+            message.append(f"while {trail}")
+        message.append(f"\n{type(exception).__name__}: {exception}")
+
+        # point at the addon frame closest to the failure, which is more useful
+        # than the innermost frame when the error surfaces inside a library
+        addon_frames = [frame for frame in traceback.extract_tb(exception.__traceback__)
+                        if "io_scene_niftools" in frame.filename and "dependencies" not in frame.filename]
+        if addon_frames:
+            frame = addon_frames[-1]
+            message.append(f"\nRaised from {frame.filename}:{frame.lineno}, in {frame.name}(): {frame.line}")
+        return " ".join(message)
+
+    @staticmethod
+    def _report(level, message):
+        """
+        Report through the injected operator.
+
+        Blender frees an operator's RNA struct once it has finished, so anything logged
+        after that, during unregistration or from a script driving the addon directly,
+        falls back to plain printing rather than raising.
+        """
+
+        try:
+            NifLog.op.report(level, message)
+        except ReferenceError:
+            NifLog.op = _MockOperator()
+            NifLog.op.report(level, message)
+
     @staticmethod
     def debug(message):
         """Report a debug message."""
 
-        NifLog.op.report({'DEBUG'}, str(message))
+        NifLog._report({'DEBUG'}, str(message))
         logging.getLogger("niftools").debug(str(message))
 
     @staticmethod
     def info(message):
         """Report an informative message."""
 
-        NifLog.op.report({'INFO'}, str(message))
+        NifLog._report({'INFO'}, str(message))
         logging.getLogger("niftools").info(str(message))
 
     @staticmethod
     def warn(message):
         """Report a warning message."""
 
-        NifLog.op.report({'WARNING'}, str(message))
+        NifLog._report({'WARNING'}, str(message))
         logging.getLogger("niftools").warning(str(message))
 
     @staticmethod
@@ -96,7 +154,7 @@ class NifLog:
             The :ref:`error reporting <dev-design-error-reporting>` design.
         """
 
-        NifLog.op.report({'ERROR'}, message)
+        NifLog._report({'ERROR'}, message)
         logging.getLogger("niftools").error(str(message))
         return {'FINISHED'}
 
@@ -112,14 +170,18 @@ class NifLog:
 
 
 class NifError(Exception):
-    """A simple custom exception class for export errors."""
+    """A simple custom exception class for import and export errors."""
 
     def __init__(self, msg):
         caller = inspect.getframeinfo(inspect.stack()[1][0])
-        NifLog.error(f"{msg:s}")
-        NifLog.error(f"{caller.filename:s}:{caller.lineno:d}")
 
-    pass
+        trail = NifLog.context_trail()
+        full_message = f"{msg} (while {trail})" if trail else str(msg)
+
+        super().__init__(full_message)
+
+        NifLog.error(full_message)
+        NifLog.error(f"Raised from {caller.filename}:{caller.lineno}, in {caller.function}()")
 
 
 def init_loggers():

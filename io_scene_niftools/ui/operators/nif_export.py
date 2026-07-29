@@ -51,6 +51,7 @@ class OperatorSetting:
 class OperatorExportTransformPanel(OperatorSetting, Panel):
     bl_label = "Transform"
     bl_idname = "NIFTOOLS_PT_export_operator_transform"
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
@@ -73,6 +74,7 @@ class OperatorExportTransformPanel(OperatorSetting, Panel):
 class OperatorExportArmaturePanel(OperatorSetting, Panel):
     bl_label = "Armature"
     bl_idname = "NIFTOOLS_PT_export_operator_armature"
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
@@ -124,6 +126,7 @@ class OperatorExportAnimationPanel(OperatorSetting, Panel):
 class OperatorExportOptimisePanel(OperatorSetting, Panel):
     bl_label = "Optimise"
     bl_idname = "NIFTOOLS_PT_export_operator_optimise"
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
@@ -145,8 +148,35 @@ class OperatorExportOptimisePanel(OperatorSetting, Panel):
         layout.prop(operator, "optimise_materials")
         layout.prop(operator, "sep_tangent_space")
 
+class OperatorExportIncludePanel(OperatorSetting, Panel):
+    bl_label = "Include"
+    bl_idname = "NIFTOOLS_PT_export_operator_include"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        return operator.bl_idname == "EXPORT_SCENE_OT_nif"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False  # No animation.
+
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        col = layout.column(heading="Limit to", align=True)
+
+        col.prop(operator, "use_selected")
+        col.prop(operator, "use_visible")
+        col.prop(operator, "use_renderable")
+        col.prop(operator, "use_active_collection")
 
 classes = [
+    OperatorExportIncludePanel,
     OperatorExportTransformPanel,
     OperatorExportArmaturePanel,
     OperatorExportAnimationPanel,

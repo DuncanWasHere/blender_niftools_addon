@@ -87,6 +87,25 @@ TEX_SLOTS.NORMAL = "normal"
 TEX_SLOTS.ENV_MAP = "environment map"
 TEX_SLOTS.ENV_MASK = "environment mask"
 
+# FO3/FNV BSShaderProperty types
+FALLOUT_SHADER_TYPES = ("BSShaderPPLightingProperty", "BSShaderNoLightingProperty", "SkyShaderProperty",
+                        "TallGrassShaderProperty", "TileShaderProperty", "WaterShaderProperty")
+# of those, the types that are rendered without lighting
+FALLOUT_UNLIT_TYPES = ("BSShaderNoLightingProperty", "SkyShaderProperty", "TileShaderProperty",
+                       "WaterShaderProperty")
+
+# The group that stands in for the fixed function shading of non-BS Shader games
+GAMEBRYO_SHADER = "Gamebryo Shader"
+
+# Every shader a material can be displayed with as a custom node group
+NIF_SHADER_GROUPS = FALLOUT_SHADER_TYPES + (GAMEBRYO_SHADER, "BSEffectShaderProperty")
+
+# Groups drawn without lighting
+UNLIT_GROUPS = FALLOUT_UNLIT_TYPES + ("BSEffectShaderProperty",)
+
+# Groups whose alpha fades with the viewing angle
+FALLOFF_GROUPS = ("BSShaderNoLightingProperty", "BSEffectShaderProperty")
+
 BS_TEX_SLOTS = EmptyObject()
 BS_TEX_SLOTS.DIFFUSE_MAP = "Diffuse Map"
 BS_TEX_SLOTS.NORMAL_MAP = "Normal Map"

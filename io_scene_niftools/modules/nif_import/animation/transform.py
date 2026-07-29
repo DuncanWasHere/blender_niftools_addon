@@ -70,6 +70,15 @@ def correct_loc(key, n_bind_rot_inv, n_bind_trans):
     return math.import_keymat(n_bind_rot_inv, mathutils.Matrix.Translation(key - n_bind_trans)).to_translation()
 
 
+def correct_loc_tangent(key, n_bind_rot_inv, n_bind_trans):
+    """Rotate a translation tangent without applying the bind translation."""
+
+    return math.import_keymat(
+        n_bind_rot_inv,
+        mathutils.Matrix.Translation(key),
+    ).to_translation()
+
+
 def correct_quat(key, n_bind_rot_inv, n_bind_trans):
     return math.import_keymat(n_bind_rot_inv, key.to_matrix().to_4x4()).to_quaternion()
 
@@ -83,10 +92,10 @@ def correct_scale(key, n_bind_rot_inv, n_bind_trans):
 
 
 key_lut = {
-    QUAT: (as_b_quat, correct_quat, 4),
-    EULER: (as_b_euler, correct_euler, 3),
-    LOC: (as_b_loc, correct_loc, 3),
-    SCALE: (as_b_scale, correct_scale, 3),
+    QUAT: (as_b_quat, correct_quat, None, 4),
+    EULER: (as_b_euler, correct_euler, None, 3),
+    LOC: (as_b_loc, correct_loc, correct_loc_tangent, 3),
+    SCALE: (as_b_scale, correct_scale, correct_scale, 3),
 }
 
 
@@ -112,6 +121,12 @@ class TransformAnimation(Animation):
 
     def __init__(self):
         super().__init__()
+        from ....modules.nif_import.animation.material import MaterialAnimation
+        from ....modules.nif_import.animation.object import ObjectAnimation
+        from ....modules.nif_import.animation.particle import ParticleAnimation
+        self.material_anim = MaterialAnimation()
+        self.object_anim = ObjectAnimation()
+        self.particle_anim = ParticleAnimation()
         self.import_kf_root = singledispatch(self.import_kf_root)
         self.import_kf_root.register(NifClasses.NiControllerSequence, self.import_controller_sequence)
         self.import_kf_root.register(NifClasses.NiSequenceStreamHelper, self.import_sequence_stream_helper)
@@ -151,13 +166,15 @@ class TransformAnimation(Animation):
         actions = set()
         for evaluator in kf_root.evaluators:
             b_target = self.get_target(b_armature_obj, evaluator.node_name)
-            actions.add(self.import_keyframe_controller(evaluator, b_armature_obj, b_target, b_action_name))
+            actions.add(self.import_keyframe_controller(
+                evaluator, b_armature_obj, b_target, b_action_name,
+                sequence_name=b_action_name))
         for b_action in actions:
             if b_action:
                 self.import_text_keys(kf_root, b_action)
                 if kf_root.cycle_type:
                     extend = self.get_extend_from_cycle_type(kf_root.cycle_type)
-                    self.set_extrapolation(extend, b_action.fcurves)
+                    self.set_extrapolation(extend, self.get_fcurves_from_action(b_action))
 
     def import_sequence_stream_helper(self, kf_root, b_armature_obj):
         b_action_name = self.import_generic_kf_root(kf_root)
@@ -175,7 +192,9 @@ class TransformAnimation(Animation):
             # grabe the node name from string data
             if isinstance(extra, NifClasses.NiStringExtraData):
                 b_target = self.get_target(b_armature_obj, extra.string_data)
-                actions.add(self.import_keyframe_controller(controller, b_armature_obj, b_target, b_action_name))
+                actions.add(self.import_keyframe_controller(
+                    controller, b_armature_obj, b_target, b_action_name,
+                    sequence_name=b_action_name))
             # grab next pair of extra and controller
             extra = extra.next_extra_data
             controller = controller.next_controller
@@ -187,6 +206,13 @@ class TransformAnimation(Animation):
         b_action_name = self.import_generic_kf_root(kf_root)
         actions = set()
         for controlledblock in kf_root.controlled_blocks:
+            if self.particle_anim.import_sequence_controlled_block(controlledblock, kf_root):
+                continue
+            # material and texture animation is driven from the sequence too, as the
+            # controllers on the targets only hold blend interpolators
+            if self.material_anim.import_sequence_controlled_block(controlledblock, str(kf_root.name or "")):
+                continue
+
             # get bone name
             # todo [pyffi] fixed get_node_name() is up, make release and clean up here
             # ZT2 - old way is not supported by pyffi's get_node_name()
@@ -195,6 +221,9 @@ class TransformAnimation(Animation):
             if not n_name:
                 n_name = controlledblock.get_node_name()
             b_target = self.get_target(b_armature_obj, n_name)
+            if self.object_anim.import_sequence_controlled_block(
+                    controlledblock, str(kf_root.name or ""), b_target):
+                continue
             # todo - temporarily disabled! should become a custom property on both object and pose bone, ideally
             # import bone priority
             # b_target.niftools.priority = controlledblock.priority
@@ -204,22 +233,31 @@ class TransformAnimation(Animation):
                 # ZT2
                 kfc = controlledblock.controller
             if kfc:
-                actions.add(self.import_keyframe_controller(kfc, b_armature_obj, b_target, b_action_name))
+                actions.add(self.import_keyframe_controller(
+                    kfc, b_armature_obj, b_target, b_action_name,
+                    sequence_name=b_action_name))
+        # Material, texture, and visibility helpers create their slots through the same
+        # shared sequence registry but return only a handled/not-handled flag above.
+        # Recover the shared action so its text keys and cycle mode are imported too.
+        actions.add(self.get_sequence_action(b_action_name))
         for b_action in actions:
             if b_action:
                 self.import_text_keys(kf_root, b_action)
                 # fallout: set global extrapolation mode here (older versions have extrapolation per controller)
                 if kf_root.cycle_type:
                     extend = self.get_extend_from_cycle_type(kf_root.cycle_type)
-                    self.set_extrapolation(extend, b_action.fcurves)
+                    self.set_extrapolation(extend, self.get_fcurves_from_action(b_action))
 
-    def import_keyframe_controller(self, n_kfc, b_armature, b_target, b_action_name):
+    def import_keyframe_controller(self, n_kfc, b_armature, b_target,
+                                   b_action_name, sequence_name=None):
         """
         Imports a keyframe controller as fcurves in an action, which is created if necessary.
         n_kfc: some nif struct that has keyframe data, somewhere
         b_armature: either None or Object (blender armature)
         b_target: either Object or PoseBone
-        b_action_name: name of the action that should be used; the actual imported name may differ due to suffixes
+        b_action_name: display name used for a standalone action
+        sequence_name: NIF sequence identity when this controller is one slot of
+            a shared sequence action; None for an attached standalone controller
         """
         # the target may not exist in the scene, in which case it is None here
         if not b_target:
@@ -234,14 +272,35 @@ class TransformAnimation(Animation):
         # create or get the action
         if b_armature and isinstance(b_target, bpy.types.PoseBone):
             # action on armature, one per armature
-            b_action = self.create_action(b_armature, b_action_name)
+            b_action = self.create_action(
+                b_armature, b_action_name, sequence_name=sequence_name)
             if b_target.name in self.bind_data:
                 n_bind_rot_inv, n_bind_trans = self.bind_data[b_target.name]
             bone_name = b_target.name
         else:
-            # one action per object
-            b_action = self.create_action(b_target, f"{b_action_name}_{b_target.name}")
+            action_name = (
+                f"{b_action_name}_{b_target.name}"
+                if sequence_name else b_action_name
+            )
+            b_action = self.create_action(
+                b_target, action_name, sequence_name=sequence_name)
             bone_name = None
+
+        # A path interpolator drives translation from one curve and time/percentage
+        # from another. It is not exposed through ``get_controller_data`` because
+        # it has no generic ``data`` field.
+        n_path = (
+            n_kfc.interpolator
+            if (hasattr(n_kfc, "interpolator")
+                and isinstance(n_kfc.interpolator, NifClasses.NiPathInterpolator))
+            else n_kfc
+        )
+        if isinstance(n_path, (NifClasses.NiPathInterpolator,
+                               NifClasses.NiPathController)):
+            self.import_path_translation(
+                n_path, n_kfc, b_armature or b_target, b_action, bone_name,
+                n_bind_rot_inv, n_bind_trans)
+            return b_action
 
         # B-spline curve import
         if isinstance(n_kfc, NifClasses.NiBSplineInterpolator):
@@ -256,16 +315,19 @@ class TransformAnimation(Animation):
                 return
             times = list(n_kfc.get_times())
             keys = [NifClasses.Vector3.from_value(tuple_key) for tuple_key in n_kfc.get_translations()]
-            self.import_keys(LOC, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
+            self.import_keys(LOC, b_armature or b_target, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
             keys = [NifClasses.Quaternion.from_value(tuple_key) for tuple_key in n_kfc.get_rotations()]
-            self.import_keys(QUAT, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
+            self.import_keys(QUAT, b_armature or b_target, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
             keys = list(n_kfc.get_scales())
-            self.import_keys(SCALE, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
+            self.import_keys(SCALE, b_armature or b_target, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
             return b_action
         elif isinstance(n_kfc, NifClasses.NiMultiTargetTransformController):
             # not sure what this is used for
             return
         n_kfd = self.get_controller_data(n_kfc)
+        if n_kfd is None:
+            # a blend interpolator, whose animation comes from the controller sequences
+            return
         # ZT2 - get extrapolation for every kfc
         if isinstance(n_kfc, NifClasses.NiKeyframeController):
             flags = n_kfc.flags
@@ -284,37 +346,252 @@ class TransformAnimation(Animation):
                 # resample each coordinate for all times
                 keys_res = [interpolate(times_all, times, keys) for times, keys in times_keys]
                 # for eulers, the actual interpolation type is apparently stored per channel
-                interp = self.get_b_interp_from_n_interp(n_kfd.xyz_rotations[0].interpolation)
-                self.import_keys(EULER, b_action, bone_name, times_all, zip(*keys_res), flags, interp, n_bind_rot_inv,
-                                 n_bind_trans)
+                n_interpolation = n_kfd.xyz_rotations[0].interpolation
+                interp = self.get_b_interp_from_n_interp(n_interpolation)
+                tangents = None
+                same_key_times = all(
+                    channel_times == times_keys[0][0]
+                    for channel_times, _ in times_keys[1:])
+                if (same_key_times
+                        and all(group.interpolation == NifClasses.KeyType.QUADRATIC_KEY
+                                for group in n_kfd.xyz_rotations)):
+                    axis_tangents = [
+                        self.get_nif_tangents(
+                            group.keys, group.interpolation)
+                        for group in n_kfd.xyz_rotations
+                    ]
+                    tangents = (
+                        list(zip(*(pair[0] for pair in axis_tangents))),
+                        list(zip(*(pair[1] for pair in axis_tangents))),
+                    )
+                elif n_interpolation == NifClasses.KeyType.QUADRATIC_KEY:
+                    # Differently timed Euler channels must be resampled for the
+                    # space conversion, so their original Hermite tangents no longer
+                    # line up. Linear interpolation avoids fabricating endpoint ease.
+                    interp = "LINEAR"
+                self.import_keys(
+                    EULER, b_armature or b_target, b_action, bone_name,
+                    times_all, zip(*keys_res), flags, interp, n_bind_rot_inv,
+                    n_bind_trans, tangents)
             else:
                 b_target.rotation_mode = "QUATERNION"
                 times, keys = self.get_keys_values(n_kfd.quaternion_keys)
-                interp = self.get_b_interp_from_n_interp(n_kfd.rotation_type)
-                self.import_keys(QUAT, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
+                # Quaternion keys never store quadratic tangents. NifSkope uses
+                # spherical interpolation regardless of the numeric rotation key
+                # type. Linear component curves are Blender's closest native
+                # representation and avoid invented Bézier endpoint easing.
+                interp = "LINEAR"
+                self.import_keys(QUAT, b_armature or b_target, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
             times, keys = self.get_keys_values(n_kfd.scales.keys)
             interp = self.get_b_interp_from_n_interp(n_kfd.scales.interpolation)
-            self.import_keys(SCALE, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
+            tangents = self.get_nif_tangents(
+                n_kfd.scales.keys, n_kfd.scales.interpolation)
+            self.import_keys(
+                SCALE, b_armature or b_target, b_action, bone_name, times,
+                keys, flags, interp, n_bind_rot_inv, n_bind_trans, tangents)
 
             times, keys = self.get_keys_values(n_kfd.translations.keys)
             interp = self.get_b_interp_from_n_interp(n_kfd.translations.interpolation)
-            self.import_keys(LOC, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
+            tangents = self.get_nif_tangents(
+                n_kfd.translations.keys, n_kfd.translations.interpolation)
+            self.import_keys(
+                LOC, b_armature or b_target, b_action, bone_name, times,
+                keys, flags, interp, n_bind_rot_inv, n_bind_trans, tangents)
 
         return b_action
 
-    def import_keys(self, key_type, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans):
+    @staticmethod
+    def _inverse_linear_percent(percent_keys, value):
+        """Return the controller time at which a monotonic linear percent curve
+        reaches ``value``."""
+
+        if len(percent_keys) == 1:
+            return float(percent_keys[0].time)
+        for left, right in zip(percent_keys, percent_keys[1:]):
+            left_value = float(left.value)
+            right_value = float(right.value)
+            if min(left_value, right_value) <= value <= max(left_value, right_value):
+                if right_value == left_value:
+                    return float(left.time)
+                factor = (value - left_value) / (right_value - left_value)
+                return float(left.time) + factor * (
+                    float(right.time) - float(left.time))
+        return float(min(
+            percent_keys, key=lambda key: abs(float(key.value) - value)).time)
+
+    @staticmethod
+    def _evaluate_key_group(group, time):
+        """Evaluate the linear/quadratic key groups used by path interpolators."""
+
+        keys = list(group.keys)
+        if not keys:
+            return None
+        if len(keys) == 1 or time <= float(keys[0].time):
+            return keys[0].value
+        if time >= float(keys[-1].time):
+            return keys[-1].value
+
+        for left, right in zip(keys, keys[1:]):
+            left_time = float(left.time)
+            right_time = float(right.time)
+            if time > right_time:
+                continue
+            factor = (time - left_time) / (right_time - left_time)
+            left_value = left.value
+            right_value = right.value
+            if hasattr(left_value, "x"):
+                left_value = mathutils.Vector(
+                    (left_value.x, left_value.y, left_value.z))
+                right_value = mathutils.Vector(
+                    (right_value.x, right_value.y, right_value.z))
+
+            if group.interpolation == NifClasses.KeyType.QUADRATIC_KEY:
+                outgoing = left.backward
+                incoming = right.forward
+                if hasattr(outgoing, "x"):
+                    outgoing = mathutils.Vector(
+                        (outgoing.x, outgoing.y, outgoing.z))
+                    incoming = mathutils.Vector(
+                        (incoming.x, incoming.y, incoming.z))
+                factor_2 = factor * factor
+                factor_3 = factor_2 * factor
+                return (
+                    (2 * factor_3 - 3 * factor_2 + 1) * left_value
+                    + (factor_3 - 2 * factor_2 + factor) * outgoing
+                    + (-2 * factor_3 + 3 * factor_2) * right_value
+                    + (factor_3 - factor_2) * incoming
+                )
+            return left_value + (right_value - left_value) * factor
+        return keys[-1].value
+
+    def import_path_translation(self, n_path, n_controller, b_obj, b_action,
+                                bone_name, n_bind_rot_inv, n_bind_trans):
+        """Import a NiPathInterpolator/NiPathController as object translation.
+
+        A monotonic linear percentage curve can be inverted at the original path
+        keys, preserving the NIF Hermite handles exactly. More complex percentage
+        curves are composed with the path at the scene frame rate.
+        """
+
+        n_path_data = getattr(n_path, "path_data", None)
+        n_percent_data = getattr(n_path, "percent_data", None)
+        path_group = getattr(n_path_data, "data", None)
+        percent_group = getattr(n_percent_data, "data", None)
+        path_keys = list(getattr(path_group, "keys", ()) or ())
+        percent_keys = list(getattr(percent_group, "keys", ()) or ())
+        if not path_keys or not percent_keys:
+            NifLog.warn(
+                f"Path controller for '{b_obj.name}' has no path or percentage keys.")
+            return
+
+        percent_values = [float(key.value) for key in percent_keys]
+        increasing = all(
+            right >= left
+            for left, right in zip(percent_values, percent_values[1:]))
+        decreasing = all(
+            right <= left
+            for left, right in zip(percent_values, percent_values[1:]))
+        can_preserve_keys = (
+            percent_group.interpolation == NifClasses.KeyType.LINEAR_KEY
+            and (increasing or decreasing)
+            and path_group.interpolation in (
+                NifClasses.KeyType.LINEAR_KEY,
+                NifClasses.KeyType.QUADRATIC_KEY)
+        )
+        flags = getattr(n_controller, "flags", None)
+        # The generic NIF scale spell scales NiTransformData translations but
+        # does not visit NiPathInterpolator.path_data. Apply the same scene
+        # correction here so path-driven objects stay in the imported scene.
+        scale_correction = bpy.context.scene.niftools_scene.scale_correction
+
+        def scaled_vector(value):
+            return NifClasses.Vector3.from_value((
+                float(value.x) * scale_correction,
+                float(value.y) * scale_correction,
+                float(value.z) * scale_correction,
+            ))
+
+        if can_preserve_keys:
+            times = [
+                self._inverse_linear_percent(percent_keys, float(key.time))
+                for key in path_keys
+            ]
+            # A flat/repeated percentage segment cannot represent distinct path
+            # keys at distinct Blender frames, so use composed samples instead.
+            if len({round(time * self.fps) for time in times}) == len(times):
+                values = [scaled_vector(key.value) for key in path_keys]
+                interpolation = self.get_b_interp_from_n_interp(
+                    path_group.interpolation)
+                tangents = self.get_nif_tangents(
+                    path_keys, path_group.interpolation)
+                if tangents:
+                    tangents = tuple(
+                        [scaled_vector(value) for value in values]
+                        for values in tangents
+                    )
+                self.import_keys(
+                    LOC, b_obj, b_action, bone_name, times, values, flags,
+                    interpolation, n_bind_rot_inv, n_bind_trans, tangents)
+                return
+
+        start_time = float(percent_keys[0].time)
+        stop_time = float(percent_keys[-1].time)
+        controller_start = float(getattr(n_controller, "start_time", start_time))
+        controller_stop = float(getattr(n_controller, "stop_time", stop_time))
+        start_time = max(start_time, controller_start)
+        stop_time = min(stop_time, controller_stop)
+        sample_count = max(1, round((stop_time - start_time) * self.fps))
+        times = [
+            start_time + (stop_time - start_time) * index / sample_count
+            for index in range(sample_count + 1)
+        ]
+        values = []
+        for time in times:
+            percent = self._evaluate_key_group(percent_group, time)
+            value = self._evaluate_key_group(path_group, float(percent))
+            if isinstance(value, mathutils.Vector):
+                value = NifClasses.Vector3.from_value(tuple(value))
+            value = scaled_vector(value)
+            values.append(value)
+        self.import_keys(
+            LOC, b_obj, b_action, bone_name, times, values, flags, "LINEAR",
+            n_bind_rot_inv, n_bind_trans)
+
+    def import_keys(self, key_type, b_obj, b_action, bone_name, times, keys,
+                    flags, interp, n_bind_rot_inv, n_bind_trans, tangents=None):
         """Imports key frames according to the specified key_type"""
         if not keys:
             return
         # look up conventions by key type
-        key_func, key_corrector, key_dim = key_lut[key_type]
+        key_func, key_corrector, tangent_corrector, key_dim = key_lut[key_type]
         NifLog.debug(f'{key_type} keys...')
         # convert nif keys to proper key type for blender
         keys = [key_func(val) for val in keys]
+        if tangents:
+            forward, backward = tangents
+            tangents = (
+                [key_func(value) for value in forward],
+                [key_func(value) for value in backward],
+            )
         # correct for bone space if target is an armature bone
         if bone_name:
             keys = [key_corrector(key, n_bind_rot_inv, n_bind_trans) for key in keys]
-        self.add_keys(b_action, key_type, range(key_dim), flags, times, keys, interp, bone_name=bone_name)
+            if tangents and tangent_corrector:
+                forward, backward = tangents
+                tangents = (
+                    [tangent_corrector(
+                        value, n_bind_rot_inv, n_bind_trans)
+                     for value in forward],
+                    [tangent_corrector(
+                        value, n_bind_rot_inv, n_bind_trans)
+                     for value in backward],
+                )
+            elif tangents:
+                tangents = None
+                interp = "LINEAR"
+        self.add_keys(
+            b_obj, b_action, key_type, range(key_dim), flags, times, keys,
+            interp, bone_name=bone_name, tangents=tangents)
         self.set_max_key_time()
 
     def import_transforms(self, n_block, b_obj, bone_name=None):

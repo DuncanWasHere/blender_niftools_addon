@@ -155,10 +155,10 @@ class Mesh:
             Vertex.map_uv_layer(b_mesh, uvs)
 
         if vertex_colors is not None:
-            self.map_vertex_colors(b_mesh, vertex_colors)
+            Vertex.map_vertex_colors(b_mesh, vertex_colors)
 
         if normals is not None:
-            # In some cases, normals can be four-component structs instead of 3; discard the 4th.
+            # In some cases, normals can be four-component structs instead of 3. Discard the 4th.
             Vertex.map_normals(b_mesh, np.array(normals)[:, :3])
 
         self.material_property_helper.import_material_properties(n_block, b_obj)
@@ -268,6 +268,8 @@ class Mesh:
             f"nonmanifold={nonmanifold_edges}, sharp_keys={len(sharp_edge_keys)}"
         )
 
+        # One bmesh session does the whole job. Copying the mesh in and out for each
+        # of the three steps used to trebled the cost of every one of them.
         bm = bmesh.new()
         bm.from_mesh(b_mesh)
         bm.verts.ensure_lookup_table()
@@ -281,53 +283,52 @@ class Mesh:
             if any(e.is_boundary for e in v.link_edges):
                 boundary_position_map.setdefault(_pos_key_from_vec(v.co), []).append(v)
 
-        merged_buckets = 0
+        mergeable_verts = []
         buckets_skipped_opposite = 0
 
-        for _, verts in boundary_position_map.items():
+        for verts in boundary_position_map.values():
             if len(verts) < 2:
                 continue
 
             # Avoid collapsing double-sided coplanar shells.
-            face_normals = [f.normal.copy() for v in verts for f in v.link_faces]
-            skip_bucket = False
-            for i in range(len(face_normals)):
-                ni = face_normals[i]
-                for j in range(i + 1, len(face_normals)):
-                    if ni.dot(face_normals[j]) < -normal_threshold:
-                        skip_bucket = True
-                        break
-                if skip_bucket:
-                    break
+            face_normals = [f.normal for v in verts for f in v.link_faces]
+            skip_bucket = any(
+                ni.dot(nj) < -normal_threshold
+                for i, ni in enumerate(face_normals)
+                for nj in face_normals[i + 1:]
+            )
 
             if skip_bucket:
                 buckets_skipped_opposite += 1
                 continue
 
-            before_bucket = len(bm.verts)
-            bmesh.ops.remove_doubles(bm, verts=verts, dist=epsilon)
-            if len(bm.verts) < before_bucket:
-                merged_buckets += 1
+            mergeable_verts.extend(verts)
+
+        # Merging every bucket in one operation rather than one at a time. Each
+        # remove_doubles call costs time in proportion to the whole mesh, so running
+        # one per position was what made a large nif take minutes to import.
+        #
+        # The buckets only exist to group coincident vertices, and one pass welds the
+        # same ones with a single exception: two vertices closer together than the
+        # merge distance but on opposite sides of a rounding boundary land in
+        # different buckets, and used to survive because of that alone. They are now
+        # welded like any other coincident pair.
+        if mergeable_verts:
+            bmesh.ops.remove_doubles(bm, verts=mergeable_verts, dist=epsilon)
+            bm.verts.ensure_lookup_table()
+            bm.edges.ensure_lookup_table()
 
         final_vert_count = len(bm.verts)
 
         NifLog.debug(
-            f"Merging done for '{node_name}': merged_buckets={merged_buckets}, "
+            f"Merging done for '{node_name}': "
             f"skipped_buckets_opposite={buckets_skipped_opposite}, verts_before={initial_vert_count}, "
             f"verts_after={final_vert_count}, merged_verts={initial_vert_count - final_vert_count}"
         )
 
-        bm.to_mesh(b_mesh)
-        bm.free()
-        b_mesh.update()
-
-        bm2 = bmesh.new()
-        bm2.from_mesh(b_mesh)
-        bm2.verts.ensure_lookup_table()
-        bm2.edges.ensure_lookup_table()
-
         sharp_applied_inferred = 0
-        for e in bm2.edges:
+        boundary_cleared = 0
+        for e in bm.edges:
             pos0 = _pos_key_from_vec(e.verts[0].co)
             pos1 = _pos_key_from_vec(e.verts[1].co)
             ekey = _edge_key_from_positions(pos0, pos1)
@@ -335,37 +336,24 @@ class Mesh:
             if ekey in sharp_edge_keys:
                 e.smooth = False
                 sharp_applied_inferred += 1
-
-        bm2.to_mesh(b_mesh)
-        bm2.free()
-        b_mesh.update()
-
-        bm3 = bmesh.new()
-        bm3.from_mesh(b_mesh)
-        bm3.edges.ensure_lookup_table()
-
-        boundary_cleared = 0
-        for e in bm3.edges:
+            # leftover open edges are smoothed for clarity
             if e.is_boundary and not e.smooth:
                 e.smooth = True
                 boundary_cleared += 1
 
-        bm3.to_mesh(b_mesh)
-        bm3.free()
+        bm.to_mesh(b_mesh)
+        bm.free()
         b_mesh.update()
 
         NifLog.debug(
             f"Sharps applied on '{node_name}': inferred={sharp_applied_inferred}, boundary_cleared={boundary_cleared}"
         )
 
-        try:
-            attr_name = "custom_normal"
-            if hasattr(b_mesh, "attributes") and attr_name in b_mesh.attributes:
-                b_mesh.attributes.remove(b_mesh.attributes[attr_name])
-                NifLog.debug(f"Removed attribute '{attr_name}' from mesh for '{node_name}'")
-
-            b_mesh.calc_normals()
+        # The custom split normals have served their purpose and would otherwise
+        # override the smoothing just inferred. Blender recomputes normals on demand
+        # once they are gone, so nothing has to ask it to.
+        attr_name = "custom_normal"
+        if attr_name in b_mesh.attributes:
+            b_mesh.attributes.remove(b_mesh.attributes[attr_name])
             b_mesh.update()
-
-        except Exception as ex:
-            NifLog.debug(f"Failed to remove custom normals attribute for '{node_name}': {ex!r}")
+            NifLog.debug(f"Removed attribute '{attr_name}' from mesh for '{node_name}'")

@@ -51,11 +51,16 @@ class NifOp:
     props = None
     context = None
 
+    # Copy of this setting so it can be read when the operator isn't running
+    use_phong_specular = True
+
     @staticmethod
     def init(operator, context):
         NifOp.op = operator
         NifOp.props = operator.properties
         NifOp.context = context
+
+        NifOp.use_phong_specular = bool(getattr(operator.properties, "use_phong_specular", True))
 
         # init loggers logging level
         NifLog.init(operator)

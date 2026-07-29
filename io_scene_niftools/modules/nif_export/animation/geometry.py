@@ -38,12 +38,34 @@
 # ***** END LICENSE BLOCK *****
 
 
+import re
+
+import bpy
+
 from ....modules.nif_export.animation.common import AnimationCommon
 from ....modules.nif_export.block_registry import block_store
 from ....utils.logging import NifLog
 from ....utils.singleton import NifOp, EGMData
 from nifgen.formats.nif import classes as NifClasses
 from pyffi.formats.egm import EgmFormat
+
+# The suffix Blender appends to keep shape key names unique within a mesh
+B_NAME_SUFFIX = re.compile(r"\.\d{3}$")
+
+
+def get_morph_name(b_key_block):
+    """
+    Get the NIF morph name for a shape key.
+
+    Blender forces shape key names to be unique, but a nif need not: FaceGen heads name
+    two of their morphs 'LookUp' and two 'LookDown'. Those come back in as 'LookUp.001'
+    and friends, and exporting that verbatim would leave the game unable to find them.
+    """
+
+    n_name = B_NAME_SUFFIX.sub("", b_key_block.name)
+    if n_name != b_key_block.name:
+        NifLog.debug(f"Exporting shape key '{b_key_block.name}' as morph '{n_name}'")
+    return n_name
 
 
 class GeometryAnimation(AnimationCommon):
@@ -63,7 +85,8 @@ class GeometryAnimation(AnimationCommon):
             if b_key.key_blocks[1].name.startswith("EGM"):
                 # egm export!
                 self.export_egm(b_key.key_blocks)
-            elif b_key.animation_data:
+            else:
+                # the morph shapes are worth exporting even when nothing animates their weights
                 self.export_ni_geom_morpher_controller(b_mesh, b_key, n_trishape, vertmap)
 
     def export_ni_geom_morpher_controller(self, b_mesh, b_key, n_trishape, vertmap):
@@ -71,11 +94,20 @@ class GeometryAnimation(AnimationCommon):
         # regular morph_data export
         b_shape_action = self.get_active_action(b_key)
 
+        # a nif can carry morph shapes that nothing animates, in which case there is no
+        # action to take weight curves or a frame range from
+        if b_shape_action:
+            action_fcurves = self.get_fcurves_from_action(b_shape_action)
+            frame_range = b_shape_action.frame_range
+        else:
+            action_fcurves = []
+            frame_range = (bpy.context.scene.frame_start, bpy.context.scene.frame_end)
+
         # create geometry morph controller
         morph_ctrl = block_store.create_block("NiGeomMorpherController", b_shape_action)
         morph_ctrl.target = n_trishape
         n_trishape.add_controller(morph_ctrl)
-        self.set_flags_and_timing(morph_ctrl, b_shape_action.fcurves, *b_shape_action.frame_range)
+        self.set_flags_and_timing(morph_ctrl, action_fcurves, *frame_range)
 
         # create geometry n_morph data
         morph_data = block_store.create_block("NiMorphData", b_shape_action)
@@ -97,7 +129,7 @@ class GeometryAnimation(AnimationCommon):
         for key_block_num, key_block in enumerate(b_key.key_blocks):
             # export morphed vertices
             n_morph = morph_data.morphs[key_block_num]
-            n_morph.frame_name = key_block.name
+            n_morph.frame_name = get_morph_name(key_block)
             NifLog.info(f"Exporting n_morph {key_block.name}: vertices")
             n_morph.arg = morph_data.num_vertices
             n_morph.reset_field("vectors")
@@ -129,12 +161,12 @@ class GeometryAnimation(AnimationCommon):
                 morph_ctrl.interpolator_weights[key_block_num].interpolator = interpol
 
             # geometry only export has no float data also skip keys that have no fcu (such as base b_key)
-            if NifOp.props.animation == 'GEOM_NIF' or not b_shape_action.fcurves:
+            if NifOp.props.animation == 'GEOM_NIF' or not action_fcurves:
                 continue
 
             # find fcurve that animates this shapekey's influence
             b_dtype = f'key_blocks["{key_block.name}"].value'
-            fcurves = [fcu for fcu in b_shape_action.fcurves if b_dtype in fcu.data_path]
+            fcurves = [fcu for fcu in action_fcurves if b_dtype in fcu.data_path]
             if not fcurves:
                 continue
             fcu = fcurves[0]

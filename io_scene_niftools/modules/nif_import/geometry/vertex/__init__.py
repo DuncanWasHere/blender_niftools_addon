@@ -40,14 +40,13 @@
 import numpy as np
 
 import bpy
+import mathutils
 from .....utils.singleton import NifOp
 
 
 class Vertex:
     @staticmethod
     def map_vertex_colors(b_mesh, vertex_colors):
-        NifLog.info(f"Vertex colors: {vertex_colors}")
-
         color_attr = b_mesh.color_attributes.new(name="Color", type="FLOAT_COLOR", domain="CORNER")
 
         corner_colors = []
@@ -56,7 +55,15 @@ class Vertex:
                 vertex_index = b_mesh.loops[loop_index].vertex_index
                 corner_colors.append(vertex_colors[vertex_index])
 
-        flat_colors = [channel for color in corner_colors for channel in color]
+        # A float colour attribute holds scene linear values, but the games multiply their
+        # vertex colours straight onto the texture in gamma space, so they are sRGB values.
+        # Without converting them, the tint is far too weak and washed out.
+        flat_colors = []
+        for color in corner_colors:
+            b_color = mathutils.Color((color.r, color.g, color.b))
+            flat_colors.extend(b_color.from_srgb_to_scene_linear())
+            # alpha is a plain factor and is never gamma encoded
+            flat_colors.append(color.a)
         color_attr.data.foreach_set("color", flat_colors)
 
     @staticmethod

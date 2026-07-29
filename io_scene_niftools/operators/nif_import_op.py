@@ -108,6 +108,14 @@ class NifImportOperator(Operator, ImportHelper, CommonScale, CommonDevOperator, 
         description="Store NIF normals as custom normals",
         default=True)
 
+    use_phong_specular: bpy.props.BoolProperty(
+        name="Phong Specular",
+        description="Shade the specular highlight the way the game does, with a phong "
+                    "highlight lit from the camera. Turn this off to use a glossy BSDF "
+                    "instead, which reacts to the lights in the scene but also mirrors "
+                    "the world, making surfaces look brighter than they do in game",
+        default=True)
+
     combine_vertices: bpy.props.BoolProperty(
         name="Combine Vertices",
         description="Merge vertices that have identical location and normal values",

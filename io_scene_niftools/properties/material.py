@@ -40,7 +40,7 @@
 
 import bpy
 
-from bpy.props import (IntProperty, BoolProperty, EnumProperty)
+from bpy.props import (IntProperty, BoolProperty, EnumProperty, FloatVectorProperty)
 from bpy.types import PropertyGroup
 
 from ..utils.decorators import register_classes, unregister_classes
@@ -48,74 +48,103 @@ from ..utils.decorators import register_classes, unregister_classes
 from nifgen.formats.nif import classes as NifClasses
 
 
+def update_alpha_display(self, context):
+    """Keep the viewport in step with the alpha property settings."""
+
+    # imported here to avoid a circular import while the addon is registering
+    from ..modules.nif_import.property.node_wrapper import apply_alpha_property
+
+    b_mat = getattr(context, "material", None)
+    if b_mat is None:
+        b_mat = next((mat for mat in bpy.data.materials if mat.nif_alpha == self), None)
+    if b_mat is not None:
+        apply_alpha_property(b_mat)
+
+
 class MaterialProperties(PropertyGroup):
     """Group of material related properties, which gets attached to materials through a property pointer."""
 
     texture_flags: IntProperty(
         name='Texture Flags',
-        default=0,
+        description='NiTexturingProperty flags. Only Oblivion and earlier make any use of '
+                    'them; later games ignore the field but still carry it',
+        default=4,
         min=0,
         max=65535
     )
 
     material_flags: IntProperty(
         name='Material Flags',
+        description='NiMaterialProperty flags, used by Oblivion and earlier',
         default=0,
         min=0,
         max=65535
     )
 
-    use_specular: BoolProperty(
-        name='Use Specular',
-        default=1,
-    )
-
-    use_alpha: BoolProperty(
-        name='Use Alpha',
+    auto_named: BoolProperty(
+        name='Automatically Named',
+        description='The material was named after its texture on import, '
+                    'so the name is not written to the NIF',
         default=0
     )
+
 
 class AlphaProperties(PropertyGroup):
     """Group of alpha related properties, which gets attached to materials through a property pointer."""
 
+    use_alpha: BoolProperty(
+        name='Use Alpha',
+        description='Give the material a NiAlphaProperty. Without one the surface is opaque '
+                    'however transparent its texture is',
+        default=0,
+        update=update_alpha_display
+    )
+
     enable_blending: BoolProperty(
         name='Enable Blending',
-        default=0
+        default=0,
+        update=update_alpha_display
     )
 
     source_blend_mode: EnumProperty(
         name='Source Blend Mode',
         items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.AlphaFunction)],
-        default='SRC_ALPHA'
+        default='SRC_ALPHA',
+        update=update_alpha_display
     )
 
     destination_blend_mode: EnumProperty(
         name='Destination Blend Mode',
         items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.AlphaFunction)],
-        default='INV_SRC_ALPHA'
+        default='INV_SRC_ALPHA',
+        update=update_alpha_display
     )
 
     enable_testing: BoolProperty(
         name='Enable Testing',
-        default=1
+        default=1,
+        update=update_alpha_display
     )
 
     alpha_test_function: EnumProperty(
         name='Alpha Test Function',
         items=[(member.name, member.name, "", i) for i, member in enumerate(NifClasses.TestFunction)],
-        default='TEST_GREATER'
+        default='TEST_GREATER',
+        update=update_alpha_display
     )
 
     alpha_test_threshold: IntProperty(
         name='Alpha Test Threshold',
         default=128,
         min=0,
-        max=255
+        max=255,
+        update=update_alpha_display
     )
 
     no_sorter: BoolProperty(
         name='No Sorter',
-        default=0
+        default=0,
+        update=update_alpha_display
     )
 
 CLASSES = [

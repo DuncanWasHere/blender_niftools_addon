@@ -39,7 +39,8 @@
 
 
 from ..utils.decorators import register_modules, unregister_modules
-from . import armature, collision, constraint, material, object, scene, shader, animation
+from . import (armature, camera, collision, constraint, light, material, object, scene, shader,
+               animation, particle_system)
 
 
 def underscore_to_camelcase(s):
@@ -62,7 +63,8 @@ def underscore_to_camelcase(s):
 
     return ''.join(camelcase_words(s.split('_')))
 
-MODS = [animation, armature, collision, constraint, material, object, shader, scene]
+MODS = [animation, armature, camera, collision, constraint, light, material, object, shader, scene,
+        particle_system]
 
 def register():
     register_modules(MODS, __name__)

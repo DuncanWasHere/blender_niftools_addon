@@ -37,6 +37,8 @@
 #
 # ***** END LICENSE BLOCK *****
 
+import os
+
 import numpy as np
 
 import bpy
@@ -363,7 +365,32 @@ class Armature:
         # force import of nodes as bones, even if no geometries are present
         if NifOp.props.process == "SKELETON_ONLY":
             self.skinned = True
+            return
         NifLog.debug(f"Found no skinned geometries.")
+        # a standalone skeleton has nothing to be skinned to, but its nodes are still bones
+        if self.is_skeleton_file(n_root):
+            NifLog.info("No skinned geometry, but this looks like a skeleton; "
+                        "importing its nodes as bones.")
+            self.skinned = True
+
+    @staticmethod
+    def is_skeleton_file(n_root):
+        """
+        Whether a nif with nothing skinned in it is a standalone skeleton.
+
+        The SkeletonID is the only reliable mark. A file name is not one: nothing stops a
+        skeleton from being called something else, or a prop from being called skeleton.
+        Neither is the presence of bone shaped nodes, which describes any static prop with
+        attachment points. Being imported as an armature is not one either, since a skinned
+        mesh brings its own flat armature of the bones it happens to use, and that armature
+        is not a skeleton.
+        """
+
+        if n_root.find(block_name="SkeletonID", block_type=NifClasses.NiIntegerExtraData):
+            NifLog.debug("Found a SkeletonID.")
+            return True
+
+        return False
 
     def is_bone(self, ni_block):
         """Tests a NiNode to see if it has been marked as a bone."""

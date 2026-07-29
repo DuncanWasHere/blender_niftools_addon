@@ -67,10 +67,11 @@ class Constraint:
             # Only export constraints for Bethesda games
             if not bpy.context.scene.niftools_scene.is_bs():
                 NifLog.warn(f"Constraints not supported for game '{self.target_game}', "
-                            f"skipped collision object '{b_constr_obj.name}'")
+                            f"skipped constraint object '{b_constr_obj.name}'")
+                continue
 
-            NifLog.warn(f"Exporting constraint!")
+            NifLog.info(f"Exporting constraint {b_constr_obj.name}")
 
             b_constr = b_constr_obj.rigid_body_constraint
 
-            self.bhk_constraint_helper.export_bhk_constraint(b_constr, b_constr_obj)
+            self.bhk_constraint_helper.export_bhk_constraint(b_constr, b_constr_obj, n_root_node)

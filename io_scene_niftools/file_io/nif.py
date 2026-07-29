@@ -43,6 +43,7 @@ import os.path as path
 
 import bpy
 import nifgen.formats.nif as NifFormat
+from ..modules.nif_export.block_registry import block_store
 from ..utils.logging import NifLog, NifError
 from ..utils.singleton import EGMData
 
@@ -75,6 +76,36 @@ class NifFile:
         return data
 
     @staticmethod
+    def validate_nif(n_data):
+        """
+        Validate the assembled NIF data, reporting which block failed and which
+        Blender object it came from.
+        """
+
+        try:
+            n_data.validate()
+        except Exception as exception:
+            # find the offending block, since the library only names the block type and field
+            # walk the same tree the library validates
+            for n_root in n_data.roots:
+                for n_block in n_root.tree(unique=True):
+                    try:
+                        type(n_block).validate_instance(n_block, n_data, arg=0, template=None)
+                        continue
+                    except Exception:
+                        pass
+                    b_obj = block_store.block_to_obj.get(n_block)
+                    source = f" (exported from '{b_obj.name}')" if b_obj else ""
+                    name = getattr(n_block, "name", "")
+                    label = f"{type(n_block).__name__} '{name}'" if name else type(n_block).__name__
+                    raise NifError(f"The exported NIF is malformed and was not written. "
+                                   f"Block {label}{source} failed validation: {exception}. "
+                                   f"This is a bug in the exporter! please report it with this file.")
+            # the failure did not reproduce per block, so report what the library said
+            raise NifError(f"The exported NIF is malformed and was not written: {exception}. "
+                           f"This is a bug in the exporter! please report it with this file.")
+
+    @staticmethod
     def write_nif(n_data, directory, file_base, file_ext):
         # export nif file:
         if bpy.context.scene.niftools_scene.game == 'EMPIRE_EARTH_II':
@@ -95,7 +126,7 @@ class NifFile:
             n_data.modification = "jmihs1"
 
         NifLog.info(f"Validating.")
-        n_data.validate()
+        NifFile.validate_nif(n_data)
         with open(niffile, "wb") as stream:
             n_data.write(stream)
 

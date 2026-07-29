@@ -44,27 +44,98 @@ import traceback
 from functools import reduce
 
 import bpy
+from .....utils import resources
 from .....utils.logging import NifLog
 from .....utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
 
 
+# Whether file names on this platform have to be matched exactly
+CASE_SENSITIVE_PATHS = os.name != "nt"
+
+# Extensions a nif texture path is retried with, in the order they are tried
+TEXTURE_EXTENSIONS = ('.DDS', '.dds', '.PNG', '.png', '.TGA', '.tga',
+                      '.BMP', '.bmp', '.JPG', '.jpg')
+
+
 class TextureLoader:
     external_textures = set()
+
+    # Directory listings reused for the length of one import. A nif asks for dozens
+    # of textures out of the same few directories, and each of those asks probes
+    # every extension of every search path. Listing a directory once is far cheaper
+    # than the hundreds of misses that costs, and than the directory walk Blender's
+    # case insensitive path resolution does for every one of them.
+    directory_listings = {}
+
+    @classmethod
+    def clear_directory_cache(cls):
+        cls.directory_listings.clear()
+        # embedded textures are written next to the nif once per import, not once
+        # per Blender session: the files they produced may since have been removed
+        cls.external_textures.clear()
+
+    @classmethod
+    def directory_listing(cls, directory):
+        """The names in a directory, keyed by their lower case form."""
+        listing = cls.directory_listings.get(directory)
+        if listing is None:
+            try:
+                listing = {name.lower(): name for name in os.listdir(directory)}
+            except OSError:
+                listing = {}
+            cls.directory_listings[directory] = listing
+        return listing
+
+    @classmethod
+    def find_existing_file(cls, path):
+        """The real path of a file, matched without regard to case, or None."""
+        directory, name = os.path.split(path)
+        match = cls.directory_listing(directory).get(name.lower())
+        if match is not None:
+            return os.path.join(directory, match)
+        if CASE_SENSITIVE_PATHS:
+            # the directory part itself may be spelled differently on disk, which
+            # only Blender's own resolver knows how to walk
+            resolved = bpy.path.resolve_ncase(path)
+            if resolved != path and os.path.exists(resolved):
+                return resolved
+        return None
 
     @staticmethod
     def load_image(tex_path):
         """Returns an image or a generated image if none was found"""
         name = os.path.basename(tex_path)
-        if name not in bpy.data.images:
-            try:
-                b_image = bpy.data.images.load(tex_path)
-            except:
-                NifLog.warn(f"Texture '{name}' not found or not supported and no alternate available")
-                b_image = bpy.data.images.new(name=name, width=1, height=1, alpha=True)
-                b_image.filepath = tex_path
-        else:
-            b_image = bpy.data.images[name]
+        # reuse an existing image only if it points to the same file,
+        # so textures with the same name in different folders don't get mixed up
+        abs_path = os.path.normcase(os.path.normpath(bpy.path.abspath(tex_path)))
+        for b_image in bpy.data.images:
+            if b_image.filepath and os.path.normcase(
+                    os.path.normpath(bpy.path.abspath(b_image.filepath))) == abs_path:
+                return b_image
+        try:
+            b_image = bpy.data.images.load(tex_path)
+        except:
+            NifLog.warn(f"Texture '{name}' not found or not supported and no alternate available")
+            b_image = bpy.data.images.new(name=name, width=1, height=1, alpha=True)
+            b_image.filepath = tex_path
+        return b_image
+
+    @staticmethod
+    def load_packed_image(tex_path, tex_data):
+        """Load an image from raw file bytes and pack it into the blend file.
+        :param tex_path: pseudo path identifying the texture, e.g. its location inside a BSA archive
+        :param tex_data: the raw bytes of the image file
+        :return Image object
+        """
+        # reuse the image if the same texture was already loaded
+        for b_image in bpy.data.images:
+            if b_image.filepath == tex_path:
+                return b_image
+        b_image = bpy.data.images.new(name=os.path.basename(tex_path), width=1, height=1)
+        b_image.pack(data=tex_data, data_len=len(tex_data))
+        b_image.source = 'FILE'
+        b_image.filepath = tex_path
         return b_image
 
     def import_texture_source(self, source):
@@ -157,14 +228,16 @@ class TextureLoader:
                 relative = False
             texdir = texdir.replace('\\', os.sep)
             texdir = texdir.replace('/', os.sep)
-            # go through all possible file names, try alternate extensions too; for linux, also try lower case versions of filenames
+            # go through all possible file names, try alternate extensions too. For linux, also try lower case versions of filenames
             texfns = reduce(operator.add,
                             [[fn[:-4] + ext, fn[:-4].lower() + ext]
-                             for ext in ('.DDS', '.dds', '.PNG', '.png',
-                                         '.TGA', '.tga', '.BMP', '.bmp',
-                                         '.JPG', '.jpg')])
-
+                             for ext in TEXTURE_EXTENSIONS])
             texfns = [fn, fn.lower()] + list(set(texfns))
+            if not CASE_SENSITIVE_PATHS:
+                # the candidates only differ in case, so on this platform they all
+                # name the same file and trying them all is pure repetition
+                texfns = list(dict.fromkeys(texfn.lower() for texfn in texfns))
+
             for texfn in texfns:
                 # now a little trick, to satisfy many Morrowind mods
                 if texfn[:9].lower() == 'textures' + os.sep and texdir[-9:].lower() == os.sep + 'textures':
@@ -173,18 +246,20 @@ class TextureLoader:
                 else:
                     tex = os.path.join(texdir, texfn)
 
-                # "ignore case" on linuxW
                 if relative:
                     tex = bpy.path.abspath("//" + tex)
-                tex = bpy.path.resolve_ncase(tex)
                 NifLog.debug(f"Searching {tex}")
-                if os.path.exists(tex):
+                tex = self.find_existing_file(tex)
+                if tex:
                     if relative:
                         return self.load_image(bpy.path.relpath(tex))
                     else:
                         return self.load_image(tex)
 
-        else:
-            tex = fn
+        # not found on disk, so look through the configured game resources
+        resource_texture = resources.find_texture(fn)
+        if resource_texture:
+            return self.load_packed_image(*resource_texture)
+
         # probably not found, but load a dummy regardless
-        return self.load_image(tex)
+        return self.load_image(fn)

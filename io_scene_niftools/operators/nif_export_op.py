@@ -128,6 +128,32 @@ class NifExportOperator(Operator, ExportHelper, CommonDevOperator, CommonNif, Co
                     "Split vertices if tangents differ (not used by Oblivion head nifs).\n"
                     "Warning: Unchecking causes seams on mirrored UV boundaries",
         default=False)
+    
+    # Export selected objects only.
+    use_selected: bpy.props.BoolProperty(
+        name="Selected Objects",
+        description="Export selected objects only.",
+        default=False)
+    
+    # Export selected objects only.
+    use_visible: bpy.props.BoolProperty(
+        name="Visible Objects",
+        description="Export visible objects only.",
+        default=True)
+    
+        # Export selected objects only.
+    use_renderable: bpy.props.BoolProperty(
+        name="Renderable Objects",
+        description="Export renderable objects only.",
+        default=False)
+    
+            # Export selected objects only.
+    use_active_collection: bpy.props.BoolProperty(
+        name="Active Collection",
+        description="Export objects in the active collection only.",
+        default=False)
+    
+    # Export selected objects only.
 
     def draw(self, context):
         pass

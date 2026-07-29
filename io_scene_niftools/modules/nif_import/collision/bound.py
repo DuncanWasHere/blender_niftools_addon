@@ -40,6 +40,7 @@
 
 from ....modules.nif_import.collision import Collision
 from ....modules.nif_import.object import Object
+from ....utils.flags import to_signed_32
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2026 NIF File Format Library and Tools contributors.
@@ -151,7 +152,7 @@ class Bound(Collision):
         b_obj = Object.box_from_extents(b_name, minx, maxx, miny, maxy, minz, maxz)
         # probably only on NiNodes with BB
         if hasattr(n_block, "flags"):
-            b_obj.nif_object.flags = n_block.flags
+            b_obj.nif_object.flags = to_signed_32(n_block.flags)
         b_obj.location = bbox_center
         self.set_b_collider(b_obj, radius=max(maxx, maxy, maxz), display_type='BOX')
         return [b_obj, ]

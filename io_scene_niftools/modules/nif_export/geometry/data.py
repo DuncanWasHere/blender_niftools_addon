@@ -48,6 +48,14 @@ from nifgen.formats.nif import classes as NifClasses
 
 class GeometryData:
 
+    @staticmethod
+    def scene_linear_to_srgb(values):
+        """Encode scene linear values as sRGB, the space the games store colours in."""
+        values = np.clip(values, 0.0, None)
+        return np.where(values <= 0.0031308,
+                        values * 12.92,
+                        1.055 * np.power(values, 1.0 / 2.4) - 0.055)
+
     def get_geom_data(self, b_mesh, color, normal, uv, tangent, b_mat_index):
         """
         Converts the blender information in b_mesh to a triangles, a dictionary with vertex information and a
@@ -134,6 +142,9 @@ class GeometryData:
                     loop_colors[:] = vert_colors[loop_to_vert]
                     del vert_colors
             loop_colors = loop_colors[matl_to_loop]
+            # Blender holds these as scene linear values, but the games store the gamma
+            # space colours they multiply onto the texture, so encode them back to sRGB
+            loop_colors[:, :3] = self.scene_linear_to_srgb(loop_colors[:, :3])
             loop_hashes = np.concatenate((loop_hashes, loop_colors), axis=1)
 
         if normal:
@@ -363,8 +374,11 @@ class GeometryData:
             data_flags.num_uv_sets = len(b_uv_layers)
             has_uv = data_flags.num_uv_sets
 
+        # the uv_sets array is sized by both the uv set count and the vertex count,
+        # so it must be resized even when the mesh has no uv layers at all
+        n_geom.data.reset_field("uv_sets")
+
         if has_uv:
-            n_geom.data.reset_field("uv_sets")
             uv_coords = vertex_information['UV']
             for j, n_uv_set in enumerate(n_geom.data.uv_sets):
                 for i, n_uv in enumerate(n_uv_set):

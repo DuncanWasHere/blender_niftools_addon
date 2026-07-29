@@ -1,4 +1,4 @@
-"""Script to import constraints."""
+"""This script contains classes to import havok constraints."""
 
 # ***** BEGIN LICENSE BLOCK *****
 # 
@@ -37,9 +37,14 @@
 #
 # ***** END LICENSE BLOCK *****
 
+
+import json
+
 import bpy
 import mathutils
 from ....modules.nif_import import collision
+from ....modules.nif_import.object import Object
+from ....utils import serialization
 from ....utils.logging import NifLog
 from ....utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses  # type: ignore
@@ -47,15 +52,27 @@ from nifgen.formats.nif import classes as NifClasses  # type: ignore
 
 class Constraint:
 
+    # hkConstraintType member names mapped to the closest Blender rigid body constraint types
+    KIND_BLENDER_TYPES = {
+        "BALL_AND_SOCKET": 'POINT',
+        "HINGE": 'HINGE',
+        "LIMITED_HINGE": 'HINGE',
+        "PRISMATIC": 'SLIDER',
+        "RAGDOLL": 'GENERIC',
+        "STIFF_SPRING": 'GENERIC_SPRING',
+    }
+
     def __init__(self):
         self.HAVOK_SCALE = NifData.data.havok_scale
 
     def import_bhk_constraints(self):
+        # make sure the world matrices of the freshly imported collision objects are up to date
+        bpy.context.view_layer.update()
         for n_bhk_rigid_body in collision.DICT_HAVOK_OBJECTS:
             self.import_constraint(n_bhk_rigid_body)
 
     def import_constraint(self, n_bhk_rigid_body):
-        """Imports a bone havok constraint as Blender object constraint."""
+        """Imports the constraints of a bhkRigidBody as Blender rigid body constraint objects."""
         assert (isinstance(n_bhk_rigid_body, NifClasses.BhkRigidBody))
 
         # check for constraints
@@ -74,7 +91,13 @@ class Constraint:
         # now import all constraints
         for n_bhk_constraint in n_bhk_rigid_body.constraints:
 
-            # check constraint 
+            # the list also holds the body's havok actions, which are bhkSerializables
+            # rather than constraints and have no entities of their own
+            if isinstance(n_bhk_constraint, NifClasses.BhkAction):
+                self.import_havok_action(n_bhk_constraint, b_col_obj)
+                continue
+
+            # check constraint
             n_c_info = n_bhk_constraint.constraint_info
             if not n_c_info.num_entities == 2:
                 NifLog.warn("Constraint with more than 2 entities, skipped")
@@ -85,265 +108,148 @@ class Constraint:
             if not n_c_info.entity_b in collision.DICT_HAVOK_OBJECTS:
                 NifLog.warn("Second constraint entity not imported, skipped")
                 continue
-
-            # get constraint descriptor
-            n_bhk_descriptor = n_bhk_constraint.constraint
-            if isinstance(n_bhk_descriptor, (NifClasses.BhkRagdollConstraintCInfo,
-                                             NifClasses.BhkLimitedHingeConstraintCInfo,
-                                             NifClasses.BhkHingeConstraintCInfo)):
-                b_col_obj.rigid_body.enabled = True
-            elif isinstance(n_bhk_descriptor, NifClasses.BhkMalleableConstraintCInfo):
-                # TODO [constraint] add other types used by malleable constraint (for values 0, 1, 6 and 8)
-                if n_bhk_descriptor.type == 2:
-                    n_bhk_descriptor = n_bhk_descriptor.limited_hinge
-                    b_col_obj.rigid_body.enabled = False
-                elif n_bhk_descriptor.type == 7:
-                    n_bhk_descriptor = n_bhk_descriptor.ragdoll
-                    b_col_obj.rigid_body.enabled = False
-                else:
-                    NifLog.warn(f"Unknown malleable type ({n_bhk_constraint.type:s}), skipped")
-            else:
-                NifLog.warn(f"Unknown constraint type ({n_bhk_constraint.__class__.__name__}), skipped")
+            b_col_obj_b = collision.DICT_HAVOK_OBJECTS[n_c_info.entity_b]
+            if not b_col_obj_b:
+                NifLog.warn("Second constraint entity has no imported shape, skipped")
                 continue
 
-            # TODO: The following is no longer possible. Fix me!
+            self.import_bhk_constraint(n_bhk_constraint, b_col_obj, b_col_obj_b)
 
-            b_col_obj2 = collision.DICT_HAVOK_OBJECTS[n_bhk_constraint.constraint_info.entity_b]
-            # add the constraint as a rigid body joint
-            override = bpy.context.copy()
-            override['active_object'] = b_col_obj
-            override['selected_objects'] = b_col_obj2
+    @staticmethod
+    def import_havok_action(n_bhk_action, b_col_obj):
+        """Import a havok action held in a rigid body's constraints list."""
 
-            bpy.ops.rigidbody.connect(con_type='FIXED', pivot_type='CENTER', connection_pattern='SELECTED_TO_ACTIVE')
+        nif_action = b_col_obj.nif_havok_action
 
-            continue
+        if isinstance(n_bhk_action, NifClasses.BhkLiquidAction):
+            nif_action.use_liquid_action = True
+            nif_action.initial_stick_force = n_bhk_action.initial_stick_force
+            nif_action.stick_strength = n_bhk_action.stick_strength
+            nif_action.neighbor_distance = n_bhk_action.neighbor_distance
+            nif_action.neighbor_strength = n_bhk_action.neighbor_strength
 
-            b_constr = None
-            for obj in bpy.context.scene.objects:  # Iterate over all objects
-                if obj.rigid_body_constraint:  # Check for rigid body constraints
-                    if obj.rigid_body_constraint.object1 == b_col_obj and obj.rigid_body_constraint.object2 == b_col_obj2:
-                        b_constr = obj.rigid_body_constraint
+        elif isinstance(n_bhk_action, NifClasses.BhkOrientHingedBodyAction):
+            nif_action.use_orient_hinged_body_action = True
+            n_hinge_axis = n_bhk_action.hinge_axis_ls
+            nif_action.hinge_axis_ls = (n_hinge_axis.x, n_hinge_axis.y, n_hinge_axis.z)
+            n_forward = n_bhk_action.forward_ls
+            nif_action.forward_ls = (n_forward.x, n_forward.y, n_forward.z)
+            nif_action.strength = n_bhk_action.strength
+            nif_action.damping = n_bhk_action.damping
 
-            # note: rigidbodyjoint parameters (from Constraint.c)
-            # CONSTR_RB_AXX 0.0
-            # CONSTR_RB_AXY 0.0
-            # CONSTR_RB_AXZ 0.0
-            # CONSTR_RB_EXTRAFZ 0.0
-            # CONSTR_RB_MAXLIMIT0 0.0
-            # CONSTR_RB_MAXLIMIT1 0.0
-            # CONSTR_RB_MAXLIMIT2 0.0
-            # CONSTR_RB_MAXLIMIT3 0.0
-            # CONSTR_RB_MAXLIMIT4 0.0
-            # CONSTR_RB_MAXLIMIT5 0.0
-            # CONSTR_RB_MINLIMIT0 0.0
-            # CONSTR_RB_MINLIMIT1 0.0
-            # CONSTR_RB_MINLIMIT2 0.0
-            # CONSTR_RB_MINLIMIT3 0.0
-            # CONSTR_RB_MINLIMIT4 0.0
-            # CONSTR_RB_MINLIMIT5 0.0
-            # CONSTR_RB_PIVX 0.0
-            # CONSTR_RB_PIVY 0.0
-            # CONSTR_RB_PIVZ 0.0
-            # CONSTR_RB_TYPE 12
-            # LIMIT 63
-            # PARSIZEY 63
-            # TARGET [Object "capsule.002"]
+        else:
+            NifLog.warn(f"Unsupported havok action type "
+                        f"({type(n_bhk_action).__name__}) on '{b_col_obj.name}', skipped.")
 
-            # limit 3, 4, 5 correspond to angular limits along x, y and z
-            # and are measured in degrees
+    def import_bhk_constraint(self, n_bhk_constraint, b_col_obj_a, b_col_obj_b):
+        """Imports a single bhkConstraint linking two imported collision objects as an empty
+        with a Blender rigid body constraint, and stores the full havok constraint data on it."""
 
-            # pivx/y/z is the pivot point
+        kind, n_bhk_descriptor = serialization.get_constraint_descriptor(n_bhk_constraint)
+        if kind is None:
+            NifLog.warn(f"Unknown constraint type ({type(n_bhk_constraint).__name__}), skipped")
+            return
 
-            # set constraint target
-            b_constr.object1 = collision.DICT_HAVOK_OBJECTS[n_bhk_constraint.constraint_info.entity_a]
-            b_constr.object2 = collision.DICT_HAVOK_OBJECTS[n_bhk_constraint.constraint_info.entity_b]
-            # set rigid body type (generic)
-            b_constr.pivot_type = 'GENERIC_6_DOF'
-            # limiting parameters (limit everything)
-            b_constr.use_angular_limit_x = True
-            b_constr.use_angular_limit_y = True
-            b_constr.use_angular_limit_z = True
+        # create an empty to hold the constraint, parented to the first entity
+        b_con_obj = Object.create_b_obj(None, None, f"constraint_{b_col_obj_a.name}")
+        b_con_obj.empty_display_type = 'ARROWS'
+        b_con_obj.empty_display_size = 0.5
+        # create_b_obj makes the empty the active object, which the constraint operator works on
+        if not bpy.context.scene.rigidbody_world:
+            bpy.ops.rigidbody.world_add()
+        bpy.ops.rigidbody.constraint_add()
+        b_constr = b_con_obj.rigid_body_constraint
 
-            # get pivot point
-            pivot = mathutils.Vector((n_bhk_descriptor.pivot_b.x,
-                                      n_bhk_descriptor.pivot_b.y,
-                                      n_bhk_descriptor.pivot_b.z)) * self.HAVOK_SCALE
+        b_constr.object1 = b_col_obj_a
+        b_constr.object2 = b_col_obj_b
+        b_constr.type = self.KIND_BLENDER_TYPES[kind]
 
-            # get z- and x-axes of the constraint
-            # (also see export_nif.py NifImport.export_constraints)
-            if isinstance(n_bhk_descriptor, NifClasses.BhkRagdollConstraintCInfo):
-                b_constr.pivot_type = 'CONE_TWIST'
-                # for ragdoll, take z to be the twist axis (central axis of the
-                # cone, that is)
-                axis_z = mathutils.Vector((n_bhk_descriptor.twist_a.x,
-                                           n_bhk_descriptor.twist_a.y,
-                                           n_bhk_descriptor.twist_a.z))
-                # for ragdoll, let x be the plane vector
-                axis_x = mathutils.Vector((n_bhk_descriptor.plane_a.x,
-                                           n_bhk_descriptor.plane_a.y,
-                                           n_bhk_descriptor.plane_a.z))
-                # set the angle limits
-                # (see http://niftools.sourceforge.net/wiki/Oblivion/Bhk_Objects/Ragdoll_Constraint
-                # for a nice picture explaining this)
-                b_constr.limit_angle_min_x = n_bhk_descriptor.plane_min_angle
-                b_constr.limit_angle_max_x = n_bhk_descriptor.plane_max_angle
+        # position the empty at the constraint pivot, oriented along the constraint axes,
+        # matching the axis conventions of the Blender constraint types
+        # (hinges rotate around Z, sliders move along X)
+        if kind == "RAGDOLL":
+            axis_z = self.vector_from_field(n_bhk_descriptor.twist_a)
+            axis_x = self.vector_from_field(n_bhk_descriptor.plane_a)
+        elif kind in ("HINGE", "LIMITED_HINGE"):
+            axis_z = self.vector_from_field(n_bhk_descriptor.axis_a)
+            axis_x = self.vector_from_field(n_bhk_descriptor.perp_axis_in_a_1)
+            if axis_z.length < 0.5:
+                # oblivion layout has no explicit hinge axis, derive it from the perpendicular pair
+                axis_z = self.vector_from_field(n_bhk_descriptor.perp_axis_in_a_1).cross(
+                    self.vector_from_field(n_bhk_descriptor.perp_axis_in_a_2))
+                axis_x = self.vector_from_field(n_bhk_descriptor.perp_axis_in_a_2)
+        elif kind == "PRISMATIC":
+            axis_x = self.vector_from_field(n_bhk_descriptor.sliding_a)
+            axis_z = self.vector_from_field(n_bhk_descriptor.plane_a)
+        else:
+            # ball and socket / stiff spring constraints have no meaningful axes
+            axis_z = mathutils.Vector((0, 0, 1))
+            axis_x = mathutils.Vector((1, 0, 0))
 
-                b_constr.limit_angle_min_y = -n_bhk_descriptor.cone_max_angle
-                b_constr.limit_angle_max_y = n_bhk_descriptor.cone_max_angle
+        pivot = self.vector_from_field(n_bhk_descriptor.pivot_a) * self.HAVOK_SCALE
+        b_con_obj.parent = b_col_obj_a
+        b_con_obj.matrix_parent_inverse = b_col_obj_a.matrix_world.inverted()
+        b_con_obj.matrix_basis = b_col_obj_a.matrix_world @ self.compose_matrix(pivot, axis_x, axis_z)
 
-                b_constr.limit_angle_min_z = n_bhk_descriptor.twist_min_angle
-                b_constr.limit_angle_max_z = n_bhk_descriptor.twist_max_angle
+        # transfer the values blender constraints can represent
+        if kind == "RAGDOLL":
+            b_constr.use_limit_ang_x = True
+            b_constr.limit_ang_x_lower = n_bhk_descriptor.plane_min_angle
+            b_constr.limit_ang_x_upper = n_bhk_descriptor.plane_max_angle
+            b_constr.use_limit_ang_y = True
+            b_constr.limit_ang_y_lower = -n_bhk_descriptor.cone_max_angle
+            b_constr.limit_ang_y_upper = n_bhk_descriptor.cone_max_angle
+            b_constr.use_limit_ang_z = True
+            b_constr.limit_ang_z_lower = n_bhk_descriptor.twist_min_angle
+            b_constr.limit_ang_z_upper = n_bhk_descriptor.twist_max_angle
+            b_con_obj.niftools_constraint.LHMaxFriction = n_bhk_descriptor.max_friction
+        elif kind == "LIMITED_HINGE":
+            b_constr.use_limit_ang_z = True
+            b_constr.limit_ang_z_lower = n_bhk_descriptor.min_angle
+            b_constr.limit_ang_z_upper = n_bhk_descriptor.max_angle
+            b_con_obj.niftools_constraint.LHMaxFriction = n_bhk_descriptor.max_friction
+        elif kind == "PRISMATIC":
+            b_constr.use_limit_lin_x = True
+            b_constr.limit_lin_x_lower = n_bhk_descriptor.min_distance * self.HAVOK_SCALE
+            b_constr.limit_lin_x_upper = n_bhk_descriptor.max_distance * self.HAVOK_SCALE
+            b_con_obj.niftools_constraint.LHMaxFriction = n_bhk_descriptor.friction
 
-                b_col_obj.niftools_constraint.LHMaxFriction = n_bhk_descriptor.max_friction
+        # transfer wrapper block values
+        if isinstance(n_bhk_constraint, NifClasses.BhkBreakableConstraint):
+            b_constr.use_breaking = True
+            b_constr.breaking_threshold = n_bhk_constraint.threshold
+        elif isinstance(n_bhk_constraint, NifClasses.BhkMalleableConstraint):
+            n_c_info = n_bhk_constraint.constraint
+            # newer nif versions store strength instead of tau and damping
+            malleable_fields = [name for name, *_ in type(n_c_info)._get_filtered_attribute_list(n_c_info)]
+            if "tau" in malleable_fields:
+                b_con_obj.niftools_constraint.tau = n_c_info.tau
+                b_con_obj.niftools_constraint.damping = n_c_info.damping
 
-            elif isinstance(n_bhk_descriptor, NifClasses.BhkLimitedHingeConstraintCInfo):
-                # for hinge, y is the vector on the plane of rotation defining
-                # the zero angle
-                axis_y = mathutils.Vector((n_bhk_descriptor.perp_2_axle_in_a_1.x,
-                                           n_bhk_descriptor.perp_2_axle_in_a_1.y,
-                                           n_bhk_descriptor.perp_2_axle_in_a_1.z))
-                # for hinge, take x to be the the axis of rotation
-                # (this corresponds with Blender's convention for hinges)
-                axis_x = mathutils.Vector((n_bhk_descriptor.axle_a.x,
-                                           n_bhk_descriptor.axle_a.y,
-                                           n_bhk_descriptor.axle_a.z))
-                # for hinge, z is the vector on the plane of rotation defining
-                # the positive direction of rotation
-                axis_z = mathutils.Vector((n_bhk_descriptor.perp_2_axle_in_a_2.x,
-                                           n_bhk_descriptor.perp_2_axle_in_a_2.y,
-                                           n_bhk_descriptor.perp_2_axle_in_a_2.z))
-                # they should form a orthogonal basis
-                if (mathutils.Vector.cross(axis_x, axis_y) - axis_z).length > 0.01:
-                    # either not orthogonal, or negative orientation
-                    if (mathutils.Vector.cross(-axis_x, axis_y) - axis_z).length > 0.01:
-                        NifLog.warn(
-                            f"Axes are not orthogonal in {n_bhk_descriptor.__class__.__name__}; Arbitrary orientation has been chosen")
-                        axis_z = mathutils.Vector.cross(axis_x, axis_y)
-                    else:
-                        # fix orientation
-                        NifLog.warn(f"X axis flipped in {n_bhk_descriptor.__class__.__name__} to fix orientation")
-                        axis_x = -axis_x
-                # getting properties with no blender constraint equivalent and setting as obj properties
-                b_constr.limit_angle_max_x = n_bhk_descriptor.max_angle
-                b_constr.limit_angle_min_x = n_bhk_descriptor.min_angle
-                b_col_obj.niftools_constraint.LHMaxFriction = n_bhk_descriptor.max_friction
+        # store the full havok constraint data so it survives the round trip to blender
+        b_con_obj.niftools_constraint.data = json.dumps({
+            "block_type": type(n_bhk_constraint).__name__,
+            "fields": serialization.struct_to_dict(n_bhk_constraint),
+        })
 
-                if hasattr(n_bhk_constraint, "tau"):
-                    b_col_obj.niftools_constraint.tau = n_bhk_constraint.tau
-                    b_col_obj.niftools_constraint.damping = n_bhk_constraint.damping
+    @staticmethod
+    def vector_from_field(n_vector):
+        return mathutils.Vector((n_vector.x, n_vector.y, n_vector.z))
 
-            elif isinstance(n_bhk_descriptor, NifClasses.HingeDescriptor):
-                # for hinge, y is the vector on the plane of rotation defining
-                # the zero angle
-                axis_y = mathutils.Vector((n_bhk_descriptor.perp_2_axle_in_a_1.x,
-                                           n_bhk_descriptor.perp_2_axle_in_a_1.y,
-                                           n_bhk_descriptor.perp_2_axle_in_a_1.z))
-                # for hinge, z is the vector on the plane of rotation defining
-                # the positive direction of rotation
-                axis_z = mathutils.Vector((n_bhk_descriptor.perp_2_axle_in_a_2.x,
-                                           n_bhk_descriptor.perp_2_axle_in_a_2.y,
-                                           n_bhk_descriptor.perp_2_axle_in_a_2.z))
-                # take x to be the the axis of rotation
-                # (this corresponds with Blender's convention for hinges)
-                axis_x = mathutils.Vector.cross(axis_y, axis_z)
-                b_col_obj.niftools_constraint.LHMaxFriction = n_bhk_descriptor.max_friction
-            else:
-                raise ValueError(f"Unknown descriptor {n_bhk_descriptor.__class__.__name__}")
-
-            # transform pivot point and constraint matrix into object
-            # coordinates
-            # (also see export_nif.py NifImport.export_constraints)
-
-            # the pivot point v is in hkbody coordinates
-            # however blender expects it in object coordinates, v'
-            # v * R * B = v' * O * T * B'
-            # with R = rigid body transform (usually unit tf)
-            # B = nif bone matrix
-            # O = blender object transform
-            # T = bone tail matrix (translation in Y direction)
-            # B' = blender bone matrix
-            # so we need to cancel out the object transformation by
-            # v' = v * R * B * B'^{-1} * T^{-1} * O^{-1}
-
-            # the local rotation L at the pivot point must be such that
-            # (axis_z + v) * R * B = ([0 0 1] * L + v') * O * T * B'
-            # so (taking the rotation parts of all matrices!!!)
-            # [0 0 1] * L = axis_z * R * B * B'^{-1} * T^{-1} * O^{-1}
-            # and similarly
-            # [1 0 0] * L = axis_x * R * B * B'^{-1} * T^{-1} * O^{-1}
-            # hence these give us the first and last row of L
-            # which is exactly enough to provide the euler angles
-
-            # multiply with rigid body transform
-            if isinstance(n_bhk_rigid_body, NifClasses.BhkRigidBodyT):
-                # set rotation
-                transform = mathutils.Quaternion((n_bhk_rigid_body.rotation.w,
-                                                  n_bhk_rigid_body.rotation.x,
-                                                  n_bhk_rigid_body.rotation.y,
-                                                  n_bhk_rigid_body.rotation.z)).to_matrix()
-                transform.resize_4x4()
-                # set translation
-                transform[0][3] = n_bhk_rigid_body.translation.x * self.HAVOK_SCALE
-                transform[1][3] = n_bhk_rigid_body.translation.y * self.HAVOK_SCALE
-                transform[2][3] = n_bhk_rigid_body.translation.z * self.HAVOK_SCALE
-                # apply transform
-                # pivot = pivot * transform
-                transform = transform.to_3x3()
-                axis_z = axis_z * transform
-                axis_x = axis_x * transform
-
-            # TODO [armature] update this to use the new bone system
-            # next, cancel out bone matrix correction
-            # note that B' = X * B with X = self.nif_import.dict_bones_extra_matrix[B]
-            # so multiply with the inverse of X
-            # for niBone in self.nif_import.dict_bones_extra_matrix:
-            # if niBone.collision_object \
-            # and niBone.collision_object.body is hkbody:
-            # transform = mathutils.Matrix(
-            # self.nif_import.dict_bones_extra_matrix[niBone])
-            # transform.invert()
-            # pivot = pivot * transform
-            # transform = transform.to_3x3()
-            # axis_z = axis_z * transform
-            # axis_x = axis_x * transform
-            # break
-
-            # # cancel out bone tail translation
-            # if b_hkobj.parent_bone:
-            #     pivot[1] -= b_hkobj.parent.data.bones[
-            #         b_hkobj.parent_bone].length
-
-            # cancel out object transform
-            transform = mathutils.Matrix(b_col_obj.matrix_local)
-            transform.invert()
-            # pivot = pivot * transform
-            transform = transform.to_3x3()
-            axis_z = axis_z * transform
-            axis_x = axis_x * transform
-
-            # set pivot point
-            b_constr.pivot_x = pivot[0]
-            b_constr.pivot_y = pivot[1]
-            b_constr.pivot_z = pivot[2]
-
-            # set euler angles
-            constr_matrix = mathutils.Matrix((axis_x,
-                                              mathutils.Vector.cross(axis_z, axis_x),
-                                              axis_z))
-            constr_euler = constr_matrix.to_euler()
-            b_constr.axis_x = constr_euler.x
-            b_constr.axis_y = constr_euler.y
-            b_constr.axis_z = constr_euler.z
-            # DEBUG
-            assert ((axis_x - mathutils.Vector((1, 0, 0)) * constr_matrix).length < 0.0001)
-            assert ((axis_z - mathutils.Vector((0, 0, 1)) * constr_matrix).length < 0.0001)
-
-            # the generic rigid body type is very buggy... so for simulation purposes let's transform it into ball and hinge
-            if isinstance(n_bhk_descriptor, NifClasses.BhkRagdollConstraintCInfo):
-                # cone_twist
-                b_constr.pivot_type = 'CONE_TWIST'
-            elif isinstance(n_bhk_descriptor, (NifClasses.BhkLimitedHingeConstraintCInfo, NifClasses.HingeDescriptor)):
-                # (limited) hinge
-                b_constr.pivot_type = 'HINGE'
-            else:
-                raise ValueError(f"Unknown descriptor {n_bhk_descriptor.__class__.__name__}")
+    @staticmethod
+    def compose_matrix(pivot, axis_x, axis_z):
+        """Build a transform matrix from a pivot point and the x and z axes of the constraint."""
+        if axis_z.length < 0.5 or axis_x.length < 0.5:
+            NifLog.warn("Constraint axes are degenerate, using identity orientation")
+            axis_z = mathutils.Vector((0, 0, 1))
+            axis_x = mathutils.Vector((1, 0, 0))
+        axis_z = axis_z.normalized()
+        # make x orthogonal to z in case the descriptor axes aren't exactly orthogonal
+        axis_x = (axis_x - axis_x.project(axis_z)).normalized()
+        axis_y = axis_z.cross(axis_x)
+        matrix = mathutils.Matrix.Identity(4)
+        matrix.col[0].xyz = axis_x
+        matrix.col[1].xyz = axis_y
+        matrix.col[2].xyz = axis_z
+        matrix.translation = pivot
+        return matrix

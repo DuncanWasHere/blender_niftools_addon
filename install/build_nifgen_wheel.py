@@ -66,7 +66,7 @@ def main():
         built = sorted(p.name for p in out_dir.glob("nifgen-*.whl"))
         sys.exit(f"expected {expected.name}, found: {built}")
 
-    print(f"built {expected.name} ({len(names)} entries)")
+    print(f"built {expected.name}")
 
 if __name__ == "__main__":
     main()

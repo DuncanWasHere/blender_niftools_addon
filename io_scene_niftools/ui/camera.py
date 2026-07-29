@@ -1,4 +1,4 @@
-"""Main module for exporting shader animation blocks."""
+""" Nif User Interface, connect the camera properties into Blender's UI"""
 
 # ***** BEGIN LICENSE BLOCK *****
 #
@@ -38,20 +38,65 @@
 # ***** END LICENSE BLOCK *****
 
 
-from ....modules.nif_export.animation.common import AnimationCommon
-from ....modules.nif_export.block_registry import block_store
+from bpy.types import Panel
+
+from ..utils.decorators import register_classes, unregister_classes
 
 
-class ShaderAnimation(AnimationCommon):
+class CameraButtonsPanel(Panel):
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "data"
 
-    def __init__(self):
-        super().__init__()
+    @classmethod
+    def poll(cls, context):
+        return context.camera is not None
 
-    def export_bs_effect_shader_property(self, b_mat, n_bs_effect_shader_property, b_slot):
-        # TODO [shader][animation] Do some form of check to ensure that we actually have data
-        effect_control = block_store.create_block("BSEffectShaderPropertyFloatController", n_bs_effect_shader_property)
-        effect_control.flags = b_mat.nif_material.texture_flags
-        effect_control.frequency = b_slot.texture.image.fps
-        effect_control.start_time = b_slot.texture.image.frame_start
-        effect_control.stop_time = b_slot.texture.image.frame_end
-        n_bs_effect_shader_property.add_controller(effect_control)
+
+class CameraPanel(CameraButtonsPanel):
+    bl_label = "NifTools Camera"
+    bl_idname = "NIFTOOLS_PT_CameraPanel"
+
+    def draw(self, context):
+        b_camera = context.camera
+        nif_camera = b_camera.nif_camera
+
+        layout = self.layout
+        layout.label(text="The frustum is taken from the lens settings above", icon='INFO')
+
+        column = layout.column()
+        column.prop(nif_camera, "lod_adjust")
+        column.prop(nif_camera, "camera_flags")
+
+
+class CameraViewportPanel(CameraButtonsPanel):
+    bl_label = "Viewport"
+    bl_idname = "NIFTOOLS_PT_CameraViewportPanel"
+    bl_parent_id = "NIFTOOLS_PT_CameraPanel"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        nif_camera = context.camera.nif_camera
+
+        layout = self.layout
+        layout.label(text="Screen rectangle this camera renders into")
+
+        column = layout.column(align=True)
+        column.prop(nif_camera, "viewport_left")
+        column.prop(nif_camera, "viewport_right")
+        column.prop(nif_camera, "viewport_top")
+        column.prop(nif_camera, "viewport_bottom")
+
+
+classes = [
+    CameraPanel,
+    CameraViewportPanel,
+]
+
+
+def register():
+    register_classes(classes, __name__)
+
+
+def unregister():
+    unregister_classes(classes, __name__)

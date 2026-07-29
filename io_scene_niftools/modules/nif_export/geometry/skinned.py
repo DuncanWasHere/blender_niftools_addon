@@ -63,8 +63,11 @@ class SkinnedGeometry:
         ungrouped_faces = []
 
         # Add body part number
-        if self.target_game not in ('FALLOUT_3', 'FALLOUT_NV', 'SKYRIM', 'SKYRIM_SE') or len(b_face_groups) == 0:
+        if self.target_game not in ('FALLOUT_3', 'FALLOUT_NV', 'SKYRIM', 'SKYRIM_SE') or len(face_group_names) == 0:
             n_face_groups = np.zeros(len(triangles), dtype=int)
+            if self.target_game in ('FALLOUT_3', 'FALLOUT_NV', 'SKYRIM'):
+                NifLog.warn(f"No body parts assigned to {b_obj.name}. "
+                            f"A regular skin instance will be exported instead of a dismember skin instance.")
         else:
             n_face_groups = b_face_groups[t_nif_to_blend]
             ungrouped_triangle_indices = np.arange(len(b_face_groups))[b_face_groups < 0]
@@ -85,7 +88,7 @@ class SkinnedGeometry:
             if boneinfluences:  # yes we have skinning!
                 # create new skinning instance block and link it
                 n_ni_skin_instance, n_ni_skin_data = self.create_skin_inst_data(b_obj, b_obj_armature,
-                                                                                b_face_groups)
+                                                                                face_group_names)
                 n_ni_geometry.skin_instance = n_ni_skin_instance
 
                 # Vertex weights,  find weights and normalization factors
@@ -262,9 +265,9 @@ class SkinnedGeometry:
                 return n_block
         raise NifError(f"Bone '{b_bone.name}' not found.")
 
-    def create_skin_inst_data(self, b_obj, b_obj_armature, body_part_face_groups):
+    def create_skin_inst_data(self, b_obj, b_obj_armature, face_group_names):
         if bpy.context.scene.niftools_scene.game in ('FALLOUT_3', 'FALLOUT_NV', 'SKYRIM') and len(
-                body_part_face_groups) > 0:
+                face_group_names) > 0:
             skininst = block_store.create_block("BSDismemberSkinInstance", b_obj)
         else:
             skininst = block_store.create_block("NiSkinInstance", b_obj)

@@ -38,10 +38,12 @@
 # ***** END LICENSE BLOCK *****
 
 
+import traceback
+
 import bpy
 import nifgen.spells.nif.fix
 from .file_io.nif import NifFile
-from .modules.nif_import import scene
+from .modules.nif_import import animation, scene
 from .modules.nif_import.animation.object import ObjectAnimation
 from .modules.nif_import.animation.transform import TransformAnimation
 from .modules.nif_import.armature import Armature
@@ -52,7 +54,11 @@ from .modules.nif_import.geometry.vertex.groups import VertexGroup
 from .modules.nif_import.object import Object
 from .modules.nif_import.object.block_registry import block_store
 from .modules.nif_import.object.types import NiTypes
+from .modules.nif_import import particle
+from .modules.nif_import.property import material
+from .modules.nif_import.particle import Particle
 from .modules.nif_import.property.object import ObjectProperty
+from .modules.nif_import.property.texture.loader import TextureLoader
 from .nif_common import NifCommon
 from .utils import math
 from .utils.logging import NifLog, NifError
@@ -71,16 +77,22 @@ class NifImport(NifCommon):
         self.load_files()  # Needs to be first to provide version info
 
         # Helper systems
+        animation.clear()
         self.armaturehelper = Armature()
         self.boundhelper = Bound()
         self.bhkhelper = BhkCollision()
         self.constrainthelper = Constraint()
+        self.particlehelper = Particle()
         self.objecthelper = Object()
         self.object_anim = ObjectAnimation()
         self.transform_anim = TransformAnimation()
 
         # find and store this list now of selected objects as creating new objects adds them to the selection list
         self.SELECTED_OBJECTS = bpy.context.selected_objects[:]
+
+        particle.clear()  # Clear data from the last import attempt
+        material.clear()  # Materials are only shared within a single imported file
+        TextureLoader.clear_directory_cache()  # the texture folders may have changed
 
         # catch nif import errors
         try:
@@ -92,13 +104,11 @@ class NifImport(NifCommon):
                         "You must select exactly one armature in 'Import Geometry Only' mode.")
 
             # Force the wireframe color type to object for collision
-            for workspace in bpy.data.workspaces:
-                for screen in workspace.screens:
-                    for area in screen.areas:
-                        if area.type == 'VIEW_3D':
-                            for space in area.spaces:
-                                if space.type == 'VIEW_3D':
-                                    space.shading.wireframe_color_type = 'OBJECT'
+            for area in bpy.context.window.screen.areas:
+                if area.type == 'VIEW_3D':
+                    for space in area.spaces:
+                        if space.type == 'VIEW_3D':
+                            space.shading.wireframe_color_type = 'OBJECT'
 
             NifLog.info("Importing data")
             # calculate and set frames per second
@@ -118,6 +128,7 @@ class NifImport(NifCommon):
             # store scale correction
             bpy.context.scene.niftools_scene.scale_correction = NifOp.props.scale_correction
             self.apply_scale(NifData.data, NifOp.props.scale_correction)
+            particle.collect_sequence_controllers(NifData.data.roots)
 
             # import all root blocks
             for root in NifData.data.roots:
@@ -136,9 +147,20 @@ class NifImport(NifCommon):
 
                 # import this root block
                 NifLog.debug(f"Root block: {root.get_global_display()}")
-                self.import_root(root)
+                with NifLog.context(f"importing root block '{getattr(root, 'name', '')}'"):
+                    self.import_root(root)
+
+            if NifOp.props.animation:
+                self.transform_anim.finalize()
+            particle.extend_cyclic_emission()
+            particle.prime_particle_caches()
 
         except NifError:
+            # already reported in full when it was raised
+            return {'CANCELLED'}
+        except Exception as exception:
+            NifLog.error(NifLog.describe_failure(exception, "Import"))
+            traceback.print_exc()
             return {'CANCELLED'}
 
         NifLog.info("Finished")
@@ -163,7 +185,8 @@ class NifImport(NifCommon):
         self.armaturehelper.check_for_skin(n_root_node)
 
         # read the NIF tree
-        if isinstance(n_root_node, NifClasses.NiNode) or self.objecthelper.has_geometry(n_root_node):
+        if (isinstance(n_root_node, NifClasses.NiNode) or self.objecthelper.has_geometry(n_root_node)
+                or self.particlehelper.is_particle_system(n_root_node)):
             b_obj = self.import_branch(n_root_node)
             ObjectProperty().import_object_properties(n_root_node, b_obj)
             ObjectProperty().import_root_extra_data(n_root_node, b_obj)
@@ -171,14 +194,20 @@ class NifImport(NifCommon):
             # now all havok objects are imported, so we are ready to import the havok constraints
             self.constrainthelper.import_bhk_constraints()
 
+            # now the whole tree is imported, so particle emitter objects can be resolved
+            particle.import_emitter_objects()
+
             # parent selected meshes to imported skeleton
             if NifOp.props.process == "SKELETON_ONLY":
                 for b_child in self.SELECTED_OBJECTS:
                     self.objecthelper.remove_armature_modifier(b_child)
                     self.objecthelper.append_armature_modifier(b_child, b_obj)
 
-        elif isinstance(n_root_node, NifClasses.NiCamera):
-            NifLog.warn('Skipped NiCamera root')
+        elif isinstance(n_root_node, (NifClasses.NiCamera, NifClasses.NiLight)):
+            # a camera or light can be a file root of its own, with nothing else in the nif
+            b_obj = self.import_branch(n_root_node)
+            if b_obj:
+                ObjectProperty().import_root_extra_data(n_root_node, b_obj)
 
         elif isinstance(n_root_node, NifClasses.NiPhysXProp):
             NifLog.warn('Skipped NiPhysXProp root')
@@ -190,7 +219,17 @@ class NifImport(NifCommon):
         """Imports a NiNode's collision_object, if present."""
         if n_node.collision_object:
             if isinstance(n_node.collision_object, NifClasses.BhkNiCollisionObject):
-                return self.bhkhelper.import_bhk_shape(n_node.collision_object.body)
+                n_col_obj = n_node.collision_object
+                b_col_obj = self.bhkhelper.import_bhk_shape(n_col_obj.body)
+                if b_col_obj:
+                    # the flags belong to the collision object rather than to the body, so
+                    # they are only reachable from here
+                    b_col_obj.nif_collision.collision_flags = int(n_col_obj.flags)
+                    if isinstance(n_col_obj, NifClasses.BhkBlendCollisionObject):
+                        b_col_obj.nif_collision.use_blend_collision = True
+                        b_col_obj.nif_collision.heir_gain = n_col_obj.heir_gain
+                        b_col_obj.nif_collision.vel_gain = n_col_obj.vel_gain
+                return b_col_obj
             elif isinstance(n_node.collision_object, NifClasses.NiCollisionData):
                 return self.boundhelper.import_bounding_volume(n_node.collision_object.bounding_volume)
         return None
@@ -208,6 +247,35 @@ class NifImport(NifCommon):
         NifLog.info(f"Importing data for block '{n_block.name}'")
         if self.objecthelper.has_geometry(n_block) and NifOp.props.process != "SKELETON_ONLY":
             return self.objecthelper.import_geometry_object(b_armature, n_block)
+
+        elif self.particlehelper.is_particle_system(n_block):
+            # particle systems have no children, so there is nothing to recurse into
+            if NifOp.props.process == "SKELETON_ONLY":
+                return None
+            return self.particlehelper.import_particle_system(n_block)
+
+        elif isinstance(n_block, NifClasses.NiCamera):
+            if NifOp.props.process == "SKELETON_ONLY":
+                return None
+            b_obj = NiTypes.import_camera(n_block)
+            ObjectProperty().import_object_properties(n_block, b_obj)
+            if NifOp.props.animation:
+                self.transform_anim.import_transforms(n_block, b_obj)
+                NiTypes.correct_aimed_animation(b_obj)
+            return b_obj
+
+        elif isinstance(n_block, NifClasses.NiLight):
+            if NifOp.props.process == "SKELETON_ONLY":
+                return None
+            b_obj = NiTypes.import_light(n_block)
+            if b_obj is None:
+                NifLog.warn(f"Skipped unsupported light type '{type(n_block).__name__}'.")
+                return None
+            ObjectProperty().import_object_properties(n_block, b_obj)
+            if NifOp.props.animation:
+                self.transform_anim.import_transforms(n_block, b_obj)
+                NiTypes.correct_aimed_animation(b_obj)
+            return b_obj
 
         elif isinstance(n_block, NifClasses.NiNode):
             # import object
@@ -236,13 +304,15 @@ class NifImport(NifCommon):
                 # import as an empty
                 b_obj = NiTypes.import_empty(n_block)
 
-            # find children
-            b_children = []
+            # these are the blocks a LOD node's levels are matched against,
+            # they're kept apart from the colliders and bounds parented alongside them
+            b_node_children = []
             n_children = [child for child in n_block.children]
             for n_child in n_children:
                 b_child = self.import_branch(n_child, b_armature=b_armature)
                 if b_child and isinstance(b_child, bpy.types.Object):
-                    b_children.append(b_child)
+                    b_node_children.append(b_child)
+            b_children = list(b_node_children)
 
             # import collision objects & bounding box
             if NifOp.props.process != "SKELETON_ONLY":
@@ -250,6 +320,9 @@ class NifImport(NifCommon):
                 if collision_obj:
                     b_children.append(collision_obj)
                 b_children.extend(self.boundhelper.import_bounding_box(n_block))
+                b_multi_bound = NiTypes.import_multi_bound(n_block)
+                if b_multi_bound:
+                    b_children.append(b_multi_bound)
 
             # set bind pose for children
             self.objecthelper.set_object_bind(b_obj, b_children, b_armature)
@@ -257,11 +330,13 @@ class NifImport(NifCommon):
             # import extra node data, such as node type
             ObjectProperty().import_object_properties(n_block, b_obj)
 
-            if not isinstance(b_obj, bpy.types.Bone):
+            if isinstance(b_obj, bpy.types.Bone):
+                ObjectProperty().import_bone_extra_data(n_block, b_obj)
+            else:
                 ObjectProperty().import_extra_data(n_block, b_obj)
                 NiTypes.import_root_collision(n_block, b_obj)
                 NiTypes.import_billboard(n_block, b_obj)
-                NiTypes.import_range_lod_data(n_block, b_obj, b_children)
+                NiTypes.import_range_lod_data(n_block, b_obj, b_node_children)
 
             if NifOp.props.animation:
                 self.transform_anim.import_controller_manager(n_block, b_obj, b_armature)

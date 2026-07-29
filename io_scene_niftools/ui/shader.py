@@ -37,7 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
-
+import bpy
 from bpy.types import Panel
 from ..utils.decorators import register_classes, unregister_classes
 from nifgen.formats.nif import classes as NifClasses
@@ -54,9 +54,10 @@ class ShaderPanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        if context.material:
-            return True
-        return False
+        # Shader property blocks start with Fallout 3
+        # Oblivion and earlier shade through the material property instead
+        b_scene = bpy.context.scene.niftools_scene
+        return context.material is not None and (b_scene.is_fo3() or b_scene.is_skyrim())
 
     def draw(self, context):
         layout = self.layout
@@ -68,19 +69,15 @@ class ShaderPanel(Panel):
         box.prop(shader_setting, "bs_shadertype", text="Shader Type")
 
         if not shader_setting.bs_shadertype in ('None', 'BSLightingShaderProperty', 'BSEffectShaderProperty'):
-            box.prop(shader_setting, "bsspplp_shaderobjtype", text="BS Shader PP Lighting Type")
+            box.prop(shader_setting, "texture_clamp_mode", text="Texture Clamp Mode")
+            # refraction, parallax and falloff live on the shader node group, where they can
+            # be seen as well as set
 
         elif shader_setting.bs_shadertype == 'BSLightingShaderProperty':
             box.prop(shader_setting, "bslsp_shaderobjtype", text="BS Lighting Shader Type")
 
             box.prop(shader_setting, "lighting_effect_1", text="Lighting Effect 1")
             box.prop(shader_setting, "lighting_effect_2", text="Lighting Effect 2")
-
-        if shader_setting.bs_shadertype in ('BSShaderNoLightingProperty', 'BSEffectShaderProperty'):
-            box.prop(shader_setting, "falloff_start_angle", text="Falloff Start Angle")
-            box.prop(shader_setting, "falloff_stop_angle", text="Falloff Stop Angle")
-            box.prop(shader_setting, "falloff_start_opacity", text="Falloff Start Opacity")
-            box.prop(shader_setting, "falloff_stop_opacity", text="Falloff Stop Opacity")
 
         if shader_setting.bs_shadertype == 'SkyShaderProperty':
             box.prop(shader_setting, "sky_object_type", text="Sky Object Type")
@@ -101,7 +98,11 @@ class ShaderFlags1Panel(Panel):
         return False
 
     def draw(self, context):
+        
+
         layout = self.layout
+
+        niftool_scene = bpy.context.scene.niftools_scene
 
         shader_setting = context.active_object.active_material.nif_shader
 
@@ -138,8 +139,16 @@ class ShaderFlags2Panel(Panel):
         box = layout.box()
 
         if not shader_setting.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty'):
+            b_scene = bpy.context.scene.niftools_scene
             for property_name in sorted(NifClasses.BSShaderFlags2.__members__):
-                box.prop(shader_setting, property_name)
+                # two of the unnamed bits are known features on Fallout 3
+                override_text = None
+                if b_scene.is_fo3():
+                    if property_name == "unknown_10":
+                        override_text = "Real Time Reflections"
+                    elif property_name == "unknown_9":
+                        override_text = "Soft Shading"
+                box.prop(shader_setting, property_name, text=override_text)
 
         elif shader_setting.bs_shadertype in ('BSLightingShaderProperty', 'BSEffectShaderProperty'):
             for property_name in sorted(NifClasses.SkyrimShaderPropertyFlags2.__members__):

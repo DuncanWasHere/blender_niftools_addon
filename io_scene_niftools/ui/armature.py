@@ -37,14 +37,16 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from bpy.types import Panel
+from bpy.types import Panel, UIList
 
+from ..properties.object import OBJECT_FLAG_BITS
 from ..utils.decorators import register_classes, unregister_classes
+from ..utils.flags import draw_bit_bools
 
 
 class BonePanel(Panel):
     bl_idname = "NIFTOOLS_PT_BonePanel"
-    bl_label = "Niftools Bone Props"
+    bl_label = "NifTools Bone"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "bone"
@@ -59,13 +61,25 @@ class BonePanel(Panel):
 
         row = self.layout.column()
 
-        row.prop(nif_bone_props, "flags")
         row.prop(nif_bone_props, "priority")
         row.prop(nif_bone_props, "longname")
 
 
+class BoneFlagsPanel(Panel):
+    bl_idname = "NIFTOOLS_PT_BoneFlagsPanel"
+    bl_label = "Object Flags"
+    bl_parent_id = "NIFTOOLS_PT_BonePanel"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "bone"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        draw_bit_bools(self.layout, context.bone.nif_bone, OBJECT_FLAG_BITS)
+
+
 class ArmaturePanel(Panel):
-    bl_label = "Niftools Armature Props"
+    bl_label = "NifTools Armature"
     bl_idname = "NIFTOOLS_PT_ArmaturePropsPanel"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -84,11 +98,71 @@ class ArmaturePanel(Panel):
 
         row.prop(nif_armature_props, "axis_forward")
         row.prop(nif_armature_props, "axis_up")
+        row.prop(nif_armature_props, "skeleton_id")
+
+
+class BoneLODGroupList(UIList):
+    """The LOD groups. A group's row number is its LOD level."""
+
+    bl_idname = "NIFTOOLS_UL_BoneLODGroups"
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        layout.label(text=f"Level {index}", icon='GROUP_BONE')
+        layout.label(text=f"{len(item.bones)} bones")
+
+
+class BoneLODBoneList(UIList):
+    """The bones of the selected LOD group."""
+
+    bl_idname = "NIFTOOLS_UL_BoneLODBones"
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        layout.prop_search(item, "bone", context.armature, "bones", text="", icon='BONE_DATA')
+
+
+class BoneLODPanel(Panel):
+    bl_label = "Bone LOD Groups"
+    bl_idname = "NIFTOOLS_PT_BoneLODPanel"
+    bl_parent_id = "NIFTOOLS_PT_ArmaturePropsPanel"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "data"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.armature is not None
+
+    def draw(self, context):
+        layout = self.layout
+        nif_armature = context.armature.nif_armature
+
+        row = layout.row()
+        row.template_list(BoneLODGroupList.bl_idname, "", nif_armature, "bone_lod_groups",
+                          nif_armature, "active_bone_lod_group_index", rows=4)
+        col = row.column(align=True)
+        col.operator("niftools.bone_lod_group_add", icon='ADD', text="")
+        col.operator("niftools.bone_lod_group_remove", icon='REMOVE', text="")
+
+        if not nif_armature.bone_lod_groups:
+            return
+
+        b_group = nif_armature.bone_lod_groups[nif_armature.active_bone_lod_group_index]
+        row = layout.row()
+        row.template_list(BoneLODBoneList.bl_idname, "", b_group, "bones",
+                          b_group, "active_bone_index", rows=6)
+        col = row.column(align=True)
+        col.operator("niftools.bone_lod_bone_add", icon='ADD', text="")
+        col.operator("niftools.bone_lod_bone_remove", icon='REMOVE', text="")
 
 
 classes = [
     BonePanel,
-    ArmaturePanel
+    BoneFlagsPanel,
+    ArmaturePanel,
+    BoneLODGroupList,
+    BoneLODBoneList,
+    BoneLODPanel
 ]
 
 

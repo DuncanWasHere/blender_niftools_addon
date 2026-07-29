@@ -39,8 +39,8 @@
 
 
 import bpy
-from ..operators import object, geometry, nif_import_op, nif_export_op, kf_import_op, egm_import_op, \
-    kf_export_op
+from ..operators import armature, object, geometry, nif_import_op, nif_export_op, kf_import_op, \
+    egm_import_op, kf_export_op
 from ..utils.decorators import register_modules, unregister_modules
 
 
@@ -60,7 +60,7 @@ def menu_func_export(self, context):
     self.layout.operator(kf_export_op.KfExportOperator.bl_idname, text="NetImmerse/Gamebryo (.kf)")
 
 
-MODS = [object, geometry, nif_import_op, nif_export_op, kf_import_op, kf_export_op, egm_import_op]
+MODS = [armature, object, geometry, nif_import_op, nif_export_op, kf_import_op, kf_export_op, egm_import_op]
 
 
 def register():

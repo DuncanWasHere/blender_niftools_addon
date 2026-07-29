@@ -1,7 +1,5 @@
 """This script contains helper methods to import objects."""
 
-from math import pi
-
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2026 NIF File Format Library and Tools contributors.
@@ -38,7 +36,56 @@ from math import pi
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
+import json
+import re
+from math import pi
+
+from .....modules.nif_import.object.block_registry import block_store
+from .....utils import decal
+from .....utils.flags import to_signed_32
+from .....utils.logging import NifLog
+from .....utils.serialization import block_to_dict
 from nifgen.formats.nif import classes as NifClasses
+
+# A bone states its animation priority in its UPB string as 'BSPriority#7#'. The LOD levels
+# the string also carries come from the LOD controller's node groups instead.
+BONE_PRIORITY = re.compile(r'BSPriority#(\d+)#')
+
+
+def is_object_upb(b_upb):
+    """Whether a UPB string contains supported bone data worth importing."""
+
+    return 'BSBoneLOD' in b_upb or 'Bip' in b_upb
+
+
+def get_bone_priority(b_upb):
+    """The animation priority a UPB string declares, or None if it declares none."""
+
+    if not b_upb:
+        return None
+
+    match = BONE_PRIORITY.search(b_upb)
+    return int(match.group(1)) if match else None
+
+# Nif node blocks paired with the nodetype they are stored as. Most derived first, so that a
+# subclass is recognised before the base it inherits from.
+NODE_TYPES = (
+    (NifClasses.BSDamageStage, 'BSDamageStage'),
+    (NifClasses.BSBlastNode, 'BSBlastNode'),
+    (NifClasses.BSDebrisNode, 'BSDebrisNode'),
+    (NifClasses.BSRangeNode, 'BSRangeNode'),
+    (NifClasses.NiLODNode, 'NiLODNode'),
+    (NifClasses.NiSwitchNode, 'NiSwitchNode'),
+    (NifClasses.BSMultiBoundNode, 'BSMultiBoundNode'),
+    (NifClasses.BSValueNode, 'BSValueNode'),
+    (NifClasses.BSOrderedNode, 'BSOrderedNode'),
+    (NifClasses.BSMasterParticleSystem, 'BSMasterParticleSystem'),
+    (NifClasses.BSLeafAnimNode, 'BSLeafAnimNode'),
+    (NifClasses.BSFadeNode, 'BSFadeNode'),
+    (NifClasses.RootCollisionNode, 'RootCollisionNode'),
+    (NifClasses.NiBillboardNode, 'NiBillboardNode'),
+    (NifClasses.NiSortAdjustNode, 'NiSortAdjustNode'),
+)
 
 
 class ObjectProperty:
@@ -49,54 +96,155 @@ class ObjectProperty:
 
         # Store object flags
         if hasattr(b_obj, 'nif_object'):
-            b_obj.nif_object.flags = n_block.flags
+            b_obj.nif_object.flags = to_signed_32(n_block.flags)
         elif hasattr(b_obj, 'nif_bone'):
-            b_obj.nif_bone.flags = n_block.flags
+            b_obj.nif_bone.flags = to_signed_32(n_block.flags)
 
         if not issubclass(type(n_block), NifClasses.NiNode):
             return
 
         # Store type of node
-        if isinstance(n_block, NifClasses.BSFadeNode):
-            b_obj.nif_object.nodetype = 'BSFadeNode'
-        elif isinstance(n_block, NifClasses.RootCollisionNode):
-            b_obj.nif_object.nodetype = 'RootCollisionNode'
-        elif isinstance(n_block, NifClasses.NiLODNode):
-            b_obj.nif_object.nodetype = 'NiLODNode'
-        elif isinstance(n_block, NifClasses.NiBillboardNode):
-            b_obj.nif_object.nodetype = 'NiBillboardNode'
-        elif isinstance(n_block, NifClasses.BSBlastNode):
-            b_obj.nif_object.nodetype = 'BSBlastNode'
-        elif isinstance(n_block, NifClasses.BSDamageStage):
-            b_obj.nif_object.nodetype = 'BSDamageStage'
-        elif isinstance(n_block, NifClasses.BSDebrisNode):
-            b_obj.nif_object.nodetype = 'BSDebrisNode'
-        elif isinstance(n_block, NifClasses.BSMultiBoundNode):
-            b_obj.nif_object.nodetype = 'BSMultiBoundNode'
-        elif isinstance(n_block, NifClasses.BSOrderedNode):
-            b_obj.nif_object.nodetype = 'BSOrderedNode'
-        elif isinstance(n_block, NifClasses.BSValueNode):
-            b_obj.nif_object.nodetype = 'BSValueNode'
+        for n_node_type, b_nodetype in NODE_TYPES:
+            if isinstance(n_block, n_node_type):
+                b_obj.nif_object.nodetype = b_nodetype
+                break
+
+        if isinstance(n_block, NifClasses.BSMasterParticleSystem):
+            if hasattr(b_obj, 'nif_master_particle_system'):
+                b_obj.nif_master_particle_system.max_emitter_objects = n_block.max_emitter_objects
+
+        self.import_node_subtype_data(n_block, b_obj)
+
+    @staticmethod
+    def import_node_subtype_data(n_block, b_obj):
+        """Import the fields a node subtype adds on top of NiNode.
+
+        Every check is a separate `if` rather than a chain, because these are independent
+        inheritance branches - a NiLODNode is also a NiSwitchNode and needs both.
+        """
+
+        nif_object = getattr(b_obj, 'nif_object', None)
+        if nif_object is None:
+            # bones carry nif_bone instead, and none of these blocks is ever a bone
+            return
+
+        if isinstance(n_block, NifClasses.BSRangeNode):
+            nif_object.node_range.min = n_block.min
+            nif_object.node_range.max = n_block.max
+            nif_object.node_range.current = n_block.current
+
+        if isinstance(n_block, NifClasses.BSValueNode):
+            nif_object.node_value.value = n_block.value
+            nif_object.node_value.value_node_flags = int(n_block.value_node_flags)
+
+        if isinstance(n_block, NifClasses.BSOrderedNode):
+            n_bound = n_block.alpha_sort_bound
+            nif_object.node_ordered.alpha_sort_bound = (n_bound.x, n_bound.y, n_bound.z, n_bound.w)
+            nif_object.node_ordered.static_bound = bool(n_block.static_bound)
+
+        if isinstance(n_block, NifClasses.NiSwitchNode):
+            nif_object.node_switch.index = n_block.index
+            # switch flags only exist from 10.1.0.0 on
+            nif_object.node_switch.switch_node_flags = int(getattr(n_block, "switch_node_flags", 0))
+
+        if isinstance(n_block, NifClasses.NiLODNode):
+            ObjectProperty.import_lod_data(n_block, nif_object)
+
+        if isinstance(n_block, NifClasses.NiSortAdjustNode):
+            nif_object.node_sort_adjust.sorting_mode = n_block.sorting_mode.name
+
+        if isinstance(n_block, NifClasses.BSMultiBoundNode):
+            # culling mode was only added for Skyrim. The Fallout 3 era has no such field
+            if hasattr(n_block, "culling_mode"):
+                nif_object.node_multi_bound.culling_mode = n_block.culling_mode.name
+
+    @staticmethod
+    def import_lod_data(n_block, nif_object):
+        """Import a NiLODNode's LOD centre and which kind of data drives its switching."""
+
+        n_lod_data = getattr(n_block, "lod_level_data", None)
+
+        if isinstance(n_lod_data, NifClasses.NiScreenLODData):
+            # nothing here maps onto the children, so keep the block verbatim
+            nif_object.node_lod.lod_type = 'NiScreenLODData'
+            nif_object.node_lod.screen_lod_data = json.dumps(block_to_dict(n_lod_data))
+            return
+
+        nif_object.node_lod.lod_type = 'NiRangeLODData'
+        nif_object.node_lod.screen_lod_data = ''
+
+        # up to 10.0.1.0 the centre sits on the node, after that on the NiRangeLODData
+        n_center_source = n_lod_data if n_lod_data is not None else n_block
+        n_center = getattr(n_center_source, "lod_center", None)
+        if n_center is not None:
+            nif_object.node_lod.lod_center = (n_center.x, n_center.y, n_center.z)
 
     def import_extra_data(self, n_node, b_obj):
         """Import extra data blocks for NiNode types."""
         for n_extra in n_node.get_extra_datas():
+            if n_extra.name == "UPB" and is_object_upb(n_extra.string_data):
+                b_obj.nif_object.upb = n_extra.string_data
+
+    def import_bone_extra_data(self, n_node, b_bone):
+        """
+        Import what a bone's UPB string holds, and the bone LOD groups if it carries them.
+
+        The LOD levels in the UPB and the controller's node groups say the same thing, so
+        only the controller is read; the levels come back out of the groups on export.
+        """
+
+        for n_extra in n_node.get_extra_datas():
             if n_extra.name == "UPB":
-                if 'BSBoneLOD' in n_extra.string_data or 'Bip' in n_extra.string_data:
-                    b_obj.nif_object.upb = n_extra.string_data
+                n_priority = get_bone_priority(n_extra.string_data)
+                if n_priority is not None:
+                    b_bone.nif_bone.priority = n_priority
+
+        for n_controller in n_node.get_controllers():
+            if isinstance(n_controller, NifClasses.NiBoneLODController):
+                self.import_bone_lod_groups(n_controller, b_bone.id_data)
+
+    @staticmethod
+    def import_bone_lod_groups(n_bone_lod_controller, b_armature_data):
+        """Fill the armature's bone LOD groups from the controller's node groups."""
+
+        nif_armature = b_armature_data.nif_armature
+        nif_armature.bone_lod_groups.clear()
+
+        for n_group in n_bone_lod_controller.node_groups:
+            b_group = nif_armature.bone_lod_groups.add()
+            for n_node in n_group.nodes:
+                if n_node is None:
+                    continue
+                b_bone_name = block_store.import_name(n_node)
+                if b_bone_name not in b_armature_data.bones:
+                    NifLog.warn(f"Bone LOD group names '{b_bone_name}', which is not a bone of "
+                                f"'{b_armature_data.name}'. Skipped.")
+                    continue
+                b_group.bones.add().bone = b_bone_name
+
+        NifLog.info(f"Imported {len(nif_armature.bone_lod_groups)} bone LOD groups.")
 
     def import_root_extra_data(self, n_root_node, b_obj):
         """Import extra data blocks for root node."""
         for n_extra in n_root_node.get_extra_datas():
-            if isinstance(n_extra, NifClasses.NiStringExtraData):
+            if isinstance(n_extra, NifClasses.BSDecalPlacementVectorExtraData):
+                self.import_decal_placement(n_extra, b_obj)
+            elif isinstance(n_extra, NifClasses.NiStringExtraData):
                 # weapon location or attachment position
                 if n_extra.name == "Prn":
                     b_obj.nif_object.prn_location = n_extra.string_data
-                elif n_extra.name == "UPB":
-                    if 'BSBoneLOD' in n_extra.string_data or 'Bip' in n_extra.string_data:
-                        b_obj.nif_object.upb = n_extra.string_data
+                elif n_extra.name == "UPB" and is_object_upb(n_extra.string_data):
+                    b_obj.nif_object.upb = n_extra.string_data
             elif isinstance(n_extra, NifClasses.BSXFlags):
-                b_obj.nif_object.bsxflags = n_extra.integer_data
+                # checked before NiIntegerExtraData, which it inherits from
+                b_obj.nif_object.bsxflags = to_signed_32(n_extra.integer_data)
+            elif isinstance(n_extra, NifClasses.NiIntegerExtraData) and n_extra.name == "SkeletonID":
+                # a skeleton is imported as an armature, so its id belongs on the armature data
+                if getattr(b_obj, "type", None) == 'ARMATURE':
+                    b_obj.data.nif_armature.skeleton_id = n_extra.integer_data
+                else:
+                    NifLog.warn(f"Found a SkeletonID of {n_extra.integer_data} but the root "
+                                f"'{b_obj.name}' is not an armature, so it was not imported.")
             elif isinstance(n_extra, NifClasses.BSInvMarker):
                 bs_inv_item = b_obj.nif_object.bs_inv.add()
                 bs_inv_item.name = n_extra.name
@@ -104,3 +252,40 @@ class ObjectProperty:
                 bs_inv_item.y = (-n_extra.rotation_y / 1000) % (2 * pi)
                 bs_inv_item.z = (-n_extra.rotation_z / 1000) % (2 * pi)
                 bs_inv_item.zoom = n_extra.zoom
+
+    @staticmethod
+    def import_decal_placement(n_extra, b_root):
+        """Import point/normal pairs as arrow empties parented to the Blender root."""
+
+        b_store = b_root.nif_object.bs_decal_placement
+        b_data = b_store.add()
+        b_data.name = n_extra.name
+        b_data.float_data = n_extra.float_data
+
+        for block_index, n_vector_block in enumerate(n_extra.vector_blocks):
+            b_vector_block = b_data.vector_blocks.add()
+            n_count = min(len(n_vector_block.points), len(n_vector_block.normals))
+            if n_count != n_vector_block.num_vectors:
+                NifLog.warn(
+                    f"Decal vector block {block_index + 1} on '{b_root.name}' declares "
+                    f"{n_vector_block.num_vectors} vectors but contains "
+                    f"{len(n_vector_block.points)} points and {len(n_vector_block.normals)} "
+                    f"normals; imported the {n_count} complete pairs.")
+
+            for point_index, (n_point, n_normal) in enumerate(
+                    zip(n_vector_block.points, n_vector_block.normals)):
+                b_point = decal.imported_point((n_point.x, n_point.y, n_point.z))
+                b_helper, normal_length = decal.create_point_helper(
+                    b_root,
+                    b_point,
+                    (n_normal.x, n_normal.y, n_normal.z),
+                    f"{b_root.name} Decal {len(b_store)}."
+                    f"{block_index + 1}.{point_index + 1}")
+                b_point_item = b_vector_block.points.add()
+                b_point_item.helper = b_helper
+                b_point_item.normal_length = normal_length
+
+        b_root.nif_object.decal_placement_index = len(b_store) - 1
+        NifLog.info(
+            f"Imported BSDecalPlacementVectorExtraData '{n_extra.name}' with "
+            f"{len(b_data.vector_blocks)} vector blocks.")

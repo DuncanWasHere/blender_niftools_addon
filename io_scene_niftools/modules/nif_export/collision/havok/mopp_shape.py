@@ -124,7 +124,12 @@ class BhkMOPPShape(BhkCollisionCommon):
 
         b_mesh = b_col_obj.data
         transform = math.get_object_bind(b_col_obj)
+
+        transform.identity()
+
         rotation = transform.decompose()[1]
+
+        b_mesh.calc_loop_triangles()
 
         # Transform vertices
         transformed_vertices = [transform @ vert.co for vert in b_mesh.vertices]
@@ -133,22 +138,15 @@ class BhkMOPPShape(BhkCollisionCommon):
         triangles_by_material = {}
         normals_by_material = {}
 
-        for face in b_mesh.polygons:
-            if len(face.vertices) < 3:
-                continue  # Ignore degenerate polygons
-
-            material_idx = face.material_index
+        for tri in b_mesh.loop_triangles:
+            material_idx = tri.material_index
 
             if material_idx not in triangles_by_material:
                 triangles_by_material[material_idx] = []
                 normals_by_material[material_idx] = []
 
-            triangles_by_material[material_idx].append([face.vertices[i] for i in (0, 1, 2)])
-            normals_by_material[material_idx].append(rotation @ face.normal)
-
-            if len(face.vertices) == 4:
-                triangles_by_material[material_idx].append([face.vertices[i] for i in (0, 2, 3)])
-                normals_by_material[material_idx].append(rotation @ face.normal)
+            triangles_by_material[material_idx].append(tri.vertices[:])
+            normals_by_material[material_idx].append(rotation @ tri.normal)
 
         # Sort materials and align geometry
         material_mapping = {

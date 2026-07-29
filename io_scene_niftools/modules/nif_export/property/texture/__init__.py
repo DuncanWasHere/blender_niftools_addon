@@ -51,11 +51,11 @@ class TextureProperty:
         self.bs_shader_property_helper = BSShaderProperty()
         self.ni_texturing_property_helper = NiTexturingProperty.get()
 
-    def export_texture_properties(self, b_mat, n_ni_geometry):
+    def export_texture_properties(self, b_mat, n_ni_geometry, b_obj=None):
         """Main function for handling texture property export."""
 
         if bpy.context.scene.niftools_scene.is_fo3() or bpy.context.scene.niftools_scene.is_skyrim():
-            self.bs_shader_property_helper.export_bs_shader_property(n_ni_geometry, b_mat)
+            self.bs_shader_property_helper.export_bs_shader_property(n_ni_geometry, b_mat, b_obj)
         else:
             if bpy.context.scene.niftools_scene.game in USED_EXTRA_SHADER_TEXTURES:
                 # Sid Meier's Railroads and Civ4: set shader slots in extra data

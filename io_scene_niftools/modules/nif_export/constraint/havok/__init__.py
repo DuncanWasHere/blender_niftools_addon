@@ -38,332 +38,245 @@
 # ***** END LICENSE BLOCK *****
 
 
+import json
+
 from .....modules.nif_export.block_registry import block_store
-from .....modules.nif_export.constraint.havok.common import ConstraintCommon
-from .....modules.nif_export.object import DICT_NAMES
+from .....utils import serialization
 from .....utils.logging import NifLog
+from .....utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
 
 
-class BhkConstraint(ConstraintCommon):
+class BhkConstraint:
     """
     Main interface class for exporting Havok constraint blocks
     (i.e., bhkConstraint subclasses).
     For Bethesda games (except Morrowind) ONLY!
     """
 
-    def export_bhk_constraint(self, b_constr, b_constr_obj, ):
+    # Blender rigid body constraint types mapped to hkConstraintType member names
+    BLENDER_TYPE_KINDS = {
+        'POINT': "BALL_AND_SOCKET",
+        'HINGE': "HINGE",  # LIMITED_HINGE when its angular limit is enabled
+        'SLIDER': "PRISMATIC",
+        'GENERIC': "RAGDOLL",
+        'GENERIC_SPRING': "STIFF_SPRING",
+    }
+
+    # hkConstraintType member names mapped to bhkConstraint block types
+    KIND_BLOCK_TYPES = {
+        "BALL_AND_SOCKET": "bhkBallAndSocketConstraint",
+        "HINGE": "bhkHingeConstraint",
+        "LIMITED_HINGE": "bhkLimitedHingeConstraint",
+        "PRISMATIC": "bhkPrismaticConstraint",
+        "RAGDOLL": "bhkRagdollConstraint",
+        "STIFF_SPRING": "bhkStiffSpringConstraint",
+    }
+
+    # hkConstraintType member names mapped to the closest Blender rigid body constraint types
+    KIND_BLENDER_TYPES = {
+        "BALL_AND_SOCKET": 'POINT',
+        "HINGE": 'HINGE',
+        "LIMITED_HINGE": 'HINGE',
+        "PRISMATIC": 'SLIDER',
+        "RAGDOLL": 'GENERIC',
+        "STIFF_SPRING": 'GENERIC_SPRING',
+    }
+
+    def __init__(self):
+        # NifData is not initialized yet when the helper is constructed
+        self.HAVOK_SCALE = None
+
+    def export_bhk_constraint(self, b_constr, b_constr_obj, root_node):
+        self.HAVOK_SCALE = NifData.data.havok_scale
 
         # Ensure constraint target objects will be exported as valid collision objects
-        if not b_constr.object1 and not b_constr.object2:
+        if not b_constr.object1 or not b_constr.object2:
             NifLog.warn(f"Constraint {b_constr_obj.name} is missing one or both target objects. "
                         f"It will not be exported")
             return
-        if not b_constr.object1.rigid_body and not b_constr.object2.rigid_body:
+        if not (b_constr.object1.rigid_body and b_constr.object2.rigid_body):
             NifLog.warn(f"Constraint {b_constr_obj.name} has target objects without rigid bodies. "
                         f"It will not be exported")
             return
 
-        # Get target rigid bodies from object dictionary
-        n_entity_a = DICT_NAMES[b_constr.object1.name]
-        n_entity_b = DICT_NAMES[b_constr.object2.name]
-
-        # Find constraint type and call export method
-        n_bhk_constraint = None
-        if b_constr.use_breaking:
-            n_bhk_constraint = self.export_bhk_breakable_constraint(b_constr,
-                                                                    b_constr_obj,
-                                                                    n_entity_a,
-                                                                    n_entity_b)
-        elif b_constr.type == 'HINGE':
-            if b_constr.use_limit_ang_z:
-                n_bhk_constraint = self.export_bhk_limited_hinge_constraint(b_constr,
-                                                                            b_constr_obj,
-                                                                            n_entity_a,
-                                                                            n_entity_b)
-            else:
-                n_bhk_constraint = self.export_bhk_hinge_constraint(b_constr,
-                                                                    b_constr_obj,
-                                                                    n_entity_a,
-                                                                    n_entity_b)
-        elif b_constr.type == 'SLIDER':
-            n_bhk_constraint = self.export_bhk_prismatic_constraint(b_constr,
-                                                                    b_constr_obj,
-                                                                    n_entity_a,
-                                                                    n_entity_b)
-        elif b_constr.type == 'POINT':
-            n_bhk_constraint = self.export_bhk_ball_and_socket_constraint(b_constr,
-                                                                          b_constr_obj,
-                                                                          n_entity_a,
-                                                                          n_entity_b)
-        elif b_constr.type == 'GENERIC_SPRING':
-            n_bhk_constraint = self.export_bhk_stiff_spring_constraint(b_constr,
-                                                                       b_constr_obj,
-                                                                       n_entity_a,
-                                                                       n_entity_b)
-        elif b_constr.type == 'GENERIC':
-            n_bhk_constraint = self.export_bhk_ragdoll_constraint(b_constr,
-                                                                  b_constr_obj,
-                                                                  n_entity_a,
-                                                                  n_entity_b)
-        else:
-            NifLog.warn(f"Constraint {b_constr_obj.name} has an unsupported type ({b_constr.type})."
-                        f"It will not be exported")
+        # Get target rigid bodies from the block registry
+        n_entity_a = block_store.obj_to_block.get(b_constr.object1)
+        n_entity_b = block_store.obj_to_block.get(b_constr.object2)
+        if not isinstance(n_entity_a, NifClasses.BhkRigidBody) or not isinstance(n_entity_b, NifClasses.BhkRigidBody):
+            NifLog.warn(f"Constraint {b_constr_obj.name} targets objects that were not exported "
+                        f"as rigid bodies. It will not be exported")
             return
 
-    def export_bhk_ball_and_socket_constraint(self, b_constr, b_constr_obj, n_entity_a, n_entity_b):
-        n_bhk_ball_and_socket_constraint = block_store.create_block("bhkBallAndSocketConstraint")
-        ConstraintCommon.attach_constraint(n_bhk_ball_and_socket_constraint, n_entity_a, n_entity_b)
+        # Restore the stored havok data if the constraint was imported from a nif,
+        # otherwise derive everything from the Blender constraint
+        stored = b_constr_obj.niftools_constraint.data
+        n_bhk_constraint = None
+        if stored:
+            try:
+                n_bhk_constraint = self.export_stored_constraint(json.loads(stored), b_constr, b_constr_obj)
+            except (KeyError, ValueError):
+                NifLog.warn(f"Stored havok data on constraint {b_constr_obj.name} could not be read. "
+                            f"Exporting from the Blender constraint values instead")
+        if not n_bhk_constraint:
+            n_bhk_constraint = self.export_blender_constraint(b_constr, b_constr_obj)
+        if not n_bhk_constraint:
+            return
 
-        (n_bhk_ball_and_socket_constraint.constraint.pivot_a,
-         n_bhk_ball_and_socket_constraint.constraint.pivot_b) = self.calculate_pivot(b_constr, b_constr_obj)
+        self.attach_constraint(n_bhk_constraint, n_entity_a, n_entity_b)
+        return n_bhk_constraint
 
-        return n_bhk_ball_and_socket_constraint
+    def export_stored_constraint(self, stored, b_constr, b_constr_obj):
+        """Rebuild a bhkConstraint block from the havok data stored on import."""
+        n_bhk_constraint = block_store.create_block(stored["block_type"], b_constr_obj)
+        serialization.dict_to_struct(n_bhk_constraint, stored["fields"])
+        self.apply_blender_values(n_bhk_constraint, b_constr, b_constr_obj)
+        return n_bhk_constraint
 
-    def export_bhk_ragdoll_constraint(self, b_constr, b_constr_obj, n_entity_a, n_entity_b):
-        n_bhk_ragdoll_constraint = block_store.create_block("bhkRagdollConstraint")
-        ConstraintCommon.attach_constraint(n_bhk_ragdoll_constraint, n_entity_a, n_entity_b)
+    def apply_blender_values(self, n_bhk_constraint, b_constr, b_constr_obj):
+        """Write the constraint values that are editable in Blender back into the restored havok data."""
+        if isinstance(n_bhk_constraint, NifClasses.BhkBreakableConstraint) and b_constr.use_breaking:
+            n_bhk_constraint.threshold = b_constr.breaking_threshold
+        if isinstance(n_bhk_constraint, NifClasses.BhkMalleableConstraint):
+            n_c_info = n_bhk_constraint.constraint
+            # newer nif versions store strength instead of tau and damping
+            malleable_fields = [name for name, *_ in type(n_c_info)._get_filtered_attribute_list(n_c_info)]
+            if "tau" in malleable_fields:
+                n_c_info.tau = b_constr_obj.niftools_constraint.tau
+                n_c_info.damping = b_constr_obj.niftools_constraint.damping
 
-        (n_bhk_ragdoll_constraint.constraint.twist_a,
-         n_bhk_ragdoll_constraint.constraint.twist_b) = self.calculate_twist(b_constr, b_constr_obj,
-                                                                             n_entity_a, n_entity_b)
+        kind, n_bhk_descriptor = serialization.get_constraint_descriptor(n_bhk_constraint)
+        if kind is None:
+            return
+        # only transfer values if the blender constraint still has the type the data was imported as
+        if b_constr.type != self.KIND_BLENDER_TYPES[kind]:
+            NifLog.warn(f"Type of Blender constraint {b_constr_obj.name} does not match its stored "
+                        f"havok data ({kind}). The stored data will be exported unchanged")
+            return
 
-        (n_bhk_ragdoll_constraint.constraint.plane_a,
-         n_bhk_ragdoll_constraint.constraint.plane_b) = self.calculate_plane(b_constr, b_constr_obj,
-                                                                             n_entity_a)
-
-        (n_bhk_ragdoll_constraint.constraint.motor_a,
-         n_bhk_ragdoll_constraint.constraint.motor_b) = self.calculate_motor(b_constr, b_constr_obj,
-                                                                             n_entity_a)
-
-        (n_bhk_ragdoll_constraint.constraint.pivot_a,
-         n_bhk_ragdoll_constraint.constraint.pivot_b) = self.calculate_pivot(b_constr, b_constr_obj)
-
-        (n_bhk_ragdoll_constraint.constraint.cone_max_angle) = self.calculate_cone_angle(b_constr, b_constr_obj,
-                                                                                         n_entity_a)
-
-        (n_bhk_ragdoll_constraint.constraint.plane_min_angle,
-         n_bhk_ragdoll_constraint.constraint.plane_max_angle) = self.calculate_plane_angle(b_constr, b_constr_obj,
-                                                                                           n_entity_a)
-
-        (n_bhk_ragdoll_constraint.constraint.twist_min_angle,
-         n_bhk_ragdoll_constraint.constraint.twist_max_angle) = self.calculate_twist_angle(b_constr, b_constr_obj,
-                                                                                           n_entity_a)
-
-        return n_bhk_ragdoll_constraint
-
-    def export_bhk_hinge_constraint(self, b_constr, b_constr_obj, n_entity_a, n_entity_b):
-        n_bhk_hinge_constraint = block_store.create_block("bhkHingeConstraint")
-        ConstraintCommon.attach_constraint(n_bhk_hinge_constraint, n_entity_a, n_entity_b)
-
-        return n_bhk_hinge_constraint
-
-    def export_bhk_limited_hinge_constraint(self, b_constr, b_constr_obj, n_entity_a, n_entity_b):
-        n_bhk_limited_hinge_constraint = block_store.create_block("bhkLimitedHingeConstraint")
-        ConstraintCommon.attach_constraint(n_bhk_limited_hinge_constraint, n_entity_a, n_entity_b)
-
-        return n_bhk_limited_hinge_constraint
-
-    def export_bhk_prismatic_constraint(self, b_constr, b_constr_obj, n_entity_a, n_entity_b):
-        n_bhk_prismatic_constraint = block_store.create_block("bhkPrismaticConstraint")
-        ConstraintCommon.attach_constraint(n_bhk_prismatic_constraint, n_entity_a, n_entity_b)
-
-        return n_bhk_prismatic_constraint
-
-    def export_bhk_stiff_spring_constraint(self, b_constr, b_constr_obj, n_entity_a, n_entity_b):
-        n_bhk_stiff_spring_constraint = block_store.create_block("bhkStiffSpringConstraint")
-        ConstraintCommon.attach_constraint(n_bhk_stiff_spring_constraint, n_entity_a, n_entity_b)
-
-        return n_bhk_stiff_spring_constraint
-
-    def export_bhk_malleable_constraint(self, b_constr, b_constr_obj, n_entity_a, n_entity_b):
-        n_bhk_malleable_constraint = block_store.create_block("bhkMalleableConstraint")
-        ConstraintCommon.attach_constraint(n_bhk_malleable_constraint, n_entity_a, n_entity_b)
-
-        return n_bhk_malleable_constraint
-
-    def export_bhk_breakable_constraint(self, b_constr, b_constr_obj, n_entity_a, n_entity_b):
-        n_bhk_breakable_constraint = block_store.create_block("bhkBreakableConstraint")
-        ConstraintCommon.attach_constraint(n_bhk_breakable_constraint, n_entity_a, n_entity_b)
-
-        n_bhk_breakable_constraint.threshold = b_constr.threshold
-
-        if b_constr.type == 'HINGE':
+        if kind == "RAGDOLL":
+            if b_constr.use_limit_ang_x:
+                n_bhk_descriptor.plane_min_angle = b_constr.limit_ang_x_lower
+                n_bhk_descriptor.plane_max_angle = b_constr.limit_ang_x_upper
+            if b_constr.use_limit_ang_y:
+                n_bhk_descriptor.cone_max_angle = b_constr.limit_ang_y_upper
             if b_constr.use_limit_ang_z:
-                n_constraint_type = NifClasses.HkConstraintType['HINGE']
-                n_wrapped_constraint = self.export_bhk_limited_hinge_constraint(b_constr, b_constr_obj)
+                n_bhk_descriptor.twist_min_angle = b_constr.limit_ang_z_lower
+                n_bhk_descriptor.twist_max_angle = b_constr.limit_ang_z_upper
+            n_bhk_descriptor.max_friction = b_constr_obj.niftools_constraint.LHMaxFriction
+        elif kind == "LIMITED_HINGE":
+            if b_constr.use_limit_ang_z:
+                n_bhk_descriptor.min_angle = b_constr.limit_ang_z_lower
+                n_bhk_descriptor.max_angle = b_constr.limit_ang_z_upper
+            n_bhk_descriptor.max_friction = b_constr_obj.niftools_constraint.LHMaxFriction
+        elif kind == "PRISMATIC":
+            if b_constr.use_limit_lin_x:
+                n_bhk_descriptor.min_distance = b_constr.limit_lin_x_lower / self.HAVOK_SCALE
+                n_bhk_descriptor.max_distance = b_constr.limit_lin_x_upper / self.HAVOK_SCALE
+            n_bhk_descriptor.friction = b_constr_obj.niftools_constraint.LHMaxFriction
 
-                n_bhk_breakable_constraint.constraint_data.hinge.axis_a = (
-                    n_wrapped_constraint.constraint.axis_a)
-
-                n_bhk_breakable_constraint.constraint_data.hinge.perp_axis_in_a_1 = (
-                    n_wrapped_constraint.constraint.perp_axis_in_a_1)
-
-                n_bhk_breakable_constraint.constraint_data.hinge.perp_axis_in_a_2 = (
-                    n_wrapped_constraint.constraint.perp_axis_in_a_2)
-
-                n_bhk_breakable_constraint.constraint_data.hinge.pivot_a = (
-                    n_wrapped_constraint.constraint.pivot_a)
-
-                n_bhk_breakable_constraint.constraint_data.hinge.axis_b = (
-                    n_wrapped_constraint.constraint.axis_b)
-
-                n_bhk_breakable_constraint.constraint_data.hinge.perp_axis_in_b_1 = (
-                    n_wrapped_constraint.constraint.perp_axis_in_b_1)
-
-                n_bhk_breakable_constraint.constraint_data.hinge.perp_axis_in_b_2 = (
-                    n_wrapped_constraint.constraint.perp_axis_in_b_2)
-
-                n_bhk_breakable_constraint.constraint_data.hinge.pivot_b = (
-                    n_wrapped_constraint.constraint.pivot_b)
-
-            else:
-                n_constraint_type = NifClasses.HkConstraintType['LIMITED_HINGE']
-                n_wrapped_constraint = self.export_bhk_hinge_constraint(b_constr, b_constr_obj)
-
-                n_bhk_breakable_constraint.constraint_data.limited_hinge.axis_a = (
-                    n_wrapped_constraint.constraint.axis_a)
-
-                n_bhk_breakable_constraint.constraint_data.limited_hinge.perp_axis_in_a_1 = (
-                    n_wrapped_constraint.constraint.perp_axis_in_a_1)
-
-                n_bhk_breakable_constraint.constraint_data.limited_hinge.perp_axis_in_a_2 = (
-                    n_wrapped_constraint.constraint.perp_axis_in_a_2)
-
-                n_bhk_breakable_constraint.constraint_data.limited_hinge.pivot_a = (
-                    n_wrapped_constraint.constraint.pivot_a)
-
-                n_bhk_breakable_constraint.constraint_data.limited_hinge.axis_b = (
-                    n_wrapped_constraint.constraint.axis_b)
-
-                n_bhk_breakable_constraint.constraint_data.limited_hinge.perp_axis_in_b_1 = (
-                    n_wrapped_constraint.constraint.perp_axis_in_b_1)
-
-                n_bhk_breakable_constraint.constraint_data.limited_hinge.perp_axis_in_b_2 = (
-                    n_wrapped_constraint.constraint.perp_axis_in_b_2)
-
-                n_bhk_breakable_constraint.constraint_data.limited_hinge.pivot_b = (
-                    n_wrapped_constraint.constraint.pivot_b)
-
-                n_bhk_breakable_constraint.constraint_data.limited_hinge.min_angle = (
-                    n_wrapped_constraint.constraint.min_angle)
-
-                n_bhk_breakable_constraint.constraint_data.limited_hinge.max_angle = (
-                    n_wrapped_constraint.constraint.max_angle)
-
-                n_bhk_breakable_constraint.constraint_data.limited_hinge.max_friction = (
-                    n_wrapped_constraint.constraint.max_friction)
-
-        elif b_constr.type == 'SLIDER':
-            n_constraint_type = NifClasses.HkConstraintType['PRISMATIC']
-            n_wrapped_constraint = self.export_bhk_prismatic_constraint(b_constr, b_constr_obj)
-
-            n_bhk_breakable_constraint.constraint_data.prismatic.sliding_a = (
-                n_wrapped_constraint.constraint.sliding_a)
-
-            n_bhk_breakable_constraint.constraint_data.prismatic.rotation_a = (
-                n_wrapped_constraint.constraint.rotation_a)
-
-            n_bhk_breakable_constraint.constraint_data.prismatic.plane_a = (
-                n_wrapped_constraint.constraint.plane_a)
-
-            n_bhk_breakable_constraint.constraint_data.prismatic.pivot_a = (
-                n_wrapped_constraint.constraint.pivot_a)
-
-            n_bhk_breakable_constraint.constraint_data.prismatic.sliding_b = (
-                n_wrapped_constraint.constraint.sliding_b)
-
-            n_bhk_breakable_constraint.constraint_data.prismatic.rotation_b = (
-                n_wrapped_constraint.constraint.rotation_b)
-
-            n_bhk_breakable_constraint.constraint_data.prismatic.plane_b = (
-                n_wrapped_constraint.constraint.plane_b)
-
-            n_bhk_breakable_constraint.constraint_data.prismatic.pivot_b = (
-                n_wrapped_constraint.constraint.pivot_b)
-
-            n_bhk_breakable_constraint.constraint_data.prismatic.min_distance = (
-                n_wrapped_constraint.constraint.min_distance)
-
-            n_bhk_breakable_constraint.constraint_data.prismatic.max_distance = (
-                n_wrapped_constraint.constraint.max_distance)
-
-            n_bhk_breakable_constraint.constraint_data.prismatic.friction = (
-                n_wrapped_constraint.constraint.friction)
-
-        elif b_constr.type == 'POINT':
-            n_constraint_type = NifClasses.HkConstraintType['BALL_AND_SOCKET']
-            n_wrapped_constraint = self.export_bhk_ball_and_socket_constraint(b_constr, b_constr_obj)
-
-            n_bhk_breakable_constraint.constraint_data.ball_and_socket.pivot_a = (
-                n_wrapped_constraint.constraint.pivot_a)
-
-            n_bhk_breakable_constraint.constraint_data.ball_and_socket.pivot_b = (
-                n_wrapped_constraint.constraint.pivot_b)
-
-        elif b_constr.type == 'GENERIC_SPRING':
-            n_constraint_type = NifClasses.HkConstraintType['STIFF_SPRING']
-            n_wrapped_constraint = self.export_bhk_stiff_spring_constraint(b_constr, b_constr_obj)
-
-            n_bhk_breakable_constraint.constraint_data.stiff_spring.pivot_a = (
-                n_wrapped_constraint.constraint.pivot_a)
-
-            n_bhk_breakable_constraint.constraint_data.stiff_spring.pivot_b = (
-                n_wrapped_constraint.constraint.pivot_b)
-
-            n_bhk_breakable_constraint.constraint_data.ball_and_socket.length = (
-                n_wrapped_constraint.constraint.length)
-
-        elif b_constr.type == 'GENERIC':
-            n_constraint_type = NifClasses.HkConstraintType['RAGDOLL']
-            n_wrapped_constraint = self.export_bhk_ragdoll_constraint(b_constr, b_constr_obj)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.twist_a = (
-                n_wrapped_constraint.constraint.twist_a)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.plane_a = (
-                n_wrapped_constraint.constraint.plane_a)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.pivot_a = (
-                n_wrapped_constraint.constraint.pivot_a)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.motor_a = (
-                n_wrapped_constraint.constraint.motor_a)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.twist_b = (
-                n_wrapped_constraint.constraint.pivot_b)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.plane_b = (
-                n_wrapped_constraint.constraint.plane_b)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.pivot_b = (
-                n_wrapped_constraint.constraint.pivot_b)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.motor_b = (
-                n_wrapped_constraint.constraint.motor_b)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.cone_max_angle = (
-                n_wrapped_constraint.constraint.cone_max_angle)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.plane_min_angle = (
-                n_wrapped_constraint.constraint.plane_min_angle)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.plane_max_angle = (
-                n_wrapped_constraint.constraint.plane_max_angle)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.twist_min_angle = (
-                n_wrapped_constraint.constraint.twist_min_angle)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.twist_max_angle = (
-                n_wrapped_constraint.constraint.twist_max_angle)
-
-            n_bhk_breakable_constraint.constraint_data.ragdoll.max_friction = (
-                n_wrapped_constraint.constraint.max_friction)
-
-        else:
-            NifLog.warn(f"Constraint {b_constr_obj.name} has an unsupported type ({b_constr.type})."
+    def export_blender_constraint(self, b_constr, b_constr_obj):
+        """Export a bhkConstraint block purely from the Blender constraint values."""
+        kind = self.BLENDER_TYPE_KINDS.get(b_constr.type)
+        if kind is None:
+            NifLog.warn(f"Constraint {b_constr_obj.name} has an unsupported type ({b_constr.type}). "
                         f"It will not be exported")
+            return None
+        if kind == "HINGE" and b_constr.use_limit_ang_z:
+            kind = "LIMITED_HINGE"
 
-        n_bhk_breakable_constraint.constraint_data.type = n_constraint_type
+        if b_constr.use_breaking:
+            n_bhk_constraint = block_store.create_block("bhkBreakableConstraint", b_constr_obj)
+            n_bhk_constraint.threshold = b_constr.breaking_threshold
+            n_bhk_constraint.constraint_data.type = NifClasses.HkConstraintType[kind]
+            n_bhk_descriptor = getattr(n_bhk_constraint.constraint_data, serialization.WRAPPED_KIND_FIELDS[kind])
+        else:
+            n_bhk_constraint = block_store.create_block(self.KIND_BLOCK_TYPES[kind], b_constr_obj)
+            n_bhk_descriptor = n_bhk_constraint.constraint
 
-        return n_bhk_breakable_constraint
+        self.fill_descriptor(n_bhk_descriptor, kind, b_constr, b_constr_obj)
+        return n_bhk_constraint
+
+    def fill_descriptor(self, n_bhk_descriptor, kind, b_constr, b_constr_obj):
+        """Fill a constraint descriptor from the transform and values of the Blender constraint."""
+
+        # the constraint object's transform defines the pivot point and axes in world space,
+        # matching the axis conventions of the Blender constraint types
+        # (hinges rotate around Z, sliders move along X)
+        m_constr = b_constr_obj.matrix_world
+        pivot_world = m_constr.translation
+        axes_world = [m_constr.col[i].xyz.normalized() for i in range(3)]
+
+        # convert into the local space of either entity
+        for suffix, b_target_obj in (("a", b_constr.object1), ("b", b_constr.object2)):
+            m_inverse = b_target_obj.matrix_world.inverted()
+            pivot = (m_inverse @ pivot_world) / self.HAVOK_SCALE
+            axis_x, axis_y, axis_z = [(m_inverse.to_3x3() @ axis).normalized() for axis in axes_world]
+
+            self.set_vector_field(n_bhk_descriptor, f"pivot_{suffix}", pivot)
+            if kind == "RAGDOLL":
+                self.set_vector_field(n_bhk_descriptor, f"twist_{suffix}", axis_z)
+                self.set_vector_field(n_bhk_descriptor, f"plane_{suffix}", axis_x)
+                self.set_vector_field(n_bhk_descriptor, f"motor_{suffix}", axis_y)
+            elif kind in ("HINGE", "LIMITED_HINGE"):
+                self.set_vector_field(n_bhk_descriptor, f"axis_{suffix}", axis_z)
+                self.set_vector_field(n_bhk_descriptor, f"perp_axis_in_{suffix}_1", axis_x)
+                self.set_vector_field(n_bhk_descriptor, f"perp_axis_in_{suffix}_2", axis_y)
+            elif kind == "PRISMATIC":
+                self.set_vector_field(n_bhk_descriptor, f"sliding_{suffix}", axis_x)
+                self.set_vector_field(n_bhk_descriptor, f"rotation_{suffix}", axis_y)
+                self.set_vector_field(n_bhk_descriptor, f"plane_{suffix}", axis_z)
+
+        # scalar values
+        if kind == "RAGDOLL":
+            if b_constr.use_limit_ang_x:
+                n_bhk_descriptor.plane_min_angle = b_constr.limit_ang_x_lower
+                n_bhk_descriptor.plane_max_angle = b_constr.limit_ang_x_upper
+            if b_constr.use_limit_ang_y:
+                n_bhk_descriptor.cone_max_angle = b_constr.limit_ang_y_upper
+            if b_constr.use_limit_ang_z:
+                n_bhk_descriptor.twist_min_angle = b_constr.limit_ang_z_lower
+                n_bhk_descriptor.twist_max_angle = b_constr.limit_ang_z_upper
+            n_bhk_descriptor.max_friction = b_constr_obj.niftools_constraint.LHMaxFriction
+        elif kind == "LIMITED_HINGE":
+            n_bhk_descriptor.min_angle = b_constr.limit_ang_z_lower
+            n_bhk_descriptor.max_angle = b_constr.limit_ang_z_upper
+            n_bhk_descriptor.max_friction = b_constr_obj.niftools_constraint.LHMaxFriction
+        elif kind == "PRISMATIC":
+            if b_constr.use_limit_lin_x:
+                n_bhk_descriptor.min_distance = b_constr.limit_lin_x_lower / self.HAVOK_SCALE
+                n_bhk_descriptor.max_distance = b_constr.limit_lin_x_upper / self.HAVOK_SCALE
+            n_bhk_descriptor.friction = b_constr_obj.niftools_constraint.LHMaxFriction
+        elif kind == "STIFF_SPRING":
+            distance = (b_constr.object1.matrix_world.translation -
+                        b_constr.object2.matrix_world.translation).length
+            n_bhk_descriptor.length = distance / self.HAVOK_SCALE
+
+    @staticmethod
+    def set_vector_field(n_bhk_descriptor, field_name, vector):
+        n_vector = getattr(n_bhk_descriptor, field_name)
+        n_vector.x = vector.x
+        n_vector.y = vector.y
+        n_vector.z = vector.z
+        n_vector.w = 0.0
+
+    @staticmethod
+    def attach_constraint(n_bhk_constraint, n_entity_a, n_entity_b):
+        """Link the constraint to its entities. The constraint block is attached to
+        the constraint list of its first entity, matching how the games store them."""
+        # malleable and breakable constraints repeat the constraint info in their wrapped data
+        n_c_infos = [n_bhk_constraint.constraint_info]
+        n_wrapped = getattr(n_bhk_constraint, "constraint", None)
+        if hasattr(n_wrapped, "constraint_info"):
+            n_c_infos.append(n_wrapped.constraint_info)
+        n_wrapped = getattr(n_bhk_constraint, "constraint_data", None)
+        if hasattr(n_wrapped, "constraint_info"):
+            n_c_infos.append(n_wrapped.constraint_info)
+
+        for n_c_info in n_c_infos:
+            n_c_info.num_entities = 2
+            n_c_info.entity_a = n_entity_a
+            n_c_info.entity_b = n_entity_b
+
+        n_entity_a.num_constraints += 1
+        n_entity_a.constraints.append(n_bhk_constraint)

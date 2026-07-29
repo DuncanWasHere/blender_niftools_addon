@@ -38,8 +38,10 @@
 # ***** END LICENSE BLOCK *****
 
 
+import bpy
 from bpy.types import Panel
 
+from ..modules.nif_import.property.node_wrapper import get_shader_group_node
 from ..utils.decorators import register_classes, unregister_classes
 
 
@@ -53,9 +55,12 @@ class MaterialPanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        if context.material:
-            return True
-        return False
+        # everything in here belongs to the games that shade with the material and texturing
+        # properties.
+        # From Fallout 3 and beyond Bethesda's custom shaders are used and the panel would be
+        # empty, so it is not shown at all
+        b_scene = bpy.context.scene.niftools_scene
+        return context.material is not None and not (b_scene.is_fo3() or b_scene.is_skyrim())
 
     def draw(self, context):
         layout = self.layout
@@ -65,8 +70,6 @@ class MaterialPanel(Panel):
         box = layout.box()
         box.prop(col_setting, "material_flags", text='Material Flags')
         box.prop(col_setting, "texture_flags", text='Texture Flags')
-        box.prop(col_setting, "use_specular", text='Use Specular')
-        box.prop(col_setting, "use_alpha", text='Use Alpha')
 
 class AlphaPanel(Panel):
     bl_idname = "NIFTOOLS_PT_AlphaPanel"
@@ -78,23 +81,34 @@ class AlphaPanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        if context.material and context.material.nif_material.use_alpha:
-            return True
-        return False
+        return context.material is not None
 
     def draw(self, context):
         layout = self.layout
 
-        material_setting = context.active_object.active_material.nif_alpha
+        b_mat = context.active_object.active_material
+        material_setting = b_mat.nif_alpha
 
         box = layout.box()
+
+        # the toggle decides whether a NiAlphaProperty is written at all, so everything else
+        # in here only means something once it is on. It is always drawn, or there would be
+        # no way to turn alpha back on once it is off.
+        box.prop(material_setting, "use_alpha", text='Use Alpha')
+
+        if not material_setting.use_alpha:
+            return
+
         box.prop(material_setting, "enable_blending", text='Enable Blending')
         box.prop(material_setting, "source_blend_mode", text='Source Blend Mode')
         box.prop(material_setting, "destination_blend_mode", text='Destination Blend Mode')
-        box.prop(material_setting, "enable_testing", text='Enable Testing')
         box.prop(material_setting, "alpha_test_function", text='Alpha Test Function')
-        box.prop(material_setting, "alpha_test_threshold", text='Alpha Test Threshold')
         box.prop(material_setting, "no_sorter", text='No Sorter')
+
+        b_group_node = get_shader_group_node(b_mat)
+        if b_group_node is None:
+            box.prop(material_setting, "enable_testing", text='Enable Testing')
+            box.prop(material_setting, "alpha_test_threshold", text='Alpha Test Threshold')
 
 classes = [
     MaterialPanel,

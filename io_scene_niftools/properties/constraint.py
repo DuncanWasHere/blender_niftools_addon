@@ -38,7 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from bpy.props import (FloatProperty)
+from bpy.props import (FloatProperty, StringProperty)
 from bpy.types import PropertyGroup
 
 from ..utils.decorators import register_classes, unregister_classes
@@ -46,6 +46,13 @@ from ..utils.decorators import register_classes, unregister_classes
 
 class ConstraintProperty(PropertyGroup):
     """Adds custom properties to object to store contraints"""
+
+    data: StringProperty(
+        name='Havok Constraint Data',
+        description='JSON representation of the original havok constraint block, '
+                    'stored on import so all constraint data is preserved on export. '
+                    'Clear it to export from the Blender constraint values instead',
+    )
 
     LHMaxFriction: FloatProperty(
         name='LHMaxFriction',

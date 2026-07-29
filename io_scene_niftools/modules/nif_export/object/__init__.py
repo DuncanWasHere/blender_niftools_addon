@@ -45,8 +45,11 @@ from ....modules.nif_export.block_registry import block_store
 from ....modules.nif_export.geometry import Geometry
 from ....modules.nif_export.object.armature import Armature
 from ....modules.nif_export.property.object import ObjectProperty
-from ....utils import math
+from ....utils import decal, math
+from ....utils.flags import to_unsigned_32
 from ....utils.logging import NifLog
+
+from nifgen.formats.nif import classes as NifClasses
 
 DICT_NAMES = {}  # Dictionary to map Blender object names to NIF blocks
 
@@ -68,7 +71,7 @@ class Object:
         self.n_root_node = None
         self.target_game = None
 
-    def export_objects(self, b_root_objects, b_exportable_objects, target_game, file_base):
+    def export_objects(self, b_root_objects, b_exportable_objects, b_collision_objects, target_game, file_base):
         """
         Export the root node and all valid child objects into the NIF.
         Use Blender root object if there is only one, otherwise create a meta root.
@@ -77,8 +80,6 @@ class Object:
         self.b_exportable_objects = b_exportable_objects
         self.target_game = target_game
         self.n_root_node = None
-
-        b_obj = None
 
         if len(b_root_objects) == 1:
             # There is only one root object, so use it as the root
@@ -92,8 +93,16 @@ class Object:
             for b_obj in b_root_objects:
                 self.export_object_hierarchy(b_obj, self.n_root_node)
 
+        if not self.n_root_node:
+            # every root object is of a kind that is not exported as a node of its own
+            # (a particle system, for instance), so the nif still needs a root to hold them
+            NifLog.info("Created meta root because no root object was exported as a node.")
+            self.n_root_node = types.create_ninode()
+            self.n_root_node.name = "Scene Root"
+
         # Export extra data
-        self.object_property_helper.export_root_node_properties(self.n_root_node, b_obj)
+        self.object_property_helper.export_root_node_properties(self.n_root_node, b_root_objects,
+                                                                b_exportable_objects, b_collision_objects)
         types.export_furniture_marker(self.n_root_node, file_base)
 
         return self.n_root_node
@@ -109,8 +118,19 @@ class Object:
         """
 
         # Can we export this Blender object?
-        if not b_obj or not b_obj in self.b_exportable_objects:
-            return
+        if not b_obj or not b_obj in self.b_exportable_objects or decal.is_decal_helper(b_obj):
+            return False
+
+        with NifLog.context(f"exporting {b_obj.type.lower()} object '{b_obj.name}'"):
+            return self._export_object_hierarchy(b_obj, n_parent_node, n_node_type)
+
+    def _export_object_hierarchy(self, b_obj, n_parent_node, n_node_type=None):
+        """
+        Export a single object and its children; see export_object_hierarchy.
+
+        Returns whether the object produced a block of its own, which is what tells a
+        NiLODNode parent which of its children became LOD levels.
+        """
 
         if b_obj.type == 'MESH':
             # Export a geometry block
@@ -123,8 +143,11 @@ class Object:
                 n_parent_node = self.n_root_node
 
             self.mesh_helper.export_geometry(b_obj, n_parent_node, self.n_root_node)
-            
-            return
+
+            return True
+
+        if b_obj.type in ('CAMERA', 'LIGHT'):
+            return self._export_aimed_object(b_obj, n_parent_node)
 
         # Everything else (empty/armature) is a node
         n_node = types.create_ninode(b_obj, n_node_type=n_node_type)
@@ -146,15 +169,63 @@ class Object:
                     b_obj_bone = b_obj.data.bones[b_child.parent_bone]
                     # Find the correct n_node
                     # TODO [object]: This is essentially the same as Geometry.get_bone_block()
-                    n_node = [k for k, v in block_store.block_to_obj.items() if v == b_obj_bone][0]
-                    self.export_object_hierarchy(b_child, n_node)
+                    n_bone_node = [k for k, v in block_store.block_to_obj.items() if v == b_obj_bone][0]
+                    self.export_object_hierarchy(b_child, n_bone_node)
                 # Just child of the armature itself, so attach to armature root
                 else:
                     self.export_object_hierarchy(b_child, n_node)
         else:
             # Export all children of this empty object as children of this node
+            b_exported_children = []
             for b_child in b_obj.children:
-                self.export_object_hierarchy(b_child, n_node)
+                if b_child.nif_object.node_multi_bound.is_bound_helper:
+                    # the bound of a BSMultiBoundNode, not a node in its own right
+                    continue
+                if self.export_object_hierarchy(b_child, n_node):
+                    b_exported_children.append(b_child)
+
+            if isinstance(n_node, NifClasses.NiLODNode):
+                # the levels are matched to children by position, so this has to wait until
+                # the children that actually made it into the nif are known
+                types.export_lod_data(n_node, b_obj, b_exported_children)
+
+            types.export_multi_bound(b_obj, n_node)
+
+        return True
+
+    def _export_aimed_object(self, b_obj, n_parent_node):
+        """
+        Export a camera or light, whose block aims along the nif's forward axis rather than
+        Blender's, and which cannot hold children because it is not a NiNode.
+        """
+
+        if b_obj.type == 'CAMERA':
+            n_block = types.create_camera(b_obj)
+        else:
+            n_block = types.create_light(b_obj)
+        if n_block is None:
+            return False
+
+        if n_parent_node:
+            n_parent_node.add_child(n_block)
+        if not self.n_root_node:
+            self.n_root_node = n_block
+
+        math.set_aimed_object_matrix(b_obj, n_block)
+        self.set_object_flags(b_obj, n_block)
+        n_block.name = block_store.get_full_name(b_obj)
+        DICT_NAMES[b_obj.name] = n_block
+
+        # a NiCamera or NiLight has no children list, so anything parented to it in Blender
+        # is attached to the node above instead rather than being dropped
+        for b_child in b_obj.children:
+            if b_child in self.b_exportable_objects:
+                NifLog.warn(f"'{b_child.name}' is parented to '{b_obj.name}', which exports as "
+                            f"a {type(n_block).__name__} and cannot hold children. "
+                            f"It was attached to the node above instead.")
+                self.export_object_hierarchy(b_child, n_parent_node)
+
+        return True
 
     def set_object_fields(self, b_obj, n_node, n_parent_node=None):
         if n_parent_node:
@@ -168,7 +239,7 @@ class Object:
 
         # Default object flags
         if b_obj.nif_object.flags != 0:
-            n_node.flags = b_obj.nif_object.flags
+            n_node.flags = to_unsigned_32(b_obj.nif_object.flags)
         else:
             if bpy.context.scene.niftools_scene.is_bs():
                 n_node.flags = 0x000E

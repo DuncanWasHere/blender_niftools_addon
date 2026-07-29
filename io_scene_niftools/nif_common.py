@@ -60,10 +60,9 @@ class NifCommon:
         debugging.start_debug()
 
         # Print scripts info
-        from . import bl_info
-        niftools_ver = (".".join(str(i) for i in bl_info["version"]))
+        from . import get_version
 
-        NifLog.info(f"Executing - NifTools : Blender NifTools Add-on v{niftools_ver}. "
+        NifLog.info(f"Executing - NifTools : Blender NifTools Add-on v{get_version()}. "
                     f"(Running on Blender {bpy.app.version_string}, "
                     f"NIF XML version {NifFormat.__xml_version__}).")
 

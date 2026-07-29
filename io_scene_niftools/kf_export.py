@@ -40,9 +40,12 @@
 
 import os
 
+import bpy
 from bpy.types import Scene
 
-from .modules.nif_export.animation.object import ObjectAnimation
+from .modules.nif_export.animation import Animation
+from .modules.nif_export.block_registry import block_store
+from .modules.nif_export.object import DICT_NAMES
 from .modules.nif_export.scene import Scene
 from .nif_common import NifCommon
 from .utils import math
@@ -53,21 +56,34 @@ from .utils.singleton import NifOp, NifData
 class KfExport(NifCommon):
     """Main KF export class."""
 
+    export_types = ('EMPTY', 'MESH', 'ARMATURE')
+
     def __init__(self, operator, context):
         NifCommon.__init__(self, operator, context)
 
         # Export helpers
-        self.transform_anim = ObjectAnimation()
         self.scene_helper = Scene()
+
+        # Blender objects to be exported
+        self.b_main_objects = []
+        self.b_armatures = []
 
         # Common export properties
         self.target_game = None
         self.version = None
 
+        # Used in testing
+        self.n_root_blocks = []
+
     def execute(self):
         """Main KF export function."""
 
-        # Get output directory, filename, and file extension from UI; the file IO scripts will use this later
+        block_store.block_to_obj = {}  # Clear data from last export attempt
+        block_store.obj_to_block = {}
+        DICT_NAMES.clear()
+
+        # Get output directory, filename, and file extension from UI
+        # the file IO scripts will use this later
         NifLog.info(f"Preparing to write file at {NifOp.props.filepath}")
         directory = os.path.dirname(NifOp.props.filepath)
         file_base, file_ext = os.path.splitext(os.path.basename(NifOp.props.filepath))
@@ -80,7 +96,11 @@ class KfExport(NifCommon):
                                "NIF version in the scene tab.")
 
             prefix = "x" if self.target_game in 'MORROWIND' else ""
-            # TODO[anim] - Change to KfData, but create_controller() [and maybe more] has to be updated first
+
+            # Get exportable objects in the Blender scene
+            self.__find_export_objects()
+            if not self.b_main_objects:
+                raise NifError("No valid objects to export!")
 
             b_armature = math.get_armature()
             # Some scenes may not have an armature, so nothing to do here
@@ -88,13 +108,15 @@ class KfExport(NifCommon):
                 math.set_bone_orientation(b_armature.data.nif_armature.axis_forward, b_armature.data.nif_armature.axis_up)
 
             NifLog.info("Creating keyframe tree.")
-            kf_root = self.transform_anim.export_kf_root(b_armature)
+            # The animation helper is built after the scene data is initialized, so that it
+            # picks up the target game the file is being written for
+            kf_roots = Animation().export_kf_roots(self.b_main_objects)
 
             # write kf (and xkf if asked)
             file_ext = ".kf"
             NifLog.info(f"Writing {prefix}{file_ext} file")
 
-            NifData.data.roots = [kf_root]
+            NifData.data.roots = kf_roots
             NifData.data.neosteam = (self.target_game == 'NEOSTEAM')
 
             # scale correction for the skeleton
@@ -105,6 +127,8 @@ class KfExport(NifCommon):
             kffile = os.path.join(directory, prefix + file_base + file_ext)
             with open(kffile, "wb") as stream:
                 NifData.data.write(stream)
+
+            self.n_root_blocks = kf_roots  # Save exported blocks (this is used by the test suite)
 
         except NifError:
             return {'CANCELLED'}
@@ -117,3 +141,20 @@ class KfExport(NifCommon):
 
         self.target_game, self.version, n_data = self.scene_helper.get_version_data()
         NifData.init(n_data)
+
+    def __find_export_objects(self):
+        """Find all Blender objects whose animation can be exported."""
+
+        if NifOp.props.use_selected:
+            objects_to_search = bpy.context.selected_objects
+        elif NifOp.props.use_visible:
+            objects_to_search = bpy.context.visible_objects
+        else:
+            objects_to_search = bpy.context.scene.objects
+
+        for b_obj in objects_to_search:
+            if b_obj.type in self.export_types:
+                self.b_main_objects.append(b_obj)
+
+                if b_obj.type == 'ARMATURE':
+                    self.b_armatures.append(b_obj)

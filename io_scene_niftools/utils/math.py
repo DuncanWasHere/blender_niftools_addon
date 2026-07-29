@@ -73,7 +73,7 @@ def import_keymat(rest_rot_inv, key_matrix):
     return correction @ (rest_rot_inv @ key_matrix) @ correction_inv
 
 
-def export_keymat(rest_rot, key_matrix, bone):
+def export_keymat(rest_rot, key_matrix, bone=None):
     """Handles space conversions for exported keys """
     if bone:
         return rest_rot @ (correction_inv @ key_matrix @ correction)
@@ -196,13 +196,18 @@ def find_property(n_block, property_type):
     return None
 
 
+def controller_has_animation(ctrl):
+    """Whether a controller carries animation, either as its own data or through an
+    interpolator. Only the older controllers have data of their own, so both are optional."""
+    return bool(getattr(ctrl, "data", None) or getattr(ctrl, "interpolator", None))
+
+
 def find_controller(n_block, controller_type):
     """Find a controller."""
     ctrl = n_block.controller
     while ctrl:
-        if isinstance(ctrl, controller_type):
-            if ctrl.data or ctrl.interpolator:
-                return ctrl
+        if isinstance(ctrl, controller_type) and controller_has_animation(ctrl):
+            return ctrl
         ctrl = ctrl.next_controller
 
 
@@ -210,9 +215,8 @@ def controllers_iter(n_block, controller_type):
     """Find a controller."""
     ctrl = n_block.controller
     while ctrl:
-        if isinstance(ctrl, controller_type):
-            if ctrl.data or ctrl.interpolator:
-                yield ctrl
+        if isinstance(ctrl, controller_type) and controller_has_animation(ctrl):
+            yield ctrl
         ctrl = ctrl.next_controller
 
 
@@ -273,7 +277,7 @@ def color_blender_to_nif(n_color, b_color):
     n_color.b = b_color[2]
 
     if hasattr(n_color, 'a') and len(b_color) == 4:
-        n_color.b = b_color[3]
+        n_color.a = b_color[3]
 
 def color_nif_to_blender(n_color, b_color):
     """Set Blender RGB/RGBA value from NIF color3/color4 value."""
@@ -284,6 +288,34 @@ def color_nif_to_blender(n_color, b_color):
 
     if len(b_color) == 4:
         if hasattr(n_color, 'a'):
-            n_color.b = b_color[3]
+            b_color[3] = n_color.a
         else:
             b_color[3] = 1.0
+
+
+# Gamebryo aims a camera, a spot light and a directional light down the node's +X axis with
+# +Z up, where Blender aims all three down local -Z with +Y up. Node transforms themselves
+# need no conversion (only bones do), so this is purely about which local axis the block's
+# own data points along. Both directions of the conversion go through get_aim_correction, so
+# if a file ever proves the convention wrong these two names are the only thing to change.
+NIF_AIM_FORWARD = 'X'
+NIF_AIM_UP = 'Z'
+
+
+def get_aim_correction():
+    """Rotation taking Blender's aim axes (-Z forward, +Y up) to the nif's."""
+
+    return axis_conversion(from_forward='-Z', from_up='Y',
+                           to_forward=NIF_AIM_FORWARD, to_up=NIF_AIM_UP).to_4x4()
+
+
+def import_aimed_matrix(n_block):
+    """The Blender local matrix for a block whose data aims along the nif's forward axis."""
+
+    return import_matrix(n_block) @ get_aim_correction()
+
+
+def set_aimed_object_matrix(b_obj, n_block):
+    """Store an aimed Blender object's transform on its block, undoing the aim correction."""
+
+    set_b_matrix_to_n_block(get_object_bind(b_obj) @ get_aim_correction().inverted(), n_block)

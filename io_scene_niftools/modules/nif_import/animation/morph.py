@@ -39,7 +39,6 @@
 
 import bpy
 import mathutils
-from ....modules.nif_import import animation
 from ....modules.nif_import.animation import Animation
 from ....utils import math
 from ....utils.logging import NifLog
@@ -51,7 +50,6 @@ class MorphAnimation(Animation):
 
     def __init__(self):
         super().__init__()
-        animation.FPS = bpy.context.scene.render.fps
 
     def import_morph_controller(self, n_node, b_obj):
         """Import NiGeomMorpherController as shape keys for blender object."""
@@ -74,7 +72,9 @@ class MorphAnimation(Animation):
                 # get base vectors and import all morphs
                 base_verts = morph.vectors
 
-                shape_action = self.create_action(b_obj.data.shape_keys, f"{b_obj.name}-Morphs")
+                # created on the first morph that actually has keys, so that unanimated
+                # morphs do not leave an empty action behind on the shape keys
+                shape_action = None
 
                 for morph_i in range(1, morph_data.num_morphs):
                     morph = morph_data.morphs[morph_i]
@@ -92,21 +92,41 @@ class MorphAnimation(Animation):
                     # older versions store keys in the morph_data
                     # newer versions store keys in the controller
                     if not morph.keys:
-                        try:
-                            if n_morph_ctrl.interpolators:
-                                morph = n_morph_ctrl.interpolators[morph_i].data.data
-                            elif n_morph_ctrl.interpolator_weights:
-                                morph = n_morph_ctrl.interpolator_weights[morph_i].interpolator.data.data
-                        except KeyError:
-                            NifLog.info(
-                                f"Unsupported interpolator '{type(n_morph_ctrl.interpolator_weights[morph_i].interpolator)}'")
+                        n_interpolator = None
+                        if n_morph_ctrl.interpolators:
+                            n_interpolator = n_morph_ctrl.interpolators[morph_i]
+                        elif n_morph_ctrl.interpolator_weights:
+                            n_interpolator = n_morph_ctrl.interpolator_weights[morph_i].interpolator
+
+                        if not isinstance(n_interpolator, NifClasses.NiFloatInterpolator):
+                            # a morph need not be animated at all, and interpolators other
+                            # than float ones have no weight curve to import
+                            NifLog.info(f"Morph '{key_name}' has no float interpolator "
+                                        f"(found {type(n_interpolator).__name__}); "
+                                        f"importing its shape without keys.")
                             continue
+
+                        if not n_interpolator.data:
+                            NifLog.info(f"Morph '{key_name}' has an interpolator but no data; "
+                                        f"importing its shape without keys.")
+                            continue
+
+                        morph = n_interpolator.data.data
+
+                    if not morph.keys:
+                        continue
+
+                    if shape_action is None:
+                        shape_action = self.create_action(b_obj.data.shape_keys, f"{b_obj.name}-Morphs")
 
                     # get the interpolation mode
                     interp = self.get_b_interp_from_n_interp(morph.interpolation)
                     times, keys = self.get_keys_values(morph.keys)
-                    self.add_keys(shape_action, "value", (0,), n_morph_ctrl.flags, times, keys, interp,
-                                  key_name=shape_key.name)
+                    tangents = self.get_nif_tangents(
+                        morph.keys, morph.interpolation)
+                    self.add_keys(b_obj.data.shape_keys, shape_action, "value", (0,),
+                                  n_morph_ctrl.flags, times, keys, interp,
+                                  key_name=shape_key.name, tangents=tangents)
                     self.set_max_key_time()
 
     def import_egm_morphs(self, b_obj):

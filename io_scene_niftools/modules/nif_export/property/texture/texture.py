@@ -78,14 +78,22 @@ class NiTexturingProperty(TextureCommon):
     def export_ni_texturing_property(self, b_mat, n_ni_geometry, n_bs_shader_property=None):
         """Export and return a NiTexturingProperty block."""
 
+        niftools_scene = bpy.context.scene.niftools_scene
+
         applymode = self.get_n_apply_mode_from_b_blend_type('MIX')
         self.determine_texture_types(b_mat)
 
-        n_ni_texturing_property = NifClasses.NiTexturingProperty(NifData.data)
+        if not any(self.slots.values()):
+            return
+
+        n_ni_texturing_property = block_store.create_block("NiTexturingProperty", b_mat)
 
         n_ni_texturing_property.flags = b_mat.nif_material.texture_flags
         n_ni_texturing_property.apply_mode = applymode
         n_ni_texturing_property.texture_count = 7
+
+        if niftools_scene.is_fo3():
+            n_ni_texturing_property.texture_count = 9
 
         self.export_texture_shader_effect(n_ni_texturing_property)
         self.export_nitextureprop_tex_descs(n_ni_texturing_property)
@@ -95,12 +103,13 @@ class NiTexturingProperty(TextureCommon):
             if isinstance(n_block, NifClasses.NiTexturingProperty) and n_block.get_hash() == n_ni_texturing_property.get_hash():
                 n_ni_texturing_property = n_block
 
-        block_store.register_block(n_ni_texturing_property)
         n_ni_geometry.add_property(n_ni_texturing_property)
         if n_bs_shader_property and isinstance(n_bs_shader_property, NifClasses.BSShaderNoLightingProperty):
             n_bs_shader_property.file_name = n_ni_texturing_property.base_texture.source.file_name
 
     def export_nitextureprop_tex_descs(self, texprop):
+        niftools_scene = bpy.context.scene.niftools_scene
+
         # go over all valid texture slots
         for slot_name, b_texture_node in self.slots.items():
             if b_texture_node:
@@ -114,6 +123,10 @@ class NiTexturingProperty(TextureCommon):
                 # set uv index and source texture to the texdesc
                 texdesc.uv_set = uv_index
                 texdesc.source = TextureCommon.export_source_texture(b_texture_node)
+
+                if niftools_scene.is_fo3():
+                    texdesc.flags.clamp_mode = NifClasses.TexClampMode.WRAP_S_WRAP_T
+                    texdesc.flags.filter_mode = NifClasses.TexFilterMode.FILTER_TRILERP
 
         # TODO [animation] FIXME Heirarchy
         # self.texture_anim.export_flip_controller(fliptxt, self.base_mtex.texture, texprop, 0)

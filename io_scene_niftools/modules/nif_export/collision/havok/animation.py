@@ -46,21 +46,39 @@ from .....utils import consts
 class BhkBlendCollision(BhkCollisionCommon):
     """Class for exporting Havok blend collision blocks."""
 
-    def export_bhk_blend_collision(self, b_obj):
-        n_col_obj = block_store.create_block("bhkBlendCollisionObject", b_obj)
-        n_col_obj.unknown_float_1 = 1.0
-        n_col_obj.unknown_float_2 = 1.0
+    def export_bhk_blend_collision(self, b_col_obj, n_parent_node, n_hav_layer):
+        """
+        Export a bhkBlendCollisionObject and the bhkBlendController that goes with it.
+
+        The two always come as a pair: every node in a vanilla Bethesda skeleton that has a
+        blend collision object also has a blend controller, and neither is any use alone.
+        """
+
+        n_col_obj = block_store.create_block("bhkBlendCollisionObject", b_col_obj)
+        n_col_obj.flags = self.get_collision_object_flags(b_col_obj, n_hav_layer)
+        n_col_obj.heir_gain = b_col_obj.nif_collision.heir_gain
+        n_col_obj.vel_gain = b_col_obj.nif_collision.vel_gain
+
+        self.export_bhk_blend_controller(b_col_obj, n_parent_node)
+
         return n_col_obj
 
-    def export_bhk_blend_controller(self, b_obj, parent_block):
-        # also add a controller for it
-        n_blend_ctrl = block_store.create_block("bhkBlendController", b_obj)
-        n_blend_ctrl.flags = 12
+    def export_bhk_blend_controller(self, b_col_obj, n_parent_node):
+        """Export the bhkBlendController that drives a blend collision object's node."""
+
+        # registered without the object, whose obj_to_block entry belongs to the rigid body
+        n_blend_ctrl = block_store.create_block("bhkBlendController")
+        # the values every vanilla skeleton uses. The controller runs for no time at all
+        n_blend_ctrl.flags = 0x4C
         n_blend_ctrl.frequency = 1.0
         n_blend_ctrl.phase = 0.0
         n_blend_ctrl.start_time = consts.FLOAT_MAX
         n_blend_ctrl.stop_time = consts.FLOAT_MIN
-        parent_block.add_controller(n_blend_ctrl)
+        n_blend_ctrl.keys = 0
+        n_parent_node.add_controller(n_blend_ctrl)
+        n_blend_ctrl.target = n_parent_node
+
+        return n_blend_ctrl
 
 
 """ # Oblivion skeleton export: check that all bones have a transform controller and transform interpolator

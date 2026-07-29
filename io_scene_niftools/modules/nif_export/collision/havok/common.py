@@ -56,6 +56,30 @@ class BhkCollisionCommon(CollisionCommon):
         self.is_oblivion = self.target_game in ('OBLIVION', 'OBLIVION_KF')
         self.is_fallout = self.target_game in ('FALLOUT_3', 'FALLOUT_NV')
 
+    def get_collision_object_flags(self, b_col_obj, n_hav_layer):
+        """
+        The flags of a bhkNiCollisionObject, whichever kind is being written.
+
+        Whatever the user set, or import read out of the source nif, is the starting point;
+        the bits below are the ones the format documents as required for animated collision,
+        so they are added on top rather than replacing the stored value.
+        """
+
+        n_flags = b_col_obj.nif_collision.collision_flags
+
+        n_anim_static = None
+        if self.is_oblivion:
+            n_anim_static = NifClasses.OblivionLayer.OL_ANIM_STATIC
+        elif self.is_fallout:
+            n_anim_static = NifClasses.Fallout3Layer.FOL_ANIM_STATIC
+
+        # unless it is constrained but not keyframed
+        if n_anim_static is not None and n_hav_layer == n_anim_static \
+                and b_col_obj.nif_collision.col_filter != 128:
+            n_flags |= NifClasses.BhkCOFlags.SET_LOCAL | NifClasses.BhkCOFlags.USE_VEL
+
+        return n_flags
+
     def get_havok_material_list(self, b_col_obj):
         """Get the Blender object's material list as Havok materials."""
 

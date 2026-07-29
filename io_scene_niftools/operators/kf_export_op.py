@@ -60,6 +60,18 @@ class KfExportOperator(Operator, ExportHelper, CommonDevOperator, CommonScale, C
         name="Use NiBSAnimationNode",
         description="Use NiBSAnimationNode (for Morrowind)",
         default=False)
+    
+    # Export selected objects only.
+    use_selected: bpy.props.BoolProperty(
+        name="Selected Objects",
+        description="Export selected objects only.",
+        default=False)
+    
+    # Export selected objects only.
+    use_visible: bpy.props.BoolProperty(
+        name="Visible Objects",
+        description="Export visible objects only.",
+        default=False)
 
     def execute(self, context):
         """Execute the export operators: first constructs a
