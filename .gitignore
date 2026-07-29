@@ -189,6 +189,8 @@ fabric.properties
 
 # Exclude temp build directory
 install/tmp
+install/temp
+
 .idea/mypy.xml
 .idea/MypyPlugin.xml
 .idea/material_theme_project_new.xml
