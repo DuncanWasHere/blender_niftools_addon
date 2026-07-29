@@ -39,9 +39,9 @@
 
 import bpy
 import nifgen.formats.nif as NifFormat
-from io_scene_niftools.utils import debugging
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifOp
+from .utils import debugging
+from .utils.logging import NifLog
+from .utils.singleton import NifOp
 from nifgen.spells.nif import NifToaster
 from nifgen.spells.nif.fix import SpellScale
 
@@ -60,7 +60,7 @@ class NifCommon:
         debugging.start_debug()
 
         # Print scripts info
-        from io_scene_niftools import bl_info
+        from . import bl_info
         niftools_ver = (".".join(str(i) for i in bl_info["version"]))
 
         NifLog.info(f"Executing - NifTools : Blender NifTools Add-on v{niftools_ver}. "

@@ -41,23 +41,23 @@ or from a terminal (Linux):
 
     BLENDER_HOME=~/.blender/
 
-~~~~~~~~~~~~~~~~~~
-BLENDER_ADDONS_DIR
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+BLENDER_EXTENSIONS_DIR
+~~~~~~~~~~~~~~~~~~~~~~
 
 Installs the Blender Nif addon and its dependencies.
 
-Set the location of corresponding Blender addons folder:
+Set the location of the corresponding Blender user extensions repository:
 
 .. code-block:: shell
 
-    BLENDER_ADDONS_DIR=%APPDATA%\Blender Foundation\Blender\<version>\scripts\addons
+    BLENDER_EXTENSIONS_DIR=%APPDATA%\Blender Foundation\Blender\<version>\extensions\user_default
 
 or from a terminal (Linux):
 
 .. code-block:: shell
 
-    BLENDER_ADDONS_DIR=~/.blender/<version>/scripts/addons
+    BLENDER_EXTENSIONS_DIR=~/.config/blender/<version>/extensions/user_default
 
 -------
 Install

@@ -39,10 +39,10 @@
 
 
 import bpy
-from io_scene_niftools.modules.nif_export.animation.material import MaterialAnimation
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifData, NifOp
+from ....modules.nif_export.animation.material import MaterialAnimation
+from ....modules.nif_export.block_registry import block_store
+from ....utils.logging import NifLog
+from ....utils.singleton import NifData, NifOp
 from nifgen.formats.nif import classes as NifClasses
 
 

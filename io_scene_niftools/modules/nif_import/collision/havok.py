@@ -42,11 +42,11 @@ from functools import singledispatch
 
 import bpy
 import mathutils
-from io_scene_niftools.modules.nif_import import collision
-from io_scene_niftools.modules.nif_import.collision import Collision
-from io_scene_niftools.modules.nif_import.object import Object
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifData
+from ....modules.nif_import import collision
+from ....modules.nif_import.collision import Collision
+from ....modules.nif_import.object import Object
+from ....utils.logging import NifLog
+from ....utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
 from nifgen.utils.quickhull import qhull3d
 

@@ -44,8 +44,8 @@ import traceback
 from functools import reduce
 
 import bpy
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifOp
+from .....utils.logging import NifLog
+from .....utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
 
 

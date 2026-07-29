@@ -38,7 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 
-from io_scene_niftools.utils.decorators import register_modules, unregister_modules
+from ..utils.decorators import register_modules, unregister_modules
 from . import armature, collision, constraint, material, object, scene, shader, animation
 
 

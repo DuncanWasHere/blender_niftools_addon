@@ -38,9 +38,9 @@
 # ***** END LICENSE BLOCK *****
 
 
-from io_scene_niftools.modules.nif_export.property.texture.common import TextureCommon
-from io_scene_niftools.utils.consts import TEX_SLOTS, BS_TEX_SLOTS
-from io_scene_niftools.utils.singleton import NifData
+from ......modules.nif_export.property.texture.common import TextureCommon
+from ......utils.consts import TEX_SLOTS, BS_TEX_SLOTS
+from ......utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
 
 

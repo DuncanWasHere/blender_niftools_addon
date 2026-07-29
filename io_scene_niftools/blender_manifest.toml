@@ -1,0 +1,39 @@
+schema_version = "1.0.0"
+
+id = "io_scene_niftools"
+name = "NifTools (Unofficial)"
+version = "1.0.0"
+tagline = "Import and export files in NetImmerse/Gamebryo/Bethesda formats"
+maintainer = "NifTools Team <https://github.com/niftools>"
+type = "add-on"
+platforms = ["windows-x64"]
+
+website = "https://github.com/DuncanWasHere/blender_niftools_addon"
+
+tags = ["Import-Export"]
+
+blender_version_min = "5.0.0"
+
+license = ["SPDX:BSD-3-Clause"]
+copyright = ["2025 NIF File Format Library and Tools contributors"]
+
+# nifgen is generated at build time and packaged as a wheel by
+# install/build_nifgen_wheel.py; its version tracks `version` above, so bumping
+# the add-on version means bumping the filename here too. makezip verifies every
+# wheel named here actually exists before zipping.
+wheels = [
+  "./wheels/PyFFI-2.2.4.dev3-py3-none-any.whl",
+  "./wheels/nifgen-1.0.0-py3-none-any.whl",
+]
+
+[permissions]
+files = "Read and write NIF, KF, EGM and BSA/BA2 asset files"
+
+[build]
+paths_exclude_pattern = [
+  "__pycache__/",
+  "/.git/",
+  "/.idea/",
+  "*.zip",
+  "/todo/",
+]

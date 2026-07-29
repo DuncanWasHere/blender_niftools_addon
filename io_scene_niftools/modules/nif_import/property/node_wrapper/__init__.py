@@ -39,10 +39,10 @@
 
 
 import bpy
-from io_scene_niftools.modules.nif_import.property.texture.loader import TextureLoader
-from io_scene_niftools.utils.consts import TEX_SLOTS, BS_TEX_SLOTS
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.nodes import nodes_iterate
+from .....modules.nif_import.property.texture.loader import TextureLoader
+from .....utils.consts import TEX_SLOTS, BS_TEX_SLOTS
+from .....utils.logging import NifLog
+from .....utils.nodes import nodes_iterate
 from nifgen.formats.nif import classes as NifClasses
 
 

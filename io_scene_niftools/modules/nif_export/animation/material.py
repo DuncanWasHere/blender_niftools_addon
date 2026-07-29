@@ -38,8 +38,8 @@
 # ***** END LICENSE BLOCK *****
 
 
-from io_scene_niftools.modules.nif_export.animation.common import AnimationCommon
-from io_scene_niftools.modules.nif_export.block_registry import block_store
+from ....modules.nif_export.animation.common import AnimationCommon
+from ....modules.nif_export.block_registry import block_store
 from nifgen.formats.nif import classes as NifClasses
 
 

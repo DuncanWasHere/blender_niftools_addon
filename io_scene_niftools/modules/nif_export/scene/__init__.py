@@ -42,7 +42,7 @@ import bpy
 
 import nifgen.formats.nif as NifFormat
 
-from io_scene_niftools.utils.logging import NifLog
+from ....utils.logging import NifLog
 
 
 class Scene:

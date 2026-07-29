@@ -39,10 +39,10 @@
 
 
 import bpy
-from io_scene_niftools.modules.nif_export.constraint.havok import BhkConstraint
+from ....modules.nif_export.constraint.havok import BhkConstraint
 
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifData
+from ....utils.logging import NifLog
+from ....utils.singleton import NifData
 
 
 class Constraint:

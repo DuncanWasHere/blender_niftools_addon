@@ -38,9 +38,9 @@
 # ***** END LICENSE BLOCK *****
 
 
-from io_scene_niftools.file_io import nif
-from io_scene_niftools.file_io.kf import KfFile
-from io_scene_niftools.file_io.nif import NifFile
+from ..file_io import nif
+from ..file_io.kf import KfFile
+from ..file_io.nif import NifFile
 
 
 class File:

@@ -38,9 +38,9 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from io_scene_niftools.modules.nif_import.geometry.mesh import Mesh
-from io_scene_niftools.modules.nif_import.object.block_registry import block_store
-from io_scene_niftools.utils import math
+from ....modules.nif_import.geometry.mesh import Mesh
+from ....modules.nif_import.object.block_registry import block_store
+from ....utils import math
 from nifgen.formats.nif import classes as NifClasses
 
 

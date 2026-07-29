@@ -41,12 +41,12 @@
 from math import pi
 
 import bpy
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.property.material import MaterialProperty
-from io_scene_niftools.modules.nif_export.property.texture import TextureProperty
-from io_scene_niftools.utils.consts import USED_EXTRA_SHADER_TEXTURES
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifOp
+from ....modules.nif_export.block_registry import block_store
+from ....modules.nif_export.property.material import MaterialProperty
+from ....modules.nif_export.property.texture import TextureProperty
+from ....utils.consts import USED_EXTRA_SHADER_TEXTURES
+from ....utils.logging import NifLog
+from ....utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
 
 

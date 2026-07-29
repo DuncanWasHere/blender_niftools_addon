@@ -39,50 +39,40 @@
 
 
 import os
-import sys
+import tomllib
 
-from io_scene_niftools import addon_updater_ops
-from io_scene_niftools.utils import logging, debugging
-from io_scene_niftools.utils.decorators import register_modules, unregister_modules
-from io_scene_niftools.utils.logging import NifLog
+import bpy
+
+from .utils import logging
+from .utils.decorators import register_modules, unregister_modules
+from .utils.logging import NifLog
 
 
-# Blender addon info
-bl_info = {
-    "name": "NifTools",
-    "description": "Import and export files in the NetImmerse/Gamebryo formats (.nif, .kf, .egm)",
-    "author": "NifTools Team",
-    "blender": (4, 5, 4),
-    "version": (0, 2, 1),  # Can't read from VERSION (Blender wants it hardcoded)
-    "api": 39257,
-    "location": "File > Import-Export",
-    "wiki_url": "https://blender-niftools-addon.readthedocs.io/",
-    "tracker_url": "https://github.com/DuncanWasHere/blender_niftools_addon/issues",
-    "support": "COMMUNITY",
-    "category": "Import-Export"
-}
+def get_version():
+    """Read the add-on version from the extension manifest."""
 
-global current_dir # NifTools Addon install directory
+    manifest = os.path.join(os.path.dirname(__file__), "blender_manifest.toml")
+    with open(manifest, "rb") as f:
+        return tomllib.load(f)["version"]
 
-def locate_dependencies():
-    """Locate Python dependencies bundled inside the io_scene_niftools/dependencies folder."""
 
-    global current_dir
-    current_dir = os.path.dirname(__file__)
-    _dependencies_path = os.path.join(current_dir, "dependencies")
-    if _dependencies_path not in sys.path:
-        sys.path.append(_dependencies_path)
-    del _dependencies_path
+def log_dependencies():
+    """Report the versions of the add-on and the generated NIF format library.
 
-    with open(os.path.join(current_dir, "VERSION.txt")) as version:
-        NifLog.info(f"Loading: Blender NifTools Add-on: {version.read()}")
+    Both nifgen and PyFFI are declared as wheels in blender_manifest.toml, so
+    Blender installs them outside the extension directory and puts them on the
+    path itself.
+    """
 
-        import nifgen.formats.nif as NifFormat
+    NifLog.info(f"Loading: Blender NifTools Add-on: {get_version()}")
 
-        # TODO [generated]: Update this and library to have actual versioning
-        NifLog.info(f"Loading: NIF Format: {NifFormat.__xml_version__}")
+    import nifgen.formats.nif as NifFormat
 
-locate_dependencies()
+    # TODO [generated]: Update this and library to have actual versioning
+    NifLog.info(f"Loading: NIF Format: {NifFormat.__xml_version__}")
+
+
+log_dependencies()
 logging.init_loggers()
 
 def get_ordered_submodules():
@@ -93,39 +83,17 @@ def get_ordered_submodules():
 
 MODS = get_ordered_submodules()
 
+
 def register():
-    """Register addon updater."""
+    """Register the add-on's modules and application handlers."""
 
     NifLog.debug("Starting registration")
-    configure_autoupdater()
 
     register_modules(MODS, __name__)
+    handlers.register()
 
 def unregister():
-    """Unregister addon updater."""
+    """Unregister the add-on's modules and application handlers."""
 
+    handlers.unregister()
     unregister_modules(MODS, __name__)
-    addon_updater_ops.unregister()
-
-def select_zip_file(self, tag):
-    """Select the latest build artifact binary."""
-
-    NifLog.debug("Looking for releases")
-    if "assets" in tag and "browser_download_url" in tag["assets"][0]:
-        link = tag["assets"][0]["browser_download_url"]
-    return link
-
-def configure_autoupdater():
-    """Configure addon updater for GitHub repository."""
-
-    NifLog.debug("Configuring auto-updater")
-    addon_updater_ops.register(bl_info)
-    addon_updater_ops.updater.select_link = select_zip_file
-    addon_updater_ops.updater.use_releases = True
-    addon_updater_ops.updater.remove_pre_update_patterns = ["*.py", "*.pyc", "*.xml", "*.exe",
-                                                            "*.rst", "VERSION", "*.xsd"]
-    addon_updater_ops.updater.user = "DuncanWasHere"
-    addon_updater_ops.updater.repo = "blender_niftools_addon"
-    addon_updater_ops.updater.website = "https://github.com/DuncanWasHere/blender_niftools_addon"
-    addon_updater_ops.updater.version_min_update = (0, 0, 4)
-

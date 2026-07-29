@@ -39,25 +39,24 @@
 
 
 import bpy
-import io_scene_niftools.utils.logging
 import nifgen.spells.nif.fix
-from io_scene_niftools.file_io.nif import NifFile
-from io_scene_niftools.modules.nif_import import scene
-from io_scene_niftools.modules.nif_import.animation.object import ObjectAnimation
-from io_scene_niftools.modules.nif_import.animation.transform import TransformAnimation
-from io_scene_niftools.modules.nif_import.armature import Armature
-from io_scene_niftools.modules.nif_import.collision.bound import Bound
-from io_scene_niftools.modules.nif_import.collision.havok import BhkCollision
-from io_scene_niftools.modules.nif_import.constraint import Constraint
-from io_scene_niftools.modules.nif_import.geometry.vertex.groups import VertexGroup
-from io_scene_niftools.modules.nif_import.object import Object
-from io_scene_niftools.modules.nif_import.object.block_registry import block_store
-from io_scene_niftools.modules.nif_import.object.types import NiTypes
-from io_scene_niftools.modules.nif_import.property.object import ObjectProperty
-from io_scene_niftools.nif_common import NifCommon
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.logging import NifLog, NifError
-from io_scene_niftools.utils.singleton import NifOp, NifData
+from .file_io.nif import NifFile
+from .modules.nif_import import scene
+from .modules.nif_import.animation.object import ObjectAnimation
+from .modules.nif_import.animation.transform import TransformAnimation
+from .modules.nif_import.armature import Armature
+from .modules.nif_import.collision.bound import Bound
+from .modules.nif_import.collision.havok import BhkCollision
+from .modules.nif_import.constraint import Constraint
+from .modules.nif_import.geometry.vertex.groups import VertexGroup
+from .modules.nif_import.object import Object
+from .modules.nif_import.object.block_registry import block_store
+from .modules.nif_import.object.types import NiTypes
+from .modules.nif_import.property.object import ObjectProperty
+from .nif_common import NifCommon
+from .utils import math
+from .utils.logging import NifLog, NifError
+from .utils.singleton import NifOp, NifData
 from nifgen.formats.nif import classes as NifClasses
 
 
@@ -89,7 +88,7 @@ class NifImport(NifCommon):
             # to armature' mode
             if NifOp.props.process == "GEOMETRY_ONLY":
                 if len(self.SELECTED_OBJECTS) != 1 or self.SELECTED_OBJECTS[0].type != 'ARMATURE':
-                    raise io_scene_niftools.utils.logging.NifError(
+                    raise NifError(
                         "You must select exactly one armature in 'Import Geometry Only' mode.")
 
             # Force the wireframe color type to object for collision
@@ -154,7 +153,7 @@ class NifImport(NifCommon):
         """Main import function."""
         # check that this is not a kf file
         if isinstance(n_root_node, (NifClasses.NiSequence, NifClasses.NiSequenceStreamHelper)):
-            raise io_scene_niftools.utils.logging.NifError("Use the KF import operator to load KF files.")
+            raise NifError("Use the KF import operator to load KF files.")
 
         # divinity 2: handle CStreamableAssetData
         if isinstance(n_root_node, NifClasses.CStreamableAssetData):

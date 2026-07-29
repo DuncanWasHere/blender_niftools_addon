@@ -39,11 +39,11 @@
 
 import bpy
 import mathutils
-from io_scene_niftools.modules.nif_import import animation
-from io_scene_niftools.modules.nif_import.animation import Animation
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import EGMData
+from ....modules.nif_import import animation
+from ....modules.nif_import.animation import Animation
+from ....utils import math
+from ....utils.logging import NifLog
+from ....utils.singleton import EGMData
 from nifgen.formats.nif import classes as NifClasses
 
 

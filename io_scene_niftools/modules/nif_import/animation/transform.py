@@ -42,11 +42,11 @@ from functools import singledispatch
 
 import bpy
 import mathutils
-from io_scene_niftools.modules.nif_import.animation import Animation
-from io_scene_niftools.modules.nif_import.object import block_registry
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.consts import QUAT, EULER, LOC, SCALE
-from io_scene_niftools.utils.logging import NifLog
+from ....modules.nif_import.animation import Animation
+from ....modules.nif_import.object import block_registry
+from ....utils import math
+from ....utils.consts import QUAT, EULER, LOC, SCALE
+from ....utils.logging import NifLog
 from nifgen.formats.nif import classes as NifClasses
 
 

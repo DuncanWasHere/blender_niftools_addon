@@ -41,9 +41,9 @@ import bpy
 from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper, orientation_helper
 
-from io_scene_niftools.nif_import import NifImport
-from io_scene_niftools.operators.common_op import CommonDevOperator, CommonScale, CommonNif
-from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+from ..nif_import import NifImport
+from ..operators.common_op import CommonDevOperator, CommonScale, CommonNif
+from ..utils.decorators import register_classes, unregister_classes
 
 
 @orientation_helper(axis_forward='Z', axis_up='-Y')

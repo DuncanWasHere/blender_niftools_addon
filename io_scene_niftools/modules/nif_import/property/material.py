@@ -40,10 +40,10 @@
 from functools import singledispatch
 
 import bpy
-from io_scene_niftools.modules.nif_import.property.node_wrapper import NodeWrapper
-from io_scene_niftools.modules.nif_import.property.shader.bethesda import BSShaderProperty
-from io_scene_niftools.utils.consts import TEX_SLOTS
-from io_scene_niftools.utils.logging import NifLog
+from ....modules.nif_import.property.node_wrapper import NodeWrapper
+from ....modules.nif_import.property.shader.bethesda import BSShaderProperty
+from ....utils.consts import TEX_SLOTS
+from ....utils.logging import NifLog
 from nifgen.formats.nif import classes as NifClasses
 
 

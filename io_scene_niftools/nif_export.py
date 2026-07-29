@@ -42,21 +42,21 @@ import os.path
 
 import bpy
 
-from io_scene_niftools.file_io import File
+from .file_io import File
 
-from io_scene_niftools.nif_common import NifCommon
+from .nif_common import NifCommon
 
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.logging import NifLog, NifError
-from io_scene_niftools.utils.singleton import NifOp, EGMData, NifData
+from .utils import math
+from .utils.logging import NifLog, NifError
+from .utils.singleton import NifOp, EGMData, NifData
 
-from io_scene_niftools.modules.nif_export.animation import Animation
-from io_scene_niftools.modules.nif_export.collision import Collision
-from io_scene_niftools.modules.nif_export.constraint import Constraint
-from io_scene_niftools.modules.nif_export.object import Object
-from io_scene_niftools.modules.nif_export.particle import Particle
-from io_scene_niftools.modules.nif_export.scene import Scene
-from io_scene_niftools.modules.nif_export.block_registry import block_store
+from .modules.nif_export.animation import Animation
+from .modules.nif_export.collision import Collision
+from .modules.nif_export.constraint import Constraint
+from .modules.nif_export.object import Object
+from .modules.nif_export.particle import Particle
+from .modules.nif_export.scene import Scene
+from .modules.nif_export.block_registry import block_store
 
 from nifgen.formats.nif import classes as NifClasses
 

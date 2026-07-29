@@ -39,9 +39,9 @@
 
 
 import bpy
-from io_scene_niftools.modules.nif_export.property.shader.bethesda import BSShaderProperty
-from io_scene_niftools.modules.nif_export.property.texture.texture import NiTexturingProperty
-from io_scene_niftools.utils.consts import USED_EXTRA_SHADER_TEXTURES
+from .....modules.nif_export.property.shader.bethesda import BSShaderProperty
+from .....modules.nif_export.property.texture.texture import NiTexturingProperty
+from .....utils.consts import USED_EXTRA_SHADER_TEXTURES
 
 
 class TextureProperty:

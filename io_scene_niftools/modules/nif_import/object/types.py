@@ -38,7 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 import bpy
-from io_scene_niftools.modules.nif_import.object import Object
+from ....modules.nif_import.object import Object
 from nifgen.formats.nif import classes as NifClasses
 
 

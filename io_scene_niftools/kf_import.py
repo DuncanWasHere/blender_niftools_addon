@@ -39,12 +39,12 @@
 
 import os
 
-from io_scene_niftools.file_io.nif import NifFile as KFFile
-from io_scene_niftools.modules.nif_import.animation.transform import TransformAnimation
-from io_scene_niftools.nif_common import NifCommon
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.logging import NifLog, NifError
-from io_scene_niftools.utils.singleton import NifOp
+from .file_io.nif import NifFile as KFFile
+from .modules.nif_import.animation.transform import TransformAnimation
+from .nif_common import NifCommon
+from .utils import math
+from .utils.logging import NifLog, NifError
+from .utils.singleton import NifOp
 
 
 class KfImport(NifCommon):

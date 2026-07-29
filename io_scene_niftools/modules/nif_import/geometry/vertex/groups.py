@@ -42,8 +42,8 @@ from itertools import chain
 import numpy as np
 
 import bpy
-from io_scene_niftools.modules.nif_import.object.block_registry import block_store, get_bone_name_for_blender
-from io_scene_niftools.utils.logging import NifLog
+from .....modules.nif_import.object.block_registry import block_store, get_bone_name_for_blender
+from .....utils.logging import NifLog
 from nifgen.formats.nif import classes as NifClasses
 from nifgen.formats.nif.nimesh.structs.DisplayList import DisplayList
 

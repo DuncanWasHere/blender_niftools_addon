@@ -40,13 +40,13 @@
 
 import bpy
 
-from io_scene_niftools.modules.nif_export import types
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.geometry import Geometry
-from io_scene_niftools.modules.nif_export.object.armature import Armature
-from io_scene_niftools.modules.nif_export.property.object import ObjectProperty
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.logging import NifLog
+from ....modules.nif_export import types
+from ....modules.nif_export.block_registry import block_store
+from ....modules.nif_export.geometry import Geometry
+from ....modules.nif_export.object.armature import Armature
+from ....modules.nif_export.property.object import ObjectProperty
+from ....utils import math
+from ....utils.logging import NifLog
 
 DICT_NAMES = {}  # Dictionary to map Blender object names to NIF blocks
 

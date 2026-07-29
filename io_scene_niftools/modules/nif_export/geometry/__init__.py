@@ -41,17 +41,17 @@
 import numpy as np
 
 import bpy
-from io_scene_niftools.modules.nif_export.animation.geometry import GeometryAnimation
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.geometry import skin_partition
-from io_scene_niftools.modules.nif_export.geometry.data import GeometryData
-from io_scene_niftools.modules.nif_export.geometry.skinned import SkinnedGeometry
-from io_scene_niftools.modules.nif_export.property.object import ObjectProperty
-from io_scene_niftools.modules.nif_export.property.texture.texture import NiTexturingProperty
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.consts import USED_EXTRA_SHADER_TEXTURES
-from io_scene_niftools.utils.logging import NifLog, NifError
-from io_scene_niftools.utils.singleton import NifOp
+from ....modules.nif_export.animation.geometry import GeometryAnimation
+from ....modules.nif_export.block_registry import block_store
+from ....modules.nif_export.geometry import skin_partition
+from ....modules.nif_export.geometry.data import GeometryData
+from ....modules.nif_export.geometry.skinned import SkinnedGeometry
+from ....modules.nif_export.property.object import ObjectProperty
+from ....modules.nif_export.property.texture.texture import NiTexturingProperty
+from ....utils import math
+from ....utils.consts import USED_EXTRA_SHADER_TEXTURES
+from ....utils.logging import NifLog, NifError
+from ....utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
 
 

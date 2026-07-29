@@ -38,8 +38,8 @@
 # ***** END LICENSE BLOCK *****
 
 
-from io_scene_niftools.modules.nif_import.collision import Collision
-from io_scene_niftools.modules.nif_import.object import Object
+from ....modules.nif_import.collision import Collision
+from ....modules.nif_import.object import Object
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2026 NIF File Format Library and Tools contributors.

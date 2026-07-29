@@ -37,9 +37,9 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from io_scene_niftools.modules.nif_import.animation import Animation
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.logging import NifLog
+from ....modules.nif_import.animation import Animation
+from ....utils import math
+from ....utils.logging import NifLog
 from nifgen.formats.nif import classes as NifClasses
 
 

@@ -38,12 +38,12 @@
 # ***** END LICENSE BLOCK *****
 
 
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.collision.havok.common import BhkCollisionCommon
-from io_scene_niftools.modules.nif_export.collision.havok.mopp_shape import BhkMOPPShape
-from io_scene_niftools.modules.nif_export.collision.havok.shape import BhkShape
-from io_scene_niftools.modules.nif_export.object import DICT_NAMES
-from io_scene_niftools.utils.singleton import NifData
+from .....modules.nif_export.block_registry import block_store
+from .....modules.nif_export.collision.havok.common import BhkCollisionCommon
+from .....modules.nif_export.collision.havok.mopp_shape import BhkMOPPShape
+from .....modules.nif_export.collision.havok.shape import BhkShape
+from .....modules.nif_export.object import DICT_NAMES
+from .....utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
 
 

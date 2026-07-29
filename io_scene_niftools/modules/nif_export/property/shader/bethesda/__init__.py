@@ -40,15 +40,14 @@
 
 import bpy
 
-import io_scene_niftools.utils.logging
-import io_scene_niftools.utils.math
 
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.property.texture.bethesda import BSShaderTextureSet
-from io_scene_niftools.modules.nif_export.property.texture.texture import NiTexturingProperty
-from io_scene_niftools.utils.math import color_blender_to_nif
+from ......modules.nif_export.block_registry import block_store
+from ......modules.nif_export.property.texture.bethesda import BSShaderTextureSet
+from ......modules.nif_export.property.texture.texture import NiTexturingProperty
+from ......utils.math import color_blender_to_nif
 
 from nifgen.formats.nif import classes as NifClasses
+from ......utils.logging import NifLog
 
 
 class BSShaderProperty:
@@ -62,7 +61,7 @@ class BSShaderProperty:
         """Main function for handling Bethesda shader property export."""
 
         if b_mat.nif_shader.bs_shadertype == 'None':
-            io_scene_niftools.NifLog.warn(f"No shader applied to material '{b_mat}' for mesh "
+            NifLog.warn(f"No shader applied to material '{b_mat}' for mesh "
                                           f"'{n_ni_geometry.name}'. It will not be visible in game.")
             return
 

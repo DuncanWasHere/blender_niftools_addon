@@ -37,10 +37,10 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from io_scene_niftools.modules.nif_import.animation import Animation
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifOp
+from ....modules.nif_import.animation import Animation
+from ....utils import math
+from ....utils.logging import NifLog
+from ....utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
 
 # indices for blender ShaderNodeMapping node

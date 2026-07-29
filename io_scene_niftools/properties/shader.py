@@ -42,7 +42,7 @@ from bpy.props import (BoolProperty,
                        EnumProperty, FloatProperty,
                        )
 from bpy.types import PropertyGroup
-from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+from ..utils.decorators import register_classes, unregister_classes
 from nifgen.formats.nif import classes as NifClasses
 
 

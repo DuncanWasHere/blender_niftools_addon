@@ -41,12 +41,12 @@ import numpy as np
 
 import bpy
 import mathutils
-from io_scene_niftools.modules.nif_import.animation.transform import TransformAnimation
-from io_scene_niftools.modules.nif_import.object import Object
-from io_scene_niftools.modules.nif_import.object.block_registry import block_store, get_bone_name_for_blender
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifOp
+from ....modules.nif_import.animation.transform import TransformAnimation
+from ....modules.nif_import.object import Object
+from ....modules.nif_import.object.block_registry import block_store, get_bone_name_for_blender
+from ....utils import math
+from ....utils.logging import NifLog
+from ....utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
 
 

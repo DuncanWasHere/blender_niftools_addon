@@ -6,6 +6,9 @@ on:
 
 name: Create Release
 
+permissions:
+  contents: write
+
 jobs:
   build:
     if: github.event.base_ref == 'refs/heads/master'
@@ -14,56 +17,53 @@ jobs:
     steps:
       - name: Get Tag
         id: get_tag
-        run: echo ::set-output name=tag_name::${GITHUB_REF#refs/tags/}
+        run: echo "tag_name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+      # tomllib, used to read the version out of blender_manifest.toml, needs 3.11+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.8
+          python-version: '3.11'
 
-      - name: Build Addon
+      - name: Check manifest version matches the tag
+        run: |
+          MANIFEST_VERSION=$(python -c "import tomllib; print(tomllib.load(open('io_scene_niftools/blender_manifest.toml','rb'))['version'])")
+          TAG_VERSION="${{ steps.get_tag.outputs.tag_name }}"
+          if [[ "v${MANIFEST_VERSION}" != "${TAG_VERSION}" ]]; then
+            echo "::error::tag ${TAG_VERSION} does not match blender_manifest.toml version ${MANIFEST_VERSION}"
+            exit 1
+          fi
+
+      - name: Build Extension
         id: build_addon
         run: |
           ./install/makezip.sh
           ZIP_NAME=$(ls ./install/temp | grep zip)
-          echo "##[set-output name=zip_name;]$ZIP_NAME"
+          echo "zip_name=${ZIP_NAME}" >> "$GITHUB_OUTPUT"
 
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1.1.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: "Blender Niftools Addon - ${{ steps.get_tag.outputs.tag_name }}"
-          body:
-            "
-              **Changes in ${{ steps.get_tag.outputs.tag_name }}**
+          TAG: ${{ steps.get_tag.outputs.tag_name }}
+          ZIP: ${{ steps.build_addon.outputs.zip_name }}
+        run: |
+          cat > release_notes.md <<EOF
+          **Changes in ${TAG}**
 
-                [Full Changelog](https://github.com/niftools/blender_niftools_addon/blob/${{ steps.get_tag.outputs.tag_name }}/CHANGELOG.rst)
+          [Full Changelog](https://github.com/${GITHUB_REPOSITORY}/blob/${TAG}/CHANGELOG.rst)
 
-              **Auto-update**
+          **Installation**
 
-                 If you have a previous release, you can auto-update from within Blender under the addon's preferences
-                 <img src=\"https://user-images.githubusercontent.com/525919/99152545-518dd200-269a-11eb-9236-38c72e641884.gif\" width=\"300\" height=\"200\">
+          Download [${ZIP}](https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${ZIP}),
+          then in Blender use *Edit > Preferences > Add-ons > Install from Disk*, or drag the zip
+          into the Blender window.
 
-              **Clean Install**
+          This release is a Blender extension and requires Blender 5.0 or newer.
+          EOF
 
-                Please use the following link to download the latest release - [${{ steps.build_addon.outputs.zip_name }}](https://github.com/niftools/blender_niftools_addon/releases/download/${{ steps.get_tag.outputs.tag_name }}/${{ steps.build_addon.outputs.zip_name }})
-
-                Click image for installation tutorial
-                <img src=\"https://user-images.githubusercontent.com/525919/98869622-fecdd380-2469-11eb-9605-946937de5923.gif\" width=\"300\" height=\"200\">
-            "
-
-      - name: Attach add-on zip
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./install/temp/${{ steps.build_addon.outputs.zip_name }}
-          asset_name: ${{ steps.build_addon.outputs.zip_name }}
-          asset_content_type: application/zip
+          gh release create "${TAG}" "./install/temp/${ZIP}" \
+            --title "Blender Niftools Addon - ${TAG}" \
+            --notes-file release_notes.md

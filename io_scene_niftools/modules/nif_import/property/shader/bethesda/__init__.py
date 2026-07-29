@@ -40,9 +40,9 @@
 
 from functools import singledispatch
 
-from io_scene_niftools import NifLog
-from io_scene_niftools.modules.nif_import.property.node_wrapper import NodeWrapper
-from io_scene_niftools.modules.nif_import.property.texture.types.bsshadertextureset import BSShaderTextureSet
+from ...... import NifLog
+from ......modules.nif_import.property.node_wrapper import NodeWrapper
+from ......modules.nif_import.property.texture.types.bsshadertextureset import BSShaderTextureSet
 from nifgen.formats.nif import classes as NifClasses
 
 

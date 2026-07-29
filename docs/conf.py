@@ -12,7 +12,7 @@
 #
 # import os
 # import sys
-import codecs
+import tomllib
 
 # sys.path.insert(0, os.path.abspath('.'))
 
@@ -23,9 +23,9 @@ project = "Blender NifTools Addon"
 copyright = "2005, NifTools"
 author = "NifTools"
 
-# The full version, including alpha/beta/rc tags
-with codecs.open("../io_scene_niftools/VERSION.txt", "rb", encoding="ascii") as f:
-    release = f.read().strip()
+# The full version, including alpha/beta/rc tags, read from the extension manifest
+with open("../io_scene_niftools/blender_manifest.toml", "rb") as f:
+    release = tomllib.load(f)["version"]
 
 
 # -- General configuration ---------------------------------------------------

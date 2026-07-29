@@ -1,6 +1,6 @@
 """Classes for exporting NIF particle blocks."""
 import bpy
-from io_scene_niftools import NifLog
+from .... import NifLog
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2026 NIF File Format Library and Tools contributors.
@@ -39,8 +39,8 @@ from io_scene_niftools import NifLog
 # ***** END LICENSE BLOCK *****
 
 
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.object import DICT_NAMES
+from ....modules.nif_export.block_registry import block_store
+from ....modules.nif_export.object import DICT_NAMES
 
 
 class Particle:

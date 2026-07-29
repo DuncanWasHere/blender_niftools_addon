@@ -42,12 +42,12 @@ import os
 
 from bpy.types import Scene
 
-from io_scene_niftools.modules.nif_export.animation.object import ObjectAnimation
-from io_scene_niftools.modules.nif_export.scene import Scene
-from io_scene_niftools.nif_common import NifCommon
-from io_scene_niftools.utils import math
-from io_scene_niftools.utils.logging import NifLog, NifError
-from io_scene_niftools.utils.singleton import NifOp, NifData
+from .modules.nif_export.animation.object import ObjectAnimation
+from .modules.nif_export.scene import Scene
+from .nif_common import NifCommon
+from .utils import math
+from .utils.logging import NifLog, NifError
+from .utils.singleton import NifOp, NifData
 
 
 class KfExport(NifCommon):

@@ -37,8 +37,8 @@
 #
 # ***** END LICENSE BLOCK *****
 import bpy
-from io_scene_niftools.utils.consts import QUAT, EULER, LOC, SCALE
-from io_scene_niftools.utils.logging import NifLog
+from ....utils.consts import QUAT, EULER, LOC, SCALE
+from ....utils.logging import NifLog
 from nifgen.formats.nif import classes as NifClasses
 
 

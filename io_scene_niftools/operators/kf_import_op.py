@@ -41,9 +41,9 @@ import bpy
 from bpy.types import Operator, PropertyGroup
 from bpy_extras.io_utils import ImportHelper
 
-from io_scene_niftools.kf_import import KfImport
-from io_scene_niftools.operators.common_op import CommonDevOperator, CommonScale, CommonKf
-from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+from ..kf_import import KfImport
+from ..operators.common_op import CommonDevOperator, CommonScale, CommonKf
+from ..utils.decorators import register_classes, unregister_classes
 
 
 class KfImportOperator(Operator, ImportHelper, CommonDevOperator, CommonScale, CommonKf):

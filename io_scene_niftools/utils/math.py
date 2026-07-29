@@ -41,7 +41,7 @@
 import bpy
 import mathutils
 from bpy_extras.io_utils import axis_conversion
-from io_scene_niftools.utils.logging import NifLog
+from ..utils.logging import NifLog
 from nifgen.formats.nif import classes as NifClasses
 
 THETA_THRESHOLD_NEGY = 1.0e-9

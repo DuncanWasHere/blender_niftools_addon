@@ -38,10 +38,10 @@
 # ***** END LICENSE BLOCK *****
 
 
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.constraint.havok.common import ConstraintCommon
-from io_scene_niftools.modules.nif_export.object import DICT_NAMES
-from io_scene_niftools.utils.logging import NifLog
+from .....modules.nif_export.block_registry import block_store
+from .....modules.nif_export.constraint.havok.common import ConstraintCommon
+from .....modules.nif_export.object import DICT_NAMES
+from .....utils.logging import NifLog
 from nifgen.formats.nif import classes as NifClasses
 
 

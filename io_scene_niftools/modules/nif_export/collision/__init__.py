@@ -40,11 +40,11 @@
 
 import bpy
 
-from io_scene_niftools.modules.nif_export.collision.bound import Bound, NiCollision
-from io_scene_niftools.modules.nif_export.collision.havok import BhkCollision
-from io_scene_niftools.modules.nif_export.collision.havok.animation import BhkBlendCollision
-from io_scene_niftools.modules.nif_export.object import DICT_NAMES
-from io_scene_niftools.utils.logging import NifLog
+from ....modules.nif_export.collision.bound import Bound, NiCollision
+from ....modules.nif_export.collision.havok import BhkCollision
+from ....modules.nif_export.collision.havok.animation import BhkBlendCollision
+from ....modules.nif_export.object import DICT_NAMES
+from ....utils.logging import NifLog
 
 from nifgen.formats.nif import classes as NifClasses
 

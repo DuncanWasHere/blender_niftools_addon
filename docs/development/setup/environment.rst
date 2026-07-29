@@ -58,14 +58,14 @@ Environment Variables
 
 .. code-block:: shell
 
-    set BLENDER_ADDONS_DIR=<path_to_blender_addons>
+    set BLENDER_EXTENSIONS_DIR=<path_to_blender_user_extensions>
     set BLENDER_HOME=<path_to_blender_exe>
 
 **Linux**
 
 .. code-block:: shell
 
-    set -X BLENDER_ADDONS_DIR=<path_to_blender_addons>
+    set -X BLENDER_EXTENSIONS_DIR=<path_to_blender_user_extensions>
     BLENDER_HOME="<path_to_blender_executable>"
 
 .. note::
@@ -76,7 +76,7 @@ Environment Variables
 
 .. code-block:: shell
 
-    export BLENDER_ADDONS_DIR="/Users/<user>/Library/Application Support/Blender/2.82/scripts/addons"
+    export BLENDER_EXTENSIONS_DIR="/Users/<user>/Library/Application Support/Blender/5.0/extensions/user_default"
     export BLENDER_HOME="/Applications/Blender.app/Contents/MacOS"
 
 ---------------

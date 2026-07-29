@@ -1,7 +1,7 @@
 import bmesh
 import bpy
 from bpy.types import Operator
-from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+from ..utils.decorators import register_classes, unregister_classes
 
 
 class OperatorShrinkHull(Operator):

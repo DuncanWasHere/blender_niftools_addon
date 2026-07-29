@@ -39,9 +39,9 @@
 
 import bpy
 import mathutils
-from io_scene_niftools.modules.nif_import import collision
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifData
+from ....modules.nif_import import collision
+from ....utils.logging import NifLog
+from ....utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses  # type: ignore
 
 

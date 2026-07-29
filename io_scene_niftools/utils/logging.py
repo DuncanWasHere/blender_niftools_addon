@@ -41,7 +41,7 @@
 import inspect
 import logging
 
-from io_scene_niftools.utils.consts import LOGGER_PYFFI, LOGGER_PLUGIN
+from ..utils.consts import LOGGER_PYFFI, LOGGER_PLUGIN
 
 
 class _MockOperator:

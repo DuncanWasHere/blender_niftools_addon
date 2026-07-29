@@ -40,7 +40,7 @@
 
 from itertools import repeat
 
-from io_scene_niftools import NifLog
+from .... import NifLog
 from nifgen.formats.nif import classes as NifClasses
 from nifgen.utils.meshopt_stripify import stripify as meshopt_stripify
 from nifgen.utils.vertex_cache import get_cache_optimized_triangles

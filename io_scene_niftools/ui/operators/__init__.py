@@ -39,8 +39,8 @@
 
 from bpy.types import Panel
 
-from io_scene_niftools.ui.operators import nif_import, nif_export
-from io_scene_niftools.utils.decorators import register_modules, unregister_modules, register_classes, \
+from ...ui.operators import nif_import, nif_export
+from ...utils.decorators import register_modules, unregister_modules, register_classes, \
     unregister_classes
 
 

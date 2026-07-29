@@ -39,9 +39,9 @@
 
 
 import bpy
-from io_scene_niftools.operators import object, geometry, nif_import_op, nif_export_op, kf_import_op, egm_import_op, \
+from ..operators import object, geometry, nif_import_op, nif_export_op, kf_import_op, egm_import_op, \
     kf_export_op
-from io_scene_niftools.utils.decorators import register_modules, unregister_modules
+from ..utils.decorators import register_modules, unregister_modules
 
 
 # noinspection PyUnusedLocal

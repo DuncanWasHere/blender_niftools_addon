@@ -1,6 +1,6 @@
 """This script contains helper methods to import textures."""
-from io_scene_niftools.modules.nif_import.property.node_wrapper import NodeWrapper
-from io_scene_niftools.utils.consts import TEX_SLOTS, BS_TEX_SLOTS
+from ......modules.nif_import.property.node_wrapper import NodeWrapper
+from ......utils.consts import TEX_SLOTS, BS_TEX_SLOTS
 # ***** BEGIN LICENSE BLOCK *****
 #
 # Copyright © 2026 NIF File Format Library and Tools contributors.
@@ -37,7 +37,7 @@ from io_scene_niftools.utils.consts import TEX_SLOTS, BS_TEX_SLOTS
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # ***** END LICENSE BLOCK *****
-from io_scene_niftools.utils.logging import NifLog
+from ......utils.logging import NifLog
 
 
 class BSShaderTextureSet:

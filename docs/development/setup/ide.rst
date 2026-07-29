@@ -47,7 +47,7 @@ script.
 
 .. code-block:: shell
 
-  export PYDEVDEBUG="${BLENDER_ADDONS_DIR}"
+  export PYDEVDEBUG="${BLENDER_EXTENSIONS_DIR}"
 
 In the IDE, create a new configuration of type `Python Debug Server`, update the port as per the util_debug.py
 settings. This can then be launched and should wait for the debug thread to call back into the server.

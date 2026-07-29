@@ -40,7 +40,7 @@
 import functools
 
 from bpy.utils import register_class, unregister_class
-from io_scene_niftools.utils.logging import NifLog
+from ..utils.logging import NifLog
 
 
 def overload_method(*types):

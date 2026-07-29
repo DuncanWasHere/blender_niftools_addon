@@ -43,13 +43,12 @@ import bpy
 import bmesh
 import mathutils
 
-import io_scene_niftools.utils.logging
-from io_scene_niftools.modules.nif_import.animation.morph import MorphAnimation
-from io_scene_niftools.modules.nif_import.geometry.vertex import Vertex
-from io_scene_niftools.modules.nif_import.geometry.vertex.groups import VertexGroup
-from io_scene_niftools.modules.nif_import.property.material import MaterialProperty
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifOp
+from .....modules.nif_import.animation.morph import MorphAnimation
+from .....modules.nif_import.geometry.vertex import Vertex
+from .....modules.nif_import.geometry.vertex.groups import VertexGroup
+from .....modules.nif_import.property.material import MaterialProperty
+from .....utils.logging import NifLog, NifError
+from .....utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
 from nifgen.formats.nif.nimesh.structs.DisplayList import DisplayList
 
@@ -131,7 +130,7 @@ class Mesh:
             n_tri_data = n_block.data
 
             if not n_tri_data:
-                raise io_scene_niftools.utils.logging.NifError(f"No shape data in {node_name}")
+                raise NifError(f"No shape data in {node_name}")
 
             vertices = n_tri_data.vertices
             triangles = n_block.get_triangles()

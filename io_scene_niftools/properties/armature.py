@@ -45,7 +45,7 @@ from bpy.props import (IntProperty,
                        )
 from bpy.types import PropertyGroup
 
-from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+from ..utils.decorators import register_classes, unregister_classes
 
 
 class BoneProperties(PropertyGroup):

@@ -43,7 +43,7 @@ from itertools import chain
 import bpy
 from bpy.props import IntProperty
 from bpy.types import PropertyGroup
-from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+from ..utils.decorators import register_classes, unregister_classes
 from nifgen.formats.nif.versions import available_versions, set_game
 
 

@@ -39,10 +39,10 @@
 
 
 import mathutils
-from io_scene_niftools.modules.nif_export import types
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.modules.nif_export.collision.common import CollisionCommon
-from io_scene_niftools.utils import math
+from ....modules.nif_export import types
+from ....modules.nif_export.block_registry import block_store
+from ....modules.nif_export.collision.common import CollisionCommon
+from ....utils import math
 
 
 class Bound(CollisionCommon):

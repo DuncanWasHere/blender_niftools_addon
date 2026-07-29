@@ -40,9 +40,9 @@
 from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
 
-from io_scene_niftools import egm_import
-from io_scene_niftools.operators.common_op import CommonDevOperator, CommonEgm, CommonScale
-from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+from .. import egm_import
+from ..operators.common_op import CommonDevOperator, CommonEgm, CommonScale
+from ..utils.decorators import register_classes, unregister_classes
 
 
 class EgmImportOperator(Operator, ImportHelper, CommonScale, CommonEgm, CommonDevOperator):

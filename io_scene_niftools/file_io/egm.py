@@ -38,7 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 
-from io_scene_niftools.utils.logging import NifLog, NifError
+from ..utils.logging import NifLog, NifError
 from pyffi.formats.egm import EgmFormat
 
 

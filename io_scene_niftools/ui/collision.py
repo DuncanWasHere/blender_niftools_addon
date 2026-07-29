@@ -39,9 +39,9 @@
 
 
 from bpy.types import Panel
-from io_scene_niftools.operators.shrink_hull import OperatorShrinkHull
+from ..operators.shrink_hull import OperatorShrinkHull
 
-from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+from ..utils.decorators import register_classes, unregister_classes
 
 
 class CollisionPanel(Panel):

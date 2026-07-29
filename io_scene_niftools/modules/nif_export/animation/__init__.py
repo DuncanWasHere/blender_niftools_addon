@@ -39,14 +39,14 @@
 
 
 import bpy
-from io_scene_niftools.modules.nif_export.animation.geometry import GeometryAnimation
-from io_scene_niftools.modules.nif_export.animation.material import MaterialAnimation
-from io_scene_niftools.modules.nif_export.animation.object import ObjectAnimation
-from io_scene_niftools.modules.nif_export.animation.particle import ParticleAnimation
-from io_scene_niftools.modules.nif_export.animation.shader import ShaderAnimation
-from io_scene_niftools.modules.nif_export.animation.texture import TextureAnimation
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.utils.logging import NifLog
+from ....modules.nif_export.animation.geometry import GeometryAnimation
+from ....modules.nif_export.animation.material import MaterialAnimation
+from ....modules.nif_export.animation.object import ObjectAnimation
+from ....modules.nif_export.animation.particle import ParticleAnimation
+from ....modules.nif_export.animation.shader import ShaderAnimation
+from ....modules.nif_export.animation.texture import TextureAnimation
+from ....modules.nif_export.block_registry import block_store
+from ....utils.logging import NifLog
 from nifgen.formats.nif import classes as NifClasses
 
 

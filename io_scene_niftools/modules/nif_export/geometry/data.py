@@ -41,8 +41,8 @@
 import numpy as np
 
 import bpy
-from io_scene_niftools.utils.logging import NifLog, NifError
-from io_scene_niftools.utils.singleton import NifOp, NifData
+from ....utils.logging import NifLog, NifError
+from ....utils.singleton import NifOp, NifData
 from nifgen.formats.nif import classes as NifClasses
 
 

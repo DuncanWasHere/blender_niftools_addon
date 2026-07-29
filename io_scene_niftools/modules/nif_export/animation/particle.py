@@ -1,6 +1,6 @@
 """Main module for exporting particle animation blocks."""
 
-from io_scene_niftools.modules.nif_export.animation.common import AnimationCommon
+from ....modules.nif_export.animation.common import AnimationCommon
 
 
 class ParticleAnimation(AnimationCommon):

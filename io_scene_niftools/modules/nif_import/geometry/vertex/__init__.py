@@ -40,7 +40,7 @@
 import numpy as np
 
 import bpy
-from io_scene_niftools.utils.singleton import NifOp
+from .....utils.singleton import NifOp
 
 
 class Vertex:

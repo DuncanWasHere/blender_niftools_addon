@@ -41,12 +41,11 @@
 import os.path
 
 import bpy
-import io_scene_niftools
-from io_scene_niftools.modules.nif_export.block_registry import block_store
-from io_scene_niftools.utils.consts import TEX_SLOTS, USED_EXTRA_SHADER_TEXTURES
-from io_scene_niftools.utils.logging import NifLog, NifError
-from io_scene_niftools.utils.singleton import NifData
-from io_scene_niftools.utils.singleton import NifOp
+from .....modules.nif_export.block_registry import block_store
+from .....utils.consts import TEX_SLOTS, USED_EXTRA_SHADER_TEXTURES
+from .....utils.logging import NifLog, NifError
+from .....utils.singleton import NifData
+from .....utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
 
 
@@ -180,14 +179,14 @@ class TextureCommon:
 
         if not (isinstance(b_texture_node, bpy.types.ShaderNodeTexImage) or
                 isinstance(b_texture_node, bpy.types.ShaderNodeTexEnvironment)):
-            raise io_scene_niftools.utils.logging.NifError(
+            raise NifError(
                 f"Expected a Shader node texture, got {type(b_texture_node)}")
         # get filename from image
 
         # TODO [b_texture_node] still needed? can b_texture_node.image be None in current blender?
         # check that image is loaded
         if b_texture_node.image is None:
-            raise io_scene_niftools.utils.logging.NifError(
+            raise NifError(
                 f"Image type texture has no file loaded ('{b_texture_node.name}')")
 
         filename = b_texture_node.image.filepath

@@ -38,12 +38,11 @@ import bpy.types
 # ***** END LICENSE BLOCK *****
 
 
-import io_scene_niftools.utils.logging
 import nifgen.formats.nif as NifFormat
-from io_scene_niftools.utils.consts import BIP_01, B_L_SUFFIX, BIP01_L, B_R_SUFFIX, BIP01_R, NPC_SUFFIX, B_L_POSTFIX, \
+from ...utils.consts import BIP_01, B_L_SUFFIX, BIP01_L, B_R_SUFFIX, BIP01_R, NPC_SUFFIX, B_L_POSTFIX, \
     NPC_L, B_R_POSTFIX, BRACE_L, BRACE_R, NPC_R, OPEN_BRACKET, CLOSE_BRACKET
-from io_scene_niftools.utils.logging import NifLog
-from io_scene_niftools.utils.singleton import NifData
+from ...utils.logging import NifLog, NifError
+from ...utils.singleton import NifData
 
 
 def replace_blender_name(name, original, replacement, open_replace, close_replace):
@@ -94,7 +93,7 @@ class ExportBlockRegistry:
         try:
             block = NifFormat.niobject_map[block_type](NifData.data)
         except AttributeError:
-            raise io_scene_niftools.NifError(f"'{block_type}': Unknown block type (this is probably a bug).")
+            raise NifError(f"'{block_type}': Unknown block type (this is probably a bug).")
         return self.register_block(block, b_obj)
 
     @staticmethod

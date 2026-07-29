@@ -41,9 +41,9 @@ import bpy
 from bpy.types import Operator
 from bpy_extras.io_utils import ExportHelper
 
-from io_scene_niftools.nif_export import NifExport
-from io_scene_niftools.operators.common_op import CommonDevOperator, CommonNif, CommonScale
-from io_scene_niftools.utils.decorators import register_classes, unregister_classes
+from ..nif_export import NifExport
+from ..operators.common_op import CommonDevOperator, CommonNif, CommonScale
+from ..utils.decorators import register_classes, unregister_classes
 
 
 class NifExportOperator(Operator, ExportHelper, CommonDevOperator, CommonNif, CommonScale):

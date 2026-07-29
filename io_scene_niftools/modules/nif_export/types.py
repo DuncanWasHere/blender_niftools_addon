@@ -40,8 +40,8 @@
 
 import bpy
 
-import io_scene_niftools.utils.logging
-from io_scene_niftools.modules.nif_export.block_registry import block_store
+from ...modules.nif_export.block_registry import block_store
+from ...utils.logging import NifError
 
 
 def create_ninode(b_obj=None, n_node_type=None):
@@ -113,7 +113,7 @@ def export_furniture_marker(n_root, filebase):
         try:
             furniturenumber = int(filebase[15:])
         except ValueError:
-            raise io_scene_niftools.utils.logging.NifError(f"Furniture marker has invalid number ({filebase[15:]}).\n"
+            raise NifError(f"Furniture marker has invalid number ({filebase[15:]}).\n"
                                                            f"Name your file 'furnituremarkerxx.nif' where xx is a number between 00 and 19.")
 
         # create furniture marker block

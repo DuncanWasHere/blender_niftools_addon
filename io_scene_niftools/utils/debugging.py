@@ -41,7 +41,7 @@
 import os
 import sys
 
-from io_scene_niftools.utils.logging import NifLog
+from ..utils.logging import NifLog
 
 
 CLIENT_PORT = 5678
