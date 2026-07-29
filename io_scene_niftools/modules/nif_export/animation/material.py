@@ -46,6 +46,7 @@ from ....modules.nif_export.animation.common import (AnimationCommon, attach_con
                                                                    get_n_target, get_n_property_target)
 from ....modules.nif_export.block_registry import block_store
 from ....utils.logging import NifError, NifLog
+from ....utils.singleton import NifOp
 from nifgen.formats.nif import classes as NifClasses
 
 
@@ -56,6 +57,9 @@ class MaterialAnimation(AnimationCommon):
 
     def export_material_animations(self, b_controlled_blocks, n_ni_controller_sequence=None):
         """Export material animations for given geometry."""
+
+        if 'MATERIAL' not in NifOp.props.object_types:
+            return
 
         for b_controlled_block in b_controlled_blocks:
             b_strip, b_obj = b_controlled_block

@@ -175,6 +175,10 @@ class OperatorExportIncludePanel(OperatorSetting, Panel):
         col.prop(operator, "use_renderable")
         col.prop(operator, "use_active_collection")
 
+        layout.separator()
+        layout.label(text="Object Types")
+        layout.column().prop(operator, "object_types")
+
 classes = [
     OperatorExportIncludePanel,
     OperatorExportTransformPanel,

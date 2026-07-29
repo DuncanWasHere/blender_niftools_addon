@@ -128,8 +128,8 @@ class NifExport(NifCommon):
             with NifLog.context("collecting the objects to export"):
                 self.__find_export_objects()
             if not self.b_root_objects:
-                raise NifError("No valid objects to export! Check the export settings for which objects are "
-                               "included (selected, visible, renderable, or in the active collection).")
+                raise NifError("No valid objects to export! Check the Include panel's object types and "
+                               "scope settings (selected, visible, renderable, or active collection).")
 
             with NifLog.context("validating the objects to export"):
                 self.__validate_object_data()
@@ -216,6 +216,8 @@ class NifExport(NifCommon):
         if NifOp.props.use_active_collection:
             objectsToSearch.update(bpy.context.collection.objects)
 
+        enabled_types = set(NifOp.props.object_types)
+
         # sorted, because the export options above collect into a set, and the order decides
         # which root object stands in for the nif root when there is more than one of them
         for b_obj in sorted(objectsToSearch, key=lambda b_search_obj: b_search_obj.name):
@@ -223,28 +225,76 @@ class NifExport(NifCommon):
                     or b_obj.get("niftools_particle_preview")
                     or b_obj.get("niftools_billboard_camera")):
                 continue
-            if b_obj.type in self.export_types:
-                self.b_main_objects.append(b_obj)
+            if b_obj.type not in self.export_types:
+                continue
 
-                if not b_obj.parent:
-                    self.b_root_objects.append(b_obj)
+            category = self.__get_object_category(b_obj)
+            # Plain empties are structural NIF nodes and remain enabled so filtering a
+            # child category does not destroy the hierarchy around the remaining data.
+            if category and category not in enabled_types:
+                continue
 
-                if b_obj.type == 'ARMATURE':
-                    self.b_armatures.append(b_obj)
+            self.b_main_objects.append(b_obj)
 
-                elif b_obj.rigid_body:
-                    self.b_collision_objects.append(b_obj)
-                    self.b_main_objects.remove(b_obj)
-                elif b_obj.rigid_body_constraint:
-                    self.b_constraint_objects.append(b_obj)
-                    self.b_main_objects.remove(b_obj)
-                elif b_obj.particle_systems:
-                    # the emitter mesh of a particle object is a stand-in for the nif emitter
-                    # volume, so the object is exported as a particle system, not as geometry
-                    self.b_particle_objects.append(b_obj)
-                    self.b_main_objects.remove(b_obj)
-                elif b_obj.field:
-                    self.b_force_field_objects.append(b_obj)
+            if b_obj.type == 'ARMATURE':
+                self.b_armatures.append(b_obj)
+
+            elif b_obj.rigid_body:
+                self.b_collision_objects.append(b_obj)
+                self.b_main_objects.remove(b_obj)
+            elif b_obj.rigid_body_constraint:
+                self.b_constraint_objects.append(b_obj)
+                self.b_main_objects.remove(b_obj)
+            elif b_obj.particle_systems:
+                # the emitter mesh of a particle object is a stand-in for the nif emitter
+                # volume, so the object is exported as a particle system, not as geometry
+                self.b_particle_objects.append(b_obj)
+                self.b_main_objects.remove(b_obj)
+            elif self.__is_force_field(b_obj):
+                self.b_force_field_objects.append(b_obj)
+
+        # A NIF skin cannot refer to bones that were omitted. Pull in an armature
+        # required by an enabled mesh even when the Armatures checkbox is off or
+        # the scope filter did not select the armature itself.
+        for b_obj in tuple(self.b_main_objects):
+            b_armature = b_obj.parent
+            if (b_obj.type == 'MESH' and b_armature and b_armature.type == 'ARMATURE'
+                    and b_armature not in self.b_main_objects):
+                NifLog.info(f"Including armature '{b_armature.name}' because it is required "
+                            f"by skinned mesh '{b_obj.name}'.")
+                self.b_main_objects.append(b_armature)
+                self.b_armatures.append(b_armature)
+
+        # Roots are relative to the filtered hierarchy. This also makes selected-only
+        # export work when a selected object has an unselected or filtered parent.
+        b_main_set = set(self.b_main_objects)
+        b_root_candidates = set(self.b_main_objects)
+        b_root_candidates.update(self.b_collision_objects)
+        b_root_candidates.update(self.b_constraint_objects)
+        b_root_candidates.update(self.b_particle_objects)
+        self.b_root_objects = sorted(
+            (b_obj for b_obj in b_root_candidates if b_obj.parent not in b_main_set),
+            key=lambda b_obj: b_obj.name,
+        )
+
+    @staticmethod
+    def __is_force_field(b_obj):
+        return bool(b_obj.field and b_obj.field.type != 'NONE')
+
+    @classmethod
+    def __get_object_category(cls, b_obj):
+        """Return the export filter category for an object, or None for structural empties."""
+
+        if b_obj.rigid_body or b_obj.rigid_body_constraint:
+            return 'COLLISION'
+        if b_obj.particle_systems or cls.__is_force_field(b_obj):
+            return 'PARTICLE'
+        return {
+            'CAMERA': 'CAMERA',
+            'MESH': 'MESH',
+            'LIGHT': 'LIGHT',
+            'ARMATURE': 'ARMATURE',
+        }.get(b_obj.type)
 
     def __validate_object_data(self):
         """

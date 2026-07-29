@@ -195,3 +195,4 @@ install/temp
 .idea/MypyPlugin.xml
 .idea/material_theme_project_new.xml
 /.idea
+/install/nifgen

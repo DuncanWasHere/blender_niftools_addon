@@ -155,6 +155,22 @@ class NifExportOperator(Operator, ExportHelper, CommonDevOperator, CommonNif, Co
     
     # Export selected objects only.
 
+    object_types: bpy.props.EnumProperty(
+        name="Object Types",
+        description="Which kinds of Blender data to export",
+        options={'ENUM_FLAG'},
+        items=(
+            ('CAMERA', "Cameras", "Export camera objects"),
+            ('MESH', "Meshes", "Export render mesh objects"),
+            ('COLLISION', "Collision", "Export rigid bodies and rigid body constraints"),
+            ('MATERIAL', "Materials", "Export material, shader, texture, and material animation blocks"),
+            ('LIGHT', "Lights", "Export light objects"),
+            ('ARMATURE', "Armatures", "Export armatures and bones; armatures required by enabled skinned meshes are always included"),
+            ('PARTICLE', "Particles", "Export particle systems and their force-field objects"),
+        ),
+        default={'MESH', 'COLLISION', 'MATERIAL', 'ARMATURE', 'PARTICLE'},
+    )
+
     def draw(self, context):
         pass
 
