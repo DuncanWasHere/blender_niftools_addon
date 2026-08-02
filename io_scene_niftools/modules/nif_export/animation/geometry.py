@@ -53,6 +53,12 @@ from pyffi.formats.egm import EgmFormat
 B_NAME_SUFFIX = re.compile(r"\.\d{3}$")
 
 
+def has_field(n_block, field_name):
+    """Whether the block carries this field at the nif version being exported."""
+    return any(name == field_name
+               for name, *_ in type(n_block)._get_filtered_attribute_list(n_block))
+
+
 def get_morph_name(b_key_block):
     """
     Get the NIF morph name for a shape key.
@@ -118,14 +124,20 @@ class GeometryAnimation(AnimationCommon):
 
         # create interpolators (for newer nif versions)
         morph_ctrl.num_interpolators = len(b_key.key_blocks)
-        interpolators_exist = morph_ctrl.reset_field("interpolators")[0]
+        interpolators_exist = has_field(morph_ctrl, "interpolators")
+        if interpolators_exist:
+            morph_ctrl.reset_field("interpolators")
 
         # interpolator weights (for Fallout 3)
-        interp_weights_exist = morph_ctrl.reset_field("interpolator_weights")[0]
+        interp_weights_exist = has_field(morph_ctrl, "interpolator_weights")
+        if interp_weights_exist:
+            morph_ctrl.reset_field("interpolator_weights")
+
         # TODO [morph] some unknowns, bethesda only
         # TODO [morph] just guessing here, data seems to be zero always
         morph_ctrl.num_unknown_ints = len(b_key.key_blocks)
-        morph_ctrl.reset_field("unknown_ints")
+        if has_field(morph_ctrl, "unknown_ints"):
+            morph_ctrl.reset_field("unknown_ints")
         for key_block_num, key_block in enumerate(b_key.key_blocks):
             # export morphed vertices
             n_morph = morph_data.morphs[key_block_num]
@@ -179,7 +191,10 @@ class GeometryAnimation(AnimationCommon):
             for n_data in (n_morph, n_floatdata):
                 n_data.interpolation = NifClasses.KeyType.LINEAR_KEY
                 n_data.num_keys = len(fcurves[0].keyframe_points)
-                data_keys_exist.append(n_data.reset_field("keys")[0])
+                keys_exist = has_field(n_data, "keys")
+                if keys_exist:
+                    n_data.reset_field("keys")
+                data_keys_exist.append(keys_exist)
 
             for i, b_keyframe in enumerate(fcurves[0].keyframe_points):
                 frame, value = b_keyframe.co
