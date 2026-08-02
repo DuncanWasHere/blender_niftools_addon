@@ -2,11 +2,11 @@ schema_version = "1.0.0"
 
 id = "io_scene_niftools"
 name = "NifTools (Unofficial)"
-version = "1.0.1"
+version = "1.0.2"
 tagline = "Import and export files in NetImmerse/Gamebryo/Bethesda formats"
 maintainer = "NifTools Team <https://github.com/niftools>"
 type = "add-on"
-platforms = ["windows-x64"]
+platforms = ["windows-x64", "windows-arm64", "macos-x64", "macos-arm64", "linux-x64"]
 
 website = "https://github.com/DuncanWasHere/blender_niftools_addon"
 
@@ -23,7 +23,7 @@ copyright = ["2025 NIF File Format Library and Tools contributors"]
 # wheel named here actually exists before zipping.
 wheels = [
   "./wheels/PyFFI-2.2.4.dev3-py3-none-any.whl",
-  "./wheels/nifgen-1.0.0-py3-none-any.whl",
+  "./wheels/nifgen-1.0.2-py3-none-any.whl",
 ]
 
 [permissions]
