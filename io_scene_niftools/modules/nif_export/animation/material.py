@@ -58,7 +58,7 @@ class MaterialAnimation(AnimationCommon):
     def export_material_animations(self, b_controlled_blocks, n_ni_controller_sequence=None):
         """Export material animations for given geometry."""
 
-        if 'MATERIAL' not in NifOp.props.object_types:
+        if not NifOp.is_type_enabled('MATERIAL'):
             return
 
         for b_controlled_block in b_controlled_blocks:

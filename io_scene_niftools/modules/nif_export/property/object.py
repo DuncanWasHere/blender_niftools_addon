@@ -78,7 +78,7 @@ class ObjectProperty:
         all suitable properties gauged from b_obj and b_mat to n_block.
         """
 
-        if 'MATERIAL' not in NifOp.props.object_types:
+        if not NifOp.is_type_enabled('MATERIAL'):
             return
 
         if b_obj.material_slots:

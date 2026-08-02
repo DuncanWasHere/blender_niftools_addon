@@ -145,7 +145,7 @@ class Geometry:
             n_parent_node.add_child(n_ni_geometry)
 
             # Add texture effect block (must be added as parent of the geometry block)
-            if 'MATERIAL' in NifOp.props.object_types:
+            if NifOp.is_type_enabled('MATERIAL'):
                 n_parent_node = self.export_texture_effect(n_parent_node, b_mat)
 
         # Fill in the block's non-trivial values

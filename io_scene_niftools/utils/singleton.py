@@ -65,6 +65,16 @@ class NifOp:
         # init loggers logging level
         NifLog.init(operator)
 
+    @staticmethod
+    def is_type_enabled(object_type):
+        """
+        Whether a Blender object type is enabled for export.
+        Will always return true for exporters that don't include this option.
+        """
+
+        object_types = getattr(NifOp.props, "object_types", None)
+        return object_types is None or object_type in object_types
+
 
 class NifData:
     data = None
