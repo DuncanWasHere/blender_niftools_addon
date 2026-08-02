@@ -144,13 +144,15 @@ class TransformAnimation(Animation):
         """Gets a target for an anim controller"""
         b_name = block_registry.get_bone_name_for_blender(n_name)
         # if we have an armature, get the pose bone
-        if b_armature_obj:
-            if b_name in b_armature_obj.pose.bones:
-                return b_armature_obj.pose.bones[b_name]
-        # try to find the object for animation
-        else:
-            if b_name in bpy.data.objects:
-                return bpy.data.objects[b_name]
+        if b_armature_obj and b_name in b_armature_obj.pose.bones:
+            return b_armature_obj.pose.bones[b_name]
+        # a sequence of a skinned nif also drives plain objects, such as its meshes,
+        # so fall back to the objects even when there is an armature
+        if b_name in bpy.data.objects:
+            return bpy.data.objects[b_name]
+        # objects only carry their nif name separately when Blender had to rename them
+        return next((b_obj for b_obj in bpy.data.objects
+                     if getattr(b_obj.nif_object, "longname", "") == b_name), None)
 
     def import_kf_root(self, kf_root, b_armature_obj):
         """Base method to warn user that this root type is not supported"""
@@ -222,7 +224,7 @@ class TransformAnimation(Animation):
                 n_name = controlledblock.get_node_name()
             b_target = self.get_target(b_armature_obj, n_name)
             if self.object_anim.import_sequence_controlled_block(
-                    controlledblock, str(kf_root.name or ""), b_target):
+                    controlledblock, str(kf_root.name or ""), b_target, n_name):
                 continue
             # todo - temporarily disabled! should become a custom property on both object and pose bone, ideally
             # import bone priority
@@ -286,6 +288,8 @@ class TransformAnimation(Animation):
                 b_target, action_name, sequence_name=sequence_name)
             bone_name = None
 
+        b_anim_owner = b_armature if bone_name else b_target
+
         # A path interpolator drives translation from one curve and time/percentage
         # from another. It is not exposed through ``get_controller_data`` because
         # it has no generic ``data`` field.
@@ -298,7 +302,7 @@ class TransformAnimation(Animation):
         if isinstance(n_path, (NifClasses.NiPathInterpolator,
                                NifClasses.NiPathController)):
             self.import_path_translation(
-                n_path, n_kfc, b_armature or b_target, b_action, bone_name,
+                n_path, n_kfc, b_anim_owner, b_action, bone_name,
                 n_bind_rot_inv, n_bind_trans)
             return b_action
 
@@ -315,11 +319,11 @@ class TransformAnimation(Animation):
                 return
             times = list(n_kfc.get_times())
             keys = [NifClasses.Vector3.from_value(tuple_key) for tuple_key in n_kfc.get_translations()]
-            self.import_keys(LOC, b_armature or b_target, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
+            self.import_keys(LOC, b_anim_owner, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
             keys = [NifClasses.Quaternion.from_value(tuple_key) for tuple_key in n_kfc.get_rotations()]
-            self.import_keys(QUAT, b_armature or b_target, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
+            self.import_keys(QUAT, b_anim_owner, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
             keys = list(n_kfc.get_scales())
-            self.import_keys(SCALE, b_armature or b_target, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
+            self.import_keys(SCALE, b_anim_owner, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
             return b_action
         elif isinstance(n_kfc, NifClasses.NiMultiTargetTransformController):
             # not sure what this is used for
@@ -370,7 +374,7 @@ class TransformAnimation(Animation):
                     # line up. Linear interpolation avoids fabricating endpoint ease.
                     interp = "LINEAR"
                 self.import_keys(
-                    EULER, b_armature or b_target, b_action, bone_name,
+                    EULER, b_anim_owner, b_action, bone_name,
                     times_all, zip(*keys_res), flags, interp, n_bind_rot_inv,
                     n_bind_trans, tangents)
             else:
@@ -381,13 +385,13 @@ class TransformAnimation(Animation):
                 # type. Linear component curves are Blender's closest native
                 # representation and avoid invented Bézier endpoint easing.
                 interp = "LINEAR"
-                self.import_keys(QUAT, b_armature or b_target, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
+                self.import_keys(QUAT, b_anim_owner, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
             times, keys = self.get_keys_values(n_kfd.scales.keys)
             interp = self.get_b_interp_from_n_interp(n_kfd.scales.interpolation)
             tangents = self.get_nif_tangents(
                 n_kfd.scales.keys, n_kfd.scales.interpolation)
             self.import_keys(
-                SCALE, b_armature or b_target, b_action, bone_name, times,
+                SCALE, b_anim_owner, b_action, bone_name, times,
                 keys, flags, interp, n_bind_rot_inv, n_bind_trans, tangents)
 
             times, keys = self.get_keys_values(n_kfd.translations.keys)
@@ -395,7 +399,7 @@ class TransformAnimation(Animation):
             tangents = self.get_nif_tangents(
                 n_kfd.translations.keys, n_kfd.translations.interpolation)
             self.import_keys(
-                LOC, b_armature or b_target, b_action, bone_name, times,
+                LOC, b_anim_owner, b_action, bone_name, times,
                 keys, flags, interp, n_bind_rot_inv, n_bind_trans, tangents)
 
         return b_action

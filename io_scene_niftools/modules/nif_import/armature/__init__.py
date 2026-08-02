@@ -43,6 +43,7 @@ import numpy as np
 
 import bpy
 import mathutils
+from ....modules.nif_import.animation.object import ObjectAnimation
 from ....modules.nif_import.animation.transform import TransformAnimation
 from ....modules.nif_import.object import Object
 from ....modules.nif_import.object.block_registry import block_store, get_bone_name_for_blender
@@ -55,6 +56,7 @@ from nifgen.formats.nif import classes as NifClasses
 class Armature:
 
     def __init__(self):
+        self.object_anim = ObjectAnimation()
         self.transform_anim = TransformAnimation()
         # to get access to the nif bone in object mode
         self.name_to_block = {}
@@ -240,6 +242,8 @@ class Armature:
                 block_store.store_longname(b_bone, n_block.name)
                 if NifOp.props.animation:
                     self.transform_anim.import_transforms(n_block, b_armature_obj, bone_name)
+                    self.object_anim.import_visibility(
+                        n_block, b_armature_obj.pose.bones[bone_name])
 
         # import pose
         for b_name, n_block in self.name_to_block.items():

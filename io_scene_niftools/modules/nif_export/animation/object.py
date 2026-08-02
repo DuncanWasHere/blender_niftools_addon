@@ -38,6 +38,8 @@
 # ***** END LICENSE BLOCK *****
 
 
+import re
+
 import bpy
 import mathutils
 
@@ -51,6 +53,10 @@ from ....utils.logging import NifError, NifLog
 from ....utils.singleton import NifData
 from nifgen.formats.nif import classes as NifClasses
 
+# The visibility channel of a bone, on its armature rather than on the armature object
+BONE_HIDE_PATH = re.compile(r'^bones\["(.+)"\]\.hide$')
+
+
 class ObjectAnimation(Common.AnimationCommon):
 
     def __init__(self):
@@ -63,7 +69,16 @@ class ObjectAnimation(Common.AnimationCommon):
             b_action = b_strip.action
             b_action_slot = b_strip.action_slot
 
-            if not b_action_slot or b_action_slot.target_id_type != 'OBJECT':
+            if not b_action_slot:
+                continue
+
+            if b_action_slot.target_id_type == 'ARMATURE':
+                # the visibility of a bone is animated on the armature it belongs to
+                self.export_ni_bone_vis_controllers(
+                    b_obj, b_action, n_ni_controller_sequence, b_action_slot)
+                continue
+
+            if b_action_slot.target_id_type != 'OBJECT':
                 continue
 
             if b_obj.type == 'MESH' and b_obj.parent_type == 'ARMATURE':
@@ -72,6 +87,32 @@ class ObjectAnimation(Common.AnimationCommon):
 
             self.export_ni_object_controllers(
                 b_obj, b_action, n_ni_controller_sequence, b_action_slot)
+
+    def export_ni_bone_vis_controllers(self, b_obj, b_action, n_ni_controller_sequence=None,
+                                       b_action_slot=None):
+        """Export a visibility controller for every bone whose visibility is animated."""
+
+        if b_obj.type != 'ARMATURE':
+            return
+
+        action_fcurves = self.get_fcurves_from_action(b_action, b_action_slot)
+
+        for b_fcurve in action_fcurves:
+            match = BONE_HIDE_PATH.match(b_fcurve.data_path)
+            if not match:
+                continue
+
+            b_bone = b_obj.data.bones.get(match.group(1))
+            if b_bone is None:
+                continue
+
+            hide_curve = [(point.co[0], point.co[1]) for point in b_fcurve.keyframe_points]
+            if not hide_curve:
+                continue
+
+            n_node, n_node_name = get_n_target(b_bone)
+            self.export_ni_vis_controller(hide_curve, b_action, action_fcurves,
+                                          n_node, n_node_name, n_ni_controller_sequence)
 
     def export_ni_vis_controller(self, hide_curves, b_action, action_fcurves, n_node, n_node_name,
                                  n_ni_controller_sequence=None):

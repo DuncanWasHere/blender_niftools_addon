@@ -80,6 +80,22 @@ def particle_billboard_frame_change(_scene, _depsgraph=None):
         pass
 
 
+def bone_visibility_frame_change(_scene, _depsgraph=None):
+    """Hide the objects attached to a bone that an imported visibility controller hides.
+
+    The bones under animation and the objects parented to them are both looked up again
+    on every frame, so a skeleton and the meshes attached to it can be imported in any
+    order, in any session, and still animate together.
+    """
+
+    from .modules.nif_import.animation.object import update_bone_visibility
+    try:
+        update_bone_visibility()
+    except (ReferenceError, RuntimeError):
+        # objects can be replaced underneath us while a file is being loaded
+        pass
+
+
 def register():
     """Attach handlers, if they are not attached already."""
 
@@ -90,6 +106,8 @@ def register():
         bpy.app.handlers.render_pre.append(particle_billboard_render_pre)
     if particle_billboard_frame_change not in bpy.app.handlers.frame_change_post:
         bpy.app.handlers.frame_change_post.append(particle_billboard_frame_change)
+    if bone_visibility_frame_change not in bpy.app.handlers.frame_change_post:
+        bpy.app.handlers.frame_change_post.append(bone_visibility_frame_change)
 
 
 def unregister():
@@ -101,3 +119,5 @@ def unregister():
         bpy.app.handlers.render_pre.remove(particle_billboard_render_pre)
     if particle_billboard_frame_change in bpy.app.handlers.frame_change_post:
         bpy.app.handlers.frame_change_post.remove(particle_billboard_frame_change)
+    if bone_visibility_frame_change in bpy.app.handlers.frame_change_post:
+        bpy.app.handlers.frame_change_post.remove(bone_visibility_frame_change)

@@ -593,8 +593,12 @@ def animation_data_of(b_obj):
         if b_settings and b_settings.animation_data:
             yield b_settings.animation_data
 
-    b_mesh = getattr(b_obj, "data", None)
-    for b_material in getattr(b_mesh, "materials", ()) or ():
+    b_data = getattr(b_obj, "data", None)
+    # bone visibility is animated in the armature data
+    if isinstance(b_data, bpy.types.Armature) and b_data.animation_data:
+        yield b_data.animation_data
+
+    for b_material in getattr(b_data, "materials", ()) or ():
         if not b_material:
             continue
         if b_material.animation_data:

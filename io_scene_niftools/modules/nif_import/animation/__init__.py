@@ -325,8 +325,13 @@ class Animation:
     def finalize(self):
         """Finish sequence storage and choose the default preview range."""
 
+        from ....modules.nif_import.animation.object import update_bone_visibility
+
         self.stash_inactive_sequences()
         self.update_active_action_range()
+        # objects attached to a bone are only synced to it when the frame changes,
+        # so give them the visibility of the frame the import ends on
+        update_bone_visibility()
 
     def create_fcurves(self, obj, action, dtype, drange, flags, bone_name, key_name):
         """ Create fcurves in action for desired conditions. """
