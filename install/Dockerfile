@@ -1,7 +1,7 @@
 FROM python:3.10.8
 
 ARG cobra_commit=99cbdf7fcb7709fcf0e4dc363d17a50ef0410ad7
-ARG pyffi_commit=6f8a8036f3b2c0e47258c47aae2e1313cad66f17
+ARG pyffi_commit=fca49d8d7ca00aebf5a0fa72d7492b44d0762a46
 ARG nifxml_commit=9914a2b4984b4909cbc55512fa8162852b211565
 
 WORKDIR /codegen
