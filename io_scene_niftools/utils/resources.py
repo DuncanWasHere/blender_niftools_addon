@@ -385,7 +385,14 @@ def steam_library_folders():
             except OSError:
                 continue
     except ImportError:
-        pass
+        # not Windows, so there is no registry
+        # Steam keeps its root in a couple of places
+        for candidate in (os.path.expanduser("~/.steam/steam"),
+                          os.path.expanduser("~/.local/share/Steam"),
+                          os.path.expanduser("~/Library/Application Support/Steam")):
+            if os.path.isdir(candidate):
+                steam_path = candidate
+                break
 
     if not steam_path:
         return libraries
