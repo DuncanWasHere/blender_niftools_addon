@@ -531,7 +531,7 @@ def create_shader_group(shader_type):
     phong = bool(NifOp.use_phong_specular)
     # Include an internal revision so blend files containing an older copy of this shared
     # group are rebuilt after its rendering math changes.
-    variant = f"{'phong' if phong else 'glossy'}-6"
+    variant = f"{'phong' if phong else 'glossy'}-7"
     b_group = get_or_rebuild_group(shader_type, [name for name, _type, _default in sockets], variant)
     if b_group.nodes:
         # already built and up to date
@@ -634,11 +634,26 @@ def create_shader_group(shader_type):
     b_links.new(group_in["Emissive Mult"], b_emission.inputs['Strength'])
 
     if unlit:
-        # No lighting: the texture is shown as it is. The emissive multiplier scales it,
-        # but the emissive colour is not added on top, which would double the brightness
-        # of a shader that is already showing the texture at full strength.
+        # Unlit shaders show the texture without scene lighting.
+        b_unlit_rgb = b_base_rgb.outputs[0]
+        if shader_type == 'BSShaderNoLightingProperty':
+            b_emissive_channels = b_nodes.new('ShaderNodeSeparateColor')
+            b_links.new(group_in["Emissive Color"], b_emissive_channels.inputs[0])
+            b_emissive_rg = new_math(
+                'ADD', b_emissive_channels.outputs[0], b_emissive_channels.outputs[1])
+            b_emissive_sum = new_math(
+                'ADD', b_emissive_rg.outputs[0], b_emissive_channels.outputs[2])
+            b_has_emissive_tint = new_math(
+                'GREATER_THAN', b_emissive_sum.outputs[0], 0.003)
+            b_emissive_tint = new_mix(
+                'MIX', (1, 1, 1, 1), group_in["Emissive Color"],
+                b_has_emissive_tint.outputs[0])
+            b_unlit_tinted = new_mix(
+                'MULTIPLY', b_unlit_rgb, b_emissive_tint.outputs[0])
+            b_unlit_rgb = b_unlit_tinted.outputs[0]
+
         b_shaded = b_nodes.new('ShaderNodeEmission')
-        b_links.new(b_base_rgb.outputs[0], b_shaded.inputs['Color'])
+        b_links.new(b_unlit_rgb, b_shaded.inputs['Color'])
         b_links.new(group_in["Emissive Mult"], b_shaded.inputs['Strength'])
         b_nodes.remove(b_emission)
         b_nodes.remove(b_emissive_rgb)
@@ -842,7 +857,7 @@ def create_shader_group(shader_type):
         # The no-lighting shader is emission, so its strength is part of the source
         # framebuffer colour before the blend factors are applied.
         b_source_rgb = new_mix(
-            'MULTIPLY', b_base_rgb.outputs[0], group_in["Emissive Mult"])
+            'MULTIPLY', b_unlit_rgb, group_in["Emissive Mult"])
         b_inv_source_rgb = new_mix(
             'SUBTRACT', (1, 1, 1, 1), b_source_rgb.outputs[0])
         b_inv_source_alpha = new_math('SUBTRACT', 1.0, b_alpha_blended.outputs[0])
