@@ -269,8 +269,8 @@ class ObjectProperty:
             # object is already mapped to its NiNode, which later animation/constraint passes
             # still need to resolve.
             n_extra = block_store.create_block("BSDecalPlacementVectorExtraData")
-            n_extra.name = b_data.name
-            n_extra.float_data = b_data.float_data
+            n_extra.name = "DVPG"
+            n_extra.float_data = 0.0
             n_extra.num_vector_blocks = len(b_data.vector_blocks)
             n_extra.reset_field("vector_blocks")
 
@@ -284,8 +284,7 @@ class ObjectProperty:
                             f"{data_index + 1}.{block_index + 1}.{point_index + 1} on "
                             f"'{b_root_obj.name}'.")
                         continue
-                    n_pairs.append(decal.helper_point_and_normal(
-                        b_root_obj, b_point.helper, b_point.normal_length))
+                    n_pairs.append(decal.helper_point_and_normal(b_root_obj, b_point.helper))
 
                 n_vector_block.num_vectors = len(n_pairs)
                 n_vector_block.reset_field("points")

@@ -45,7 +45,7 @@ from ....modules.nif_export.block_registry import block_store
 from ....modules.nif_export.geometry import Geometry
 from ....modules.nif_export.object.armature import Armature
 from ....modules.nif_export.property.object import ObjectProperty
-from ....utils import decal, math
+from ....utils import math
 from ....utils.flags import to_unsigned_32
 from ....utils.logging import NifLog
 
@@ -118,7 +118,7 @@ class Object:
         """
 
         # Can we export this Blender object?
-        if not b_obj or not b_obj in self.b_exportable_objects or decal.is_decal_helper(b_obj):
+        if not b_obj or not b_obj in self.b_exportable_objects:
             return False
 
         with NifLog.context(f"exporting {b_obj.type.lower()} object '{b_obj.name}'"):

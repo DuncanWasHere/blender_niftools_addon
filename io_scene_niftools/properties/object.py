@@ -46,6 +46,7 @@ from bpy.props import (StringProperty,
                        FloatProperty, FloatVectorProperty, CollectionProperty
                        )
 from bpy.types import PropertyGroup
+from ..utils import decal
 from ..utils.decorators import register_classes, unregister_classes
 from ..utils.flags import bits_of, inject_bit_bools, named_bits
 from nifgen.formats.nif import classes as NifClasses
@@ -315,7 +316,7 @@ class NodeMultiBoundProperty(PropertyGroup):
 
     The bound itself is imported as a child empty rather than as numbers in a panel, so it
     can be seen and dragged in the viewport. Its shape comes straight off that empty's
-    transform: location is the centre, scale is the extent or radius, and for an oriented
+    transform: location is the center, scale is the extent or radius, and for an oriented
     box the rotation is the box rotation.
     """
 
@@ -447,13 +448,22 @@ class DecalPlacementPoint(PropertyGroup):
         type=bpy.types.Object
     )
 
-    normal_length: FloatProperty(
-        name="Normal Length",
-        description="Length of the stored normal. Normally 1; retained separately so zero and "
-                    "non-unit normals round trip unchanged",
-        default=1.0,
-        min=0.0
-    )
+
+def highlight_active_point(self, context):
+    """Select the handle of the point picked in the list."""
+
+    if self.points:
+        index = min(self.point_index, len(self.points) - 1)
+        decal.highlight_helpers([self.points[index].helper])
+
+
+def highlight_active_block(self, context):
+    """Select the handles of every vector in the block picked in the list."""
+
+    if self.vector_blocks:
+        index = min(self.vector_block_index, len(self.vector_blocks) - 1)
+        decal.highlight_helpers([b_point.helper
+                                 for b_point in self.vector_blocks[index].points])
 
 
 class DecalVectorBlock(PropertyGroup):
@@ -468,23 +478,21 @@ class DecalVectorBlock(PropertyGroup):
     point_index: IntProperty(
         name="Active Point",
         default=0,
-        min=0
+        min=0,
+        update=highlight_active_point
     )
 
 
 class BSDecalPlacement(PropertyGroup):
     """Editable contents of one BSDecalPlacementVectorExtraData block."""
 
-    name: StringProperty(
-        name="Name",
-        description="Extra data name. Bethesda files conventionally use DVPG",
-        default="DVPG"
-    )
-
-    float_data: FloatProperty(
-        name="Float Data",
-        description="The float value inherited from NiFloatExtraData",
-        default=0.0
+    target: bpy.props.PointerProperty(
+        name="Decal Volume",
+        description="Mesh whose faces are the part of the weapon that takes decals. Every "
+                    "generated vector lands on it, so leave out anything that should stay "
+                    "clean such as the handle",
+        type=bpy.types.Object,
+        poll=lambda self, b_obj: b_obj.type == 'MESH'
     )
 
     vector_blocks: CollectionProperty(
@@ -496,7 +504,8 @@ class BSDecalPlacement(PropertyGroup):
     vector_block_index: IntProperty(
         name="Active Vector Block",
         default=0,
-        min=0
+        min=0,
+        update=highlight_active_block
     )
 
 
@@ -572,12 +581,6 @@ class ObjectProperty(PropertyGroup):
 
     bs_decal_placement: bpy.props.CollectionProperty(type=BSDecalPlacement)
 
-    decal_placement_index: IntProperty(
-        name="Active Decal Placement Data",
-        default=0,
-        min=0
-    )
-
     # Decal point arrows are editor handles, not NiNodes.  Keeping the marker on the object
     # lets every export path reject them even when a user exports selected objects only.
     is_decal_placement_helper: BoolProperty(
@@ -591,6 +594,7 @@ class ObjectProperty(PropertyGroup):
         type=bpy.types.Object,
         options={'HIDDEN'}
     )
+
 
     # Per node-subtype fields, each only meaningful for the matching nodetype
     node_range: bpy.props.PointerProperty(type=NodeRangeProperty)

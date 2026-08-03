@@ -47,7 +47,7 @@ from .file_io import File
 
 from .nif_common import NifCommon
 
-from .utils import decal, math
+from .utils import math
 from .utils.logging import NifLog, NifError
 from .utils.singleton import NifOp, EGMData, NifData
 
@@ -221,8 +221,7 @@ class NifExport(NifCommon):
         # sorted, because the export options above collect into a set, and the order decides
         # which root object stands in for the nif root when there is more than one of them
         for b_obj in sorted(objectsToSearch, key=lambda b_search_obj: b_search_obj.name):
-            if (decal.is_decal_helper(b_obj)
-                    or b_obj.get("niftools_particle_preview")
+            if (b_obj.get("niftools_particle_preview")
                     or b_obj.get("niftools_billboard_camera")):
                 continue
             if b_obj.type not in self.export_types:

@@ -345,13 +345,6 @@ class ObjectBSInvMarkerPanel(ObjectButtonsPanel):
             col.prop(bs_inv[i], "zoom", index=i)
 
 
-class ObjectDecalPlacementList(UIList):
-    bl_idname = "NIFTOOLS_UL_DecalPlacement"
-
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        layout.prop(item, "name", text="", emboss=False, icon='EMPTY_AXIS')
-
-
 class ObjectDecalVectorBlocksList(UIList):
     bl_idname = "NIFTOOLS_UL_DecalVectorBlocks"
 
@@ -389,23 +382,14 @@ class ObjectDecalPlacementPanel(ObjectButtonsPanel):
         nif_object = b_root.nif_object
         store = nif_object.bs_decal_placement
 
-        row = layout.row()
-        row.template_list("NIFTOOLS_UL_DecalPlacement", "", nif_object,
-                          "bs_decal_placement", nif_object, "decal_placement_index", rows=2)
-        buttons = row.column(align=True)
-        buttons.operator("object.nif_decal_placement_add", icon='ADD', text="")
-        buttons.operator("object.nif_decal_placement_remove", icon='REMOVE', text="")
-
         if not store:
-            layout.label(text="Add data, then pick points directly on a mesh surface.",
-                         icon='INFO')
+            layout.operator("object.nif_decal_placement_add", icon='ADD')
             return
 
-        data_index = min(nif_object.decal_placement_index, len(store) - 1)
-        b_data = store[data_index]
-        box = layout.box()
-        box.prop(b_data, "name")
-        box.prop(b_data, "float_data")
+        b_data = store[0]
+        layout.operator("object.nif_decal_placement_remove", icon='REMOVE')
+        layout.prop(b_data, "target")
+        layout.operator("object.nif_decal_generate", icon='OUTLINER_OB_POINTCLOUD')
 
         row = layout.row()
         row.template_list("NIFTOOLS_UL_DecalVectorBlocks", "", b_data,
@@ -415,7 +399,6 @@ class ObjectDecalPlacementPanel(ObjectButtonsPanel):
         buttons.operator("object.nif_decal_vector_block_remove", icon='REMOVE', text="")
 
         if not b_data.vector_blocks:
-            layout.label(text="Add a vector block before adding points.", icon='INFO')
             return
 
         block_index = min(b_data.vector_block_index, len(b_data.vector_blocks) - 1)
@@ -424,15 +407,10 @@ class ObjectDecalPlacementPanel(ObjectButtonsPanel):
         row.template_list("NIFTOOLS_UL_DecalPoints", "", b_vector_block,
                           "points", b_vector_block, "point_index", rows=4)
         buttons = row.column(align=True)
-        buttons.operator("object.nif_decal_point_pick", icon='EYEDROPPER', text="")
         buttons.operator("object.nif_decal_point_add", icon='ADD', text="")
         buttons.operator("object.nif_decal_point_remove", icon='REMOVE', text="")
         buttons.separator()
         buttons.operator("object.nif_decal_point_select", icon='RESTRICT_SELECT_OFF', text="")
-
-        layout.label(text="Eyedropper: click a mesh to place and align an arrow.",
-                     icon='INFO')
-        layout.label(text="Move the arrow origin for the point. Rotate its +Z axis for the normal.")
 
         if not b_vector_block.points:
             return
@@ -444,7 +422,6 @@ class ObjectDecalPlacementPanel(ObjectButtonsPanel):
         else:
             detail.prop(b_point.helper, "location", text="Point")
             detail.prop(b_point.helper, "rotation_euler", text="Normal Rotation")
-        detail.prop(b_point, "normal_length")
 
 
 class ObjectDecalPointPanel(ObjectButtonsPanel):
@@ -461,9 +438,6 @@ class ObjectDecalPointPanel(ObjectButtonsPanel):
     def draw(self, context):
         b_helper = context.object
         layout = self.layout
-        layout.label(text="Origin = point, local +Z = normal", icon='EMPTY_SINGLE_ARROW')
-        layout.prop(b_helper, "location", text="Point")
-        layout.prop(b_helper, "rotation_euler", text="Normal Rotation")
         layout.prop(b_helper.nif_object, "decal_placement_root", text="Root")
         layout.operator("object.nif_decal_root_select", icon='FILE_PARENT')
 
@@ -477,7 +451,6 @@ classes = [
     ObjectFurniturePositionsList,
     ObjectBSFurnitureMarkerPanel,
     ObjectBSInvMarkerPanel,
-    ObjectDecalPlacementList,
     ObjectDecalVectorBlocksList,
     ObjectDecalPointsList,
     ObjectDecalPlacementPanel,

@@ -160,7 +160,7 @@ class ObjectProperty:
 
     @staticmethod
     def import_lod_data(n_block, nif_object):
-        """Import a NiLODNode's LOD centre and which kind of data drives its switching."""
+        """Import a NiLODNode's LOD center and which kind of data drives its switching."""
 
         n_lod_data = getattr(n_block, "lod_level_data", None)
 
@@ -173,7 +173,7 @@ class ObjectProperty:
         nif_object.node_lod.lod_type = 'NiRangeLODData'
         nif_object.node_lod.screen_lod_data = ''
 
-        # up to 10.0.1.0 the centre sits on the node, after that on the NiRangeLODData
+        # up to 10.0.1.0 the center sits on the node, after that on the NiRangeLODData
         n_center_source = n_lod_data if n_lod_data is not None else n_block
         n_center = getattr(n_center_source, "lod_center", None)
         if n_center is not None:
@@ -258,9 +258,16 @@ class ObjectProperty:
         """Import point/normal pairs as arrow empties parented to the Blender root."""
 
         b_store = b_root.nif_object.bs_decal_placement
+        if b_store:
+            NifLog.warn(f"'{b_root.name}' already has decal placement data, so the extra "
+                        f"'{n_extra.name}' block was not imported. A nif holds one of these.")
+            return
         b_data = b_store.add()
-        b_data.name = n_extra.name
-        b_data.float_data = n_extra.float_data
+
+        if n_extra.name != "DVPG" or n_extra.float_data:
+            NifLog.warn(f"Decal placement data on '{b_root.name}' is named '{n_extra.name}' with "
+                        f"a float value of {n_extra.float_data}; it will be exported as 'DVPG' "
+                        f"with a value of 0.")
 
         for block_index, n_vector_block in enumerate(n_extra.vector_blocks):
             b_vector_block = b_data.vector_blocks.add()
@@ -272,20 +279,30 @@ class ObjectProperty:
                     f"{len(n_vector_block.points)} points and {len(n_vector_block.normals)} "
                     f"normals; imported the {n_count} complete pairs.")
 
-            for point_index, (n_point, n_normal) in enumerate(
-                    zip(n_vector_block.points, n_vector_block.normals)):
-                b_point = decal.imported_point((n_point.x, n_point.y, n_point.z))
-                b_helper, normal_length = decal.create_point_helper(
-                    b_root,
-                    b_point,
-                    (n_normal.x, n_normal.y, n_normal.z),
-                    f"{b_root.name} Decal {len(b_store)}."
-                    f"{block_index + 1}.{point_index + 1}")
-                b_point_item = b_vector_block.points.add()
-                b_point_item.helper = b_helper
-                b_point_item.normal_length = normal_length
+            # the files repeat the vectors as reference nodes, so reuse those as handles
+            b_group = decal.find_vector_group(b_root, block_index)
+            b_candidates = decal.adoptable_handles(b_group) if b_group else []
 
-        b_root.nif_object.decal_placement_index = len(b_store) - 1
+            for n_point, n_normal in zip(n_vector_block.points, n_vector_block.normals):
+                b_point = decal.imported_point((n_point.x, n_point.y, n_point.z))
+                b_normal = (n_normal.x, n_normal.y, n_normal.z)
+                b_helper = decal.claim_handle(b_root, b_candidates, b_point)
+                if b_helper is None:
+                    b_group = b_group or decal.vector_group(b_root, block_index)
+                    b_helper = decal.create_point_helper(
+                        b_root, b_point, b_normal, decal.next_vector_name(b_group),
+                        b_parent=b_group)
+                else:
+                    # reference node rotations do not match the normals in the block
+                    decal.make_handle(b_helper, b_root)
+                    decal.place_handle(b_root, b_helper, b_point, b_normal)
+                b_vector_block.points.add().helper = b_helper
+
+            if b_candidates:
+                NifLog.warn(f"{len(b_candidates)} node(s) under '{b_group.name}' did not match "
+                            f"any vector of decal block {block_index + 1} and were left as "
+                            f"ordinary nodes.")
+
         NifLog.info(
             f"Imported BSDecalPlacementVectorExtraData '{n_extra.name}' with "
             f"{len(b_data.vector_blocks)} vector blocks.")
