@@ -55,6 +55,8 @@ def get_input_node_of_type(input_socket, node_types):
     if not links:
         # this socket has no inputs
         return None
+    if links[0].from_socket.name == "Alpha":
+        return None
     node = links[0].from_node
     if isinstance(node, node_types):
         # the input node is of the required type
