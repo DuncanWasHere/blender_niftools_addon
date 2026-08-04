@@ -224,9 +224,16 @@ def highlight_helpers(b_helpers):
             b_helper.select_set(True)
 
 
+def evaluated(b_mesh):
+    """A mesh object with its modifiers applied."""
+
+    return b_mesh.evaluated_get(bpy.context.evaluated_depsgraph_get())
+
+
 def mesh_axes(b_root, b_mesh):
     """The mesh's own axes in the root's space, longest first."""
 
+    b_mesh = evaluated(b_mesh)
     b_to_root = b_root.matrix_world.inverted_safe()
     b_points = [b_to_root @ (b_mesh.matrix_world @ b_vertex.co)
                 for b_vertex in b_mesh.data.vertices]
@@ -258,27 +265,53 @@ def mesh_axes(b_root, b_mesh):
     return b_center, b_axes, radius
 
 
-def facing_triangles(b_root, b_mesh, b_direction):
-    """Triangles of a mesh whose front faces a direction, in the root's space."""
+# how squarely a face has to meet an approach direction to be worth throwing a decal at.
+# A face edge on to the throw takes a smeared decal, and the vector aiming at it can end up
+# behind its own target once the approach is tilted.
+MINIMUM_FACING = 0.35
 
+
+def facing_triangles(b_root, b_mesh, b_direction):
+    """Triangles facing a direction as (area, corners, normal), in the root's space."""
+
+    b_mesh = evaluated(b_mesh)
     b_data = b_mesh.data
     b_data.calc_loop_triangles()
     b_to_root = b_root.matrix_world.inverted_safe() @ b_mesh.matrix_world
-    b_normal_to_root = b_to_root.to_3x3()
 
     b_triangles = []
     for b_triangle in b_data.loop_triangles:
-        if (b_normal_to_root @ b_triangle.normal).dot(b_direction) <= 0.0:
-            continue
         b_corners = [b_to_root @ b_data.vertices[index].co for index in b_triangle.vertices]
-        b_area = (b_corners[1] - b_corners[0]).cross(b_corners[2] - b_corners[0]).length * 0.5
-        if b_area > NORMAL_EPSILON:
-            b_triangles.append((b_area, b_corners))
+        # taken from the transformed corners, because transforming the stored normal by the
+        # same matrix skews it whenever the volume is scaled unevenly
+        b_cross = (b_corners[1] - b_corners[0]).cross(b_corners[2] - b_corners[0])
+        b_area = b_cross.length * 0.5
+        if b_area <= NORMAL_EPSILON:
+            continue
+        b_normal = b_cross / (b_area * 2.0)
+        if b_normal.dot(b_direction) >= MINIMUM_FACING:
+            b_triangles.append((b_area, b_corners, b_normal))
     return b_triangles
 
 
+def ray_blocked(b_root, b_mesh, origin, target):
+    """True if the mesh gets in the way between two root-local points."""
+
+    b_mesh = evaluated(b_mesh)
+    b_to_local = b_mesh.matrix_world.inverted_safe() @ b_root.matrix_world
+    b_origin = b_to_local @ mathutils.Vector(origin)
+    b_target = b_to_local @ mathutils.Vector(target)
+    b_ray = b_target - b_origin
+    length = b_ray.length
+    if length <= NORMAL_EPSILON:
+        return False
+    # stop short of the target, so its own face does not count as an obstruction
+    hit, _at, _normal, _index = b_mesh.ray_cast(b_origin, b_ray / length, distance=length * 0.99)
+    return hit
+
+
 def poisson_samples(b_triangles, count, candidates_each=32):
-    """Poisson disc sample of a triangle set, returned in the space the triangles are in.
+    """Poisson disc sample of a triangle set as (point, normal) pairs.
 
     Candidates are scattered over the surface by area and then thinned so that no two picks
     sit closer than a radius, which is relaxed until enough of them fit.
@@ -287,7 +320,7 @@ def poisson_samples(b_triangles, count, candidates_each=32):
     if not b_triangles or count <= 0:
         return []
 
-    total_area = sum(b_area for b_area, _corners in b_triangles)
+    total_area = sum(b_area for b_area, _corners, _normal in b_triangles)
     if total_area <= NORMAL_EPSILON:
         return []
 
@@ -299,21 +332,21 @@ def poisson_samples(b_triangles, count, candidates_each=32):
         first = (index * 0.7548776662) % 1.0
         second = (index * 0.5698402909) % 1.0
         running = 0.0
-        for b_area, b_corners in b_triangles:
+        for b_area, b_corners, b_normal in b_triangles:
             running += b_area
             if running >= along:
                 if first + second > 1.0:
                     first, second = 1.0 - first, 1.0 - second
-                b_candidates.append(b_corners[0]
-                                    + (b_corners[1] - b_corners[0]) * first
-                                    + (b_corners[2] - b_corners[0]) * second)
+                b_candidates.append((b_corners[0]
+                                     + (b_corners[1] - b_corners[0]) * first
+                                     + (b_corners[2] - b_corners[0]) * second, b_normal))
                 break
 
     radius = math.sqrt(total_area / count) * 0.8
     for _attempt in range(12):
         b_picked = []
         for b_candidate in b_candidates:
-            if all((b_candidate - b_point).length >= radius for b_point in b_picked):
+            if all((b_candidate[0] - b_point).length >= radius for b_point, _normal in b_picked):
                 b_picked.append(b_candidate)
                 if len(b_picked) == count:
                     return b_picked

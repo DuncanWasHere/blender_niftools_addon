@@ -210,7 +210,7 @@ def _aim_at_target(b_root, b_data, point):
 
     if b_data is None or b_data.target is None:
         return None
-    b_mesh = b_data.target
+    b_mesh = decal.evaluated(b_data.target)
     b_to_local = b_mesh.matrix_world.inverted_safe() @ b_root.matrix_world
     hit, b_at, _normal, _index = b_mesh.closest_point_on_mesh(b_to_local @ mathutils.Vector(point))
     if not hit:
@@ -356,9 +356,16 @@ class NifDecalGenerate(Operator):
         default=7, min=1, max=64
     )
 
-    distance: bpy.props.FloatProperty(
-        name="Distance",
-        description="How far the vectors sit from the decal volume, in nif units. Zero "
+    near_distance: bpy.props.FloatProperty(
+        name="Near",
+        description="Closest a vector may stand off the decal volume, in nif units. Zero "
+                    "picks a distance from the size of the volume",
+        default=0.0, min=0.0
+    )
+
+    far_distance: bpy.props.FloatProperty(
+        name="Far",
+        description="Furthest a vector may stand off the decal volume, in nif units. Zero "
                     "picks a distance from the size of the volume",
         default=0.0, min=0.0
     )
@@ -366,7 +373,7 @@ class NifDecalGenerate(Operator):
     spread: bpy.props.FloatProperty(
         name="Spread",
         description="How wide a cone of directions each group covers",
-        default=0.44, min=0.0, max=1.4, subtype='ANGLE'
+        default=0.7, min=0.0, max=1.4, subtype='ANGLE'
     )
 
     @classmethod
@@ -386,8 +393,13 @@ class NifDecalGenerate(Operator):
             self.report({'ERROR'}, f"'{b_data.target.name}' has no geometry")
             return {'CANCELLED'}
         b_center, b_mesh_axes, radius = b_axes
-        distance = (nif_to_blender_units(self.distance) if self.distance
-                    else max(radius, decal.NORMAL_EPSILON))
+        radius = max(radius, decal.NORMAL_EPSILON)
+        # vanilla clouds stand about one weapon length off and vary the distance several
+        # fold, which spreads them through a volume rather than over a shell
+        near = nif_to_blender_units(self.near_distance) if self.near_distance else radius
+        far = nif_to_blender_units(self.far_distance) if self.far_distance else radius * 3.0
+        if far < near:
+            near, far = far, near
 
         for b_vector_block in b_data.vector_blocks:
             _remove_point_helpers(b_vector_block.points)
@@ -399,7 +411,8 @@ class NifDecalGenerate(Operator):
         for index, b_direction in enumerate(b_directions):
             b_vector_block = b_data.vector_blocks.add()
             b_group = decal.vector_group(b_root, index)
-            placed += self._fill(b_root, b_data, b_group, b_vector_block, b_direction, distance)
+            placed += self._fill(b_root, b_data, b_group, b_vector_block, b_direction,
+                                 near, far, index)
 
         b_data.vector_block_index = 0
         if not placed:
@@ -411,23 +424,31 @@ class NifDecalGenerate(Operator):
                               f"{len(b_data.vector_blocks)} groups")
         return {'FINISHED'}
 
-    def _fill(self, b_root, b_data, b_group, b_vector_block, b_direction, distance):
+    def _fill(self, b_root, b_data, b_group, b_vector_block, b_direction, near, far, group):
         b_triangles = decal.facing_triangles(b_root, b_data.target, b_direction)
         b_samples = decal.poisson_samples(b_triangles, self.count)
         b_across, b_up = _center_line_frame(b_direction)
 
-        for index, b_sample in enumerate(b_samples):
-            b_point = b_sample + self._offset(index, b_direction, b_across, b_up) * distance
+        placed = 0
+        for index, (b_sample, b_normal) in enumerate(b_samples):
+            # offset per group, so the groups do not come out as copies of each other
+            turn = index * 2.399963 + group * 1.107149
+            reach = ((index * 0.6180339887 + group * 0.3819660113) % 1.0)
+            tilt = self.spread * math.sqrt((index + group) % self.count / max(1, self.count - 1))
+            b_offset = (b_direction * math.cos(tilt)
+                        + (b_across * math.cos(turn) + b_up * math.sin(turn)) * math.sin(tilt))
+            reach = near + (far - near) * reach
+
+            b_point = b_sample + b_offset * reach
+            if decal.ray_blocked(b_root, b_data.target, b_point, b_sample):
+                # another part of the volume is in the way, so come in along the face instead
+                b_point = b_sample + b_normal * reach
+                if decal.ray_blocked(b_root, b_data.target, b_point, b_sample):
+                    continue
             _add_decal_point(b_root, b_vector_block, b_point, b_sample - b_point,
                              select=False, b_group=b_group)
-        return len(b_samples)
-
-    def _offset(self, index, b_direction, b_across, b_up):
-        # golden angle, so the cone of directions fills in evenly as the count rises
-        angle = index * 2.399963
-        tilt = self.spread * math.sqrt(index / max(1, self.count - 1))
-        return (b_direction * math.cos(tilt)
-                + (b_across * math.cos(angle) + b_up * math.sin(angle)) * math.sin(tilt))
+            placed += 1
+        return placed
 
 
 class NifDecalPointRemove(Operator):
