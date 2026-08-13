@@ -235,6 +235,9 @@ class NifExport(NifCommon):
 
             self.b_main_objects.append(b_obj)
 
+            if not b_obj.parent:
+                self.b_root_objects.append(b_obj)
+
             if b_obj.type == 'ARMATURE':
                 self.b_armatures.append(b_obj)
 
@@ -263,18 +266,6 @@ class NifExport(NifCommon):
                             f"by skinned mesh '{b_obj.name}'.")
                 self.b_main_objects.append(b_armature)
                 self.b_armatures.append(b_armature)
-
-        # Roots are relative to the filtered hierarchy. This also makes selected-only
-        # export work when a selected object has an unselected or filtered parent.
-        b_main_set = set(self.b_main_objects)
-        b_root_candidates = set(self.b_main_objects)
-        b_root_candidates.update(self.b_collision_objects)
-        b_root_candidates.update(self.b_constraint_objects)
-        b_root_candidates.update(self.b_particle_objects)
-        self.b_root_objects = sorted(
-            (b_obj for b_obj in b_root_candidates if b_obj.parent not in b_main_set),
-            key=lambda b_obj: b_obj.name,
-        )
 
     @staticmethod
     def __is_force_field(b_obj):
