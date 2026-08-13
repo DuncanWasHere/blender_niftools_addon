@@ -43,7 +43,6 @@ import numpy as np
 import bpy
 from ....modules.nif_export.animation.geometry import GeometryAnimation
 from ....modules.nif_export.block_registry import block_store
-from ....modules.nif_export.geometry import skin_partition
 from ....modules.nif_export.geometry.data import GeometryData
 from ....modules.nif_export.geometry.skinned import SkinnedGeometry
 from ....modules.nif_export.property.object import ObjectProperty
