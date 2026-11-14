@@ -22,44 +22,45 @@ The repo comes with scripts which will package up the addon for use
 Building the Blender Niftools Addon
 ===================================
 
-The Blender Niftools Addon is a python project which can be manually put into the Blender add-ons directory. The repo
-provides a set of scripts which allows creating of a zip file which can be loaded into Blender Addon Manager.
+The Blender Niftools Addon is a python project which can be manually put into the Blender extensions directory. The
+repo provides a build script which creates a zip file that can be installed through the Blender preferences menu.
 
 .. note::
-    Ensure that you have installed the prerequisite dependencies using install_deps scripts
+    Ensure that you have installed Git and Python 3.11 or newer. Source dependencies will be fetched automatically
 
 ---------
 Build Zip
 ---------
 
-To build the addon from a git checkout, run the following in the Command Prompt (Windows):
+To build the addon from a git checkout, run the following:
 
 .. code-block:: shell
 
-    cd ./blender_niftools_addon/install
-    makezip.bat
+    python install/build.py
 
-or from a Bash terminal (Linux):
-
-.. code-block:: shell
-
-    cd ./blender_niftools_addon/install
-    makezip.sh
+The zip file is written to ``install/temp/``.
 
 -------
 Install
 -------
 
-To install the addon from a git checkout, run the following in the Command Prompt (Windows):
+Set ``BLENDER_EXTENSIONS_DIR`` to Blender's ``user_default`` extensions repository, for example
+``%APPDATA%\Blender Foundation\Blender\5.3\extensions\user_default`` (Windows) or
+``~/.config/blender/5.3/extensions/user_default`` (Linux), then run:
 
 .. code-block:: shell
 
-    cd ./blender_niftools_addon/install
-    install.bat
+    python install/build.py --install
 
-or from a Bash terminal (Linux):
+-------
+Options
+-------
 
-.. code-block:: shell
-
-    cd ./blender_niftools_addon/install
-    sh ./install.sh
+``--extensions-dir DIR``
+    Install location (overriding ``BLENDER_EXTENSIONS_DIR``).
+``--generated-dir DIR``
+    Skip codegen and use an existing cobra-tools ``generated`` folder.
+``--keep-temp``
+    Keep the codegen and nifgen folders in ``install/temp`` for debugging.
+``--clean-cache``
+    Delete ``install/.cache`` and fetch the pinned sources again.

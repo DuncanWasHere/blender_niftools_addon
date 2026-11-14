@@ -44,13 +44,9 @@ Build Steps
 Build:
 ------
 
-Windows:
-
 .. code-block:: shell
 
-  cd install
-  DEL *.zip
-  makezip.bat
+  python install/build.py
   
 Unit Test:
 ----------

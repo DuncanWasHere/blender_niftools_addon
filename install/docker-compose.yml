@@ -1,5 +1,0 @@
-services:
-  codegen:
-    build: .
-    volumes:
-      - ./temp/io_scene_niftools/dependencies:/output
