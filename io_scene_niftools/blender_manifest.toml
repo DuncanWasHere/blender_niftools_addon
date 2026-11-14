@@ -19,7 +19,7 @@ copyright = ["2025 NIF File Format Library and Tools contributors"]
 
 # nifgen is generated at build time and packaged as a wheel by
 # install/build_nifgen_wheel.py; its version tracks `version` above, so bumping
-# the add-on version means bumping the filename here too. makezip verifies every
+# the add-on version means bumping the filename here too. install/build.py verifies every
 # wheel named here actually exists before zipping.
 wheels = [
   "./wheels/PyFFI-2.2.4.dev3-py3-none-any.whl",

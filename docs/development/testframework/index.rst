@@ -67,15 +67,8 @@ To install the addon from a git checkout, run the following:
 
 .. code-block:: shell
 
-   cd blender_niftools_addon/install
-   install.bat
-
-or from a terminal (Linux):
-
-.. code-block:: shell
-
-    ./blender_niftools_addon/install
-    sh ./install.sh
+    cd blender_niftools_addon
+    python install/build.py --install
 
 -------------
 Running Tests

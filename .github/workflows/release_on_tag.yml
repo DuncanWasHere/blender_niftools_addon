@@ -40,7 +40,7 @@ jobs:
       - name: Build Extension
         id: build_addon
         run: |
-          ./install/makezip.sh
+          python install/build.py
           ZIP_NAME=$(ls ./install/temp | grep zip)
           echo "zip_name=${ZIP_NAME}" >> "$GITHUB_OUTPUT"
 
