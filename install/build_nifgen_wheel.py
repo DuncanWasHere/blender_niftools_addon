@@ -61,12 +61,11 @@ def main():
                 + (result.stderr or "")[-2000:]
             )
 
-    expected = out_dir / f"nifgen-{version}-py3-none-any.whl"
-    if not expected.is_file():
-        built = sorted(p.name for p in out_dir.glob("nifgen-*.whl"))
-        sys.exit(f"expected {expected.name}, found: {built}")
+    built = sorted(out_dir.glob("nifgen-*-py3-none-any.whl"))
+    if len(built) != 1:
+        sys.exit(f"expected nifgen wheel for version {version}, found: {[p.name for p in built]}")
 
-    print(f"built {expected.name}")
+    print(f"built {built[0].name}")
 
 if __name__ == "__main__":
     main()

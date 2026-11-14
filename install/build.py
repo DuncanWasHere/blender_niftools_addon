@@ -13,8 +13,10 @@ Usage:
 
 import argparse
 import datetime
+import hashlib
 import os
 import pathlib
+import re
 import shutil
 import stat
 import subprocess
@@ -34,6 +36,8 @@ NIFXML_REPO = "https://github.com/Candoran2/nifxml.git"
 NIFXML_COMMIT = "9914a2b4984b4909cbc55512fa8162852b211565"
 
 PYFFI_VERSION = "2.2.4.dev3"
+# nifgen wheel version: 0.0.0+<new-pyffi commit>.<content hash>, see nifgen_version()
+NIFGEN_BASE_VERSION = "0.0.0"
 
 NAME = "blender_niftools_addon"
 INSTALL_DIR = pathlib.Path(__file__).resolve().parent
@@ -114,6 +118,17 @@ def run_codegen(work):
     return work / "generated"
 
 
+def nifgen_version(nifgen):
+    digest = hashlib.sha256()
+    for path in sorted(p for p in nifgen.rglob("*") if p.is_file()):
+        rel = path.relative_to(nifgen).as_posix()
+        if "__pycache__" in rel.split("/"):
+            continue
+        digest.update(rel.encode() + b"\0")
+        digest.update(path.read_bytes().replace(b"\r\n", b"\n") + b"\0")
+    return f"{NIFGEN_BASE_VERSION}+{PYFFI_COMMIT[:7]}.{digest.hexdigest()[:8]}"
+
+
 def copy_nifgen(generated, nifgen):
     nifgen.mkdir(parents=True)
     shutil.copy2(generated / "__init__.py", nifgen)
@@ -127,12 +142,28 @@ def copy_nifgen(generated, nifgen):
         copy_tree(generated / pkg, nifgen / pkg)
 
 
-def check_manifest_wheels(manifest, addon):
-    wheels = manifest.get("wheels", [])
-    missing = [w for w in wheels if not (addon / w).is_file()]
-    if missing:
-        sys.exit(f"manifest lists wheels that were not built: {missing}")
-    log(f"ok, {len(wheels)} wheel(s)")
+WHEELS_RE = re.compile(r"^wheels\s*=\s*\[.*?\]\s*?\n", re.M | re.S)
+TABLE_RE = re.compile(r"^\[", re.M)
+
+
+def write_manifest_wheels(manifest_path, wheels_dir):
+    wheels = sorted(f"./wheels/{p.name}" for p in wheels_dir.glob("*.whl"))
+    block = "wheels = [\n" + "".join(f'  "{w}",\n' for w in wheels) + "]\n"
+    text = manifest_path.read_text(encoding="utf-8")
+    if WHEELS_RE.search(text):
+        text = WHEELS_RE.sub(lambda _: block, text, count=1)
+    else:
+        # wheels key has to go before the first [table]
+        table = TABLE_RE.search(text)
+        pos = table.start() if table else len(text)
+        text = text[:pos] + block + "\n" + text[pos:]
+    manifest_path.write_text(text, encoding="utf-8")
+
+    with manifest_path.open("rb") as f:
+        written = tomllib.load(f).get("wheels")
+    if written != wheels:
+        sys.exit(f"failed to write wheels to {manifest_path}: got {written}, expected {wheels}")
+    log("manifest wheels: " + ", ".join(wheels))
 
 
 def make_zip(src, zip_path):
@@ -184,12 +215,14 @@ def build(args):
     copy_nifgen(generated, deps_out)
     run([sys.executable, INSTALL_DIR / "rename_nifgen.py", deps_out])
     # Blender requires nifgen to be packaged as a wheel
-    run([sys.executable, INSTALL_DIR / "build_nifgen_wheel.py", deps_out, version, wheels_out])
+    nifgen_ver = nifgen_version(deps_out)
+    log(f"nifgen version {nifgen_ver}")
+    run([sys.executable, INSTALL_DIR / "build_nifgen_wheel.py", deps_out, nifgen_ver, wheels_out])
 
     for doc in DOC_FILES:
         shutil.copy2(ROOT / doc, addon_out)
 
-    check_manifest_wheels(manifest, addon_out)
+    write_manifest_wheels(addon_out / "blender_manifest.toml", wheels_out)
 
     zip_path = TEMP / zip_name
     log(f"creating {zip_path}")
