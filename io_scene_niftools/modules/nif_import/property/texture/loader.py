@@ -257,9 +257,9 @@ class TextureLoader:
                         return self.load_image(tex)
 
         # not found on disk, so look through the configured game resources
-        resource_texture = resources.find_texture(fn)
-        if resource_texture:
-            return self.load_packed_image(*resource_texture)
+        (_, tex_data) = resources.find_texture(fn)
+        if tex_data:
+            return self.load_packed_image(fn, tex_data)
 
         # probably not found, but load a dummy regardless
         return self.load_image(fn)
