@@ -206,6 +206,11 @@ def build(args):
     run([sys.executable, "-m", "pip", "download", f"PyFFI=={PYFFI_VERSION}", "--no-deps",
          "--only-binary=:all:", "--dest", wheels_out])
 
+    log(f"downloading lz4 wheel")
+    run([sys.executable, "-m", "pip", "download", "lz4", "--no-deps",
+         "--only-binary=:all:", "--dest", wheels_out])
+
+
     if args.generated_dir:
         generated = pathlib.Path(args.generated_dir).resolve()
         log(f"using pre-generated tree {generated}")
