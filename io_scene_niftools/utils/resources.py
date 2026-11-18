@@ -41,6 +41,7 @@
 import os
 import struct
 import zlib
+import lz4.frame
 
 import bpy
 from ..utils.logging import NifLog
@@ -300,10 +301,14 @@ def read_archive_file(archive_path, entry):
         try:
             blob = zlib.decompress(blob[4:])
         except zlib.error:
-            # skyrim se archives may use lz4, which python cannot decompress natively
-            NifLog.warn(f"Could not decompress a file from '{archive_path}' "
-                        f"(lz4 compressed archives are not supported)")
-            return None
+            # skyrim se archives may use lz4, we'll try that.
+
+            try:
+                blob = lz4.frame.decompress(blob[4:], blob[0])
+            except lz4.frame.LZ4FrameError:
+                NifLog.warn(f"Could not decompress a file from '{archive_path}' "
+                            f"(lz4 Failed or unsupported archive compression format was used)")
+                return None
     return blob
 
 
