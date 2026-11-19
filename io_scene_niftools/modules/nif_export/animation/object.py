@@ -150,10 +150,24 @@ class ObjectAnimation(Common.AnimationCommon):
             for b_bone in b_obj.data.bones:
                 n_node, n_node_name = get_n_target(b_bone)
 
-                quaternion_data = [fcu for fcu in action_fcurves if fcu.data_path.endswith(f"{b_bone.name}\"].rotation_quaternion")]
-                translation_data = [fcu for fcu in action_fcurves if fcu.data_path.endswith(f"{b_bone.name}\"].location")]
-                euler_data = [fcu for fcu in action_fcurves if fcu.data_path.endswith(f"{b_bone.name}\"].rotation_euler")]
-                scale_data = [fcu for fcu in action_fcurves if fcu.data_path.endswith(f"{b_bone.name}\"].scale")]
+                bone_data_path = f'pose.bones["{b_bone.name}"]'
+
+                quaternion_data = [
+                    fcu for fcu in action_fcurves
+                    if fcu.data_path == f'{bone_data_path}.rotation_quaternion'
+                ]
+                translation_data = [
+                    fcu for fcu in action_fcurves
+                    if fcu.data_path == f'{bone_data_path}.location'
+                ]
+                euler_data = [
+                    fcu for fcu in action_fcurves
+                    if fcu.data_path == f'{bone_data_path}.rotation_euler'
+                ]
+                scale_data = [
+                    fcu for fcu in action_fcurves
+                    if fcu.data_path == f'{bone_data_path}.scale'
+                ]
 
                 # ensure that those groups that are present have all their fcurves
                 for fcus, num_fcus in ((quaternion_data, 4), (euler_data, 3), (translation_data, 3), (scale_data, 3)):

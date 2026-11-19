@@ -231,7 +231,11 @@ class Geometry:
                                                                                        b_mat_index=b_mat_index)
 
         if len(vertex_information['POSITION']) == 0:
-            return  # Skip empty material indices
+            NifLog.warn(
+                f"Skipping material '{b_mat.name if b_mat else 'no material'}' "
+                f"for mesh '{b_obj.name}': no geometry assigned."
+            )
+            return None
         if len(vertex_information['POSITION']) > 65535:
             raise NifError("Too many vertices! Decimate your mesh and try again.")
         if len(triangles) > 65535:

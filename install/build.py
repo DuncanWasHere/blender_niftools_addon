@@ -41,7 +41,7 @@ TARGETS = {
 COBRA_REPO = "https://github.com/DuncanWasHere/cobra-tools.git"
 COBRA_COMMIT = "e966da4f18b999bbf09fd73a3b4af7f112403e8d"
 PYFFI_REPO = "https://github.com/DuncanWasHere/new-pyffi.git"
-PYFFI_COMMIT = "6fe1a3c85a67a494123ef09b82ff091a384edafb"
+PYFFI_COMMIT = "21d90eb5f55b62df77148c832f6fbb5085e44c95"
 NIFXML_REPO = "https://github.com/Candoran2/nifxml.git"
 NIFXML_COMMIT = "9914a2b4984b4909cbc55512fa8162852b211565"
 
