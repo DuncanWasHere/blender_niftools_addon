@@ -27,11 +27,21 @@ import zipfile
 if sys.version_info < (3, 11):
     sys.exit("build.py requires Python 3.11 or newer")
 
+
+PYTHON_VERSION = "3.13" # Current Blender Python version
+TARGETS = {
+ "manylinux2014_x86_64",
+ "manylinux2014_aarch64",
+ "win_amd64",
+ "win_arm64",
+ "macosx_11_0_arm64",
+}
+
 # Source Dependencies
-COBRA_REPO = "https://github.com/Candoran2/cobra-tools.git"
-COBRA_COMMIT = "99cbdf7fcb7709fcf0e4dc363d17a50ef0410ad7"
+COBRA_REPO = "https://github.com/DuncanWasHere/cobra-tools.git"
+COBRA_COMMIT = "e966da4f18b999bbf09fd73a3b4af7f112403e8d"
 PYFFI_REPO = "https://github.com/DuncanWasHere/new-pyffi.git"
-PYFFI_COMMIT = "f188986d1d72a31ffc6a981a57f1337e35030d3a"
+PYFFI_COMMIT = "6fe1a3c85a67a494123ef09b82ff091a384edafb"
 NIFXML_REPO = "https://github.com/Candoran2/nifxml.git"
 NIFXML_COMMIT = "9914a2b4984b4909cbc55512fa8162852b211565"
 
@@ -114,8 +124,8 @@ def run_codegen(work):
             rmtree(fmt)
 
     log("running codegen")
-    run([sys.executable, "codegen.py", "--silent"], cwd=work)
-    return work / "generated"
+    run([sys.executable, "-m", "codegen", "-g", "nifgen"], cwd=work)
+    return work / "nifgen"
 
 
 def nifgen_version(nifgen):
@@ -207,9 +217,9 @@ def build(args):
          "--only-binary=:all:", "--dest", wheels_out])
 
     log(f"downloading lz4 wheel")
-    run([sys.executable, "-m", "pip", "download", "lz4", "--no-deps",
-         "--only-binary=:all:", "--dest", wheels_out])
-
+    for platform in TARGETS:
+        run([sys.executable, "-m", "pip", "download", "lz4", "--python-version", PYTHON_VERSION, "--platform", platform, "--no-deps",
+             "--only-binary=:all:", "--dest", wheels_out])
 
     if args.generated_dir:
         generated = pathlib.Path(args.generated_dir).resolve()
@@ -218,7 +228,6 @@ def build(args):
         generated = run_codegen(TEMP / "codegen")
 
     copy_nifgen(generated, deps_out)
-    run([sys.executable, INSTALL_DIR / "rename_nifgen.py", deps_out])
     # Blender requires nifgen to be packaged as a wheel
     nifgen_ver = nifgen_version(deps_out)
     log(f"nifgen version {nifgen_ver}")
