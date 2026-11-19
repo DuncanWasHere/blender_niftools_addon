@@ -155,7 +155,8 @@ class BSShaderProperty():
         # on the tint sockets the exporter reads them back from.
         for n_color, socket_name in ((n_bs_lighting_shader_property.specular_color, 'Specular Tint'),
                                      (n_bs_lighting_shader_property.hair_tint_color, 'Sheen Tint'),
-                                     (n_bs_lighting_shader_property.skin_tint_color, 'Coat Tint')):
+                                     (n_bs_lighting_shader_property.skin_tint_color, 'Coat Tint'),
+                                     (n_bs_lighting_shader_property.emissive_color, 'Emission Color')):
             b_socket = b_shader_node.inputs.get(socket_name)
             if b_socket is None:
                 NifLog.warn(f"The Principled shader has no '{socket_name}' socket, so that "
