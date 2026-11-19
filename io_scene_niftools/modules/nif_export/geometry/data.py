@@ -237,7 +237,7 @@ class GeometryData:
         blend_triangles = blend_triangles[tri_sort]
 
         # make the vertex data from the hash map
-        nif_to_hash = np.unique(hash_to_same_hash, return_index=True)[1]
+        nif_to_hash = np.unique(hash_to_nif_vert, return_index=True)[1]
         nif_to_matl = hash_to_matl[nif_to_hash]
         data_dict = {
             'POSITION': loop_positions[nif_to_matl]
