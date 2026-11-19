@@ -189,6 +189,7 @@ class GeometryAnimation(AnimationCommon):
             # of course only one of these will be actually written to the file
             data_keys_exist = []
             for n_data in (n_morph, n_floatdata):
+                n_data.interpolation = self.b_interpolation_mode_to_n_key_type(fcu.keyframe_points[0].interpolation)
                 n_data.interpolation = NifClasses.KeyType.LINEAR_KEY
                 n_data.num_keys = len(fcurves[0].keyframe_points)
                 keys_exist = has_field(n_data, "keys")

@@ -541,18 +541,15 @@ class AnimationCommon(ABC):
                 node_kfctrls[node].append(ctrl)
         return node_kfctrls
 
-    # todo [anim] currently not used, maybe reimplement this
     @staticmethod
-    def get_n_interp_from_b_interp(b_ipol):
-        if b_ipol == "LINEAR":
-            return NifClasses.KeyType.LINEAR_KEY
-        elif b_ipol == "BEZIER":
-            return NifClasses.KeyType.QUADRATIC_KEY
-        elif b_ipol == "CONSTANT":
-            return NifClasses.KeyType.CONST_KEY
-
-        NifLog.warn(f"Unsupported interpolation mode ({b_ipol}) in blend, using quadratic/bezier.")
-        return NifClasses.KeyType.QUADRATIC_KEY
+    def b_interpolation_mode_to_n_key_type(b_interpolation_mode: str):
+        match b_interpolation_mode:
+            case "CONSTANT":
+                return NifClasses.KeyType.CONST_KEY
+            case "LINEAR":
+                return NifClasses.KeyType.LINEAR_KEY
+            case _:
+                return NifClasses.KeyType.QUADRATIC_KEY
 
     def get_fcurves_from_action(self, b_action, b_action_slot=None):
         """Return an action's curves, optionally restricted to one controlled slot."""

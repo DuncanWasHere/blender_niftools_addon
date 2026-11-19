@@ -211,7 +211,7 @@ class MaterialAnimation(AnimationCommon):
         # create the key data
         n_key_data = block_store.create_block("NiPosData")
         n_key_data.data.num_keys = len(emission_color_curves)
-        n_key_data.data.interpolation = NifClasses.KeyType.LINEAR_KEY
+        n_key_data.data.interpolation = self.b_interpolation_mode_to_n_key_type(action_fcurves[0].keyframe_points[0].interpolation)
         n_key_data.data.reset_field("keys")
 
         for key, (frame, color) in zip(n_key_data.data.keys, emission_color_curves):
@@ -238,7 +238,7 @@ class MaterialAnimation(AnimationCommon):
         # create the key data
         n_key_data = block_store.create_block("NiFloatData")
         n_key_data.data.num_keys = len(alpha_curves)
-        n_key_data.data.interpolation = NifClasses.KeyType.LINEAR_KEY
+        n_key_data.data.interpolation = self.b_interpolation_mode_to_n_key_type(action_fcurves[0].keyframe_points[0].interpolation)
         n_key_data.data.reset_field("keys")
 
         for key, (frame, strength) in zip(n_key_data.data.keys, alpha_curves):
@@ -261,7 +261,7 @@ class MaterialAnimation(AnimationCommon):
         # create the key data
         n_key_data = block_store.create_block("NiFloatData")
         n_key_data.data.num_keys = len(emission_strength_curves)
-        n_key_data.data.interpolation = NifClasses.KeyType.LINEAR_KEY
+        n_key_data.data.interpolation = self.b_interpolation_mode_to_n_key_type(action_fcurves[0].keyframe_points[0].interpolation)
         n_key_data.data.reset_field("keys")
 
         for key, (frame, strength) in zip(n_key_data.data.keys, emission_strength_curves):

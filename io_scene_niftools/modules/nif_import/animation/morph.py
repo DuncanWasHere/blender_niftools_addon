@@ -120,7 +120,7 @@ class MorphAnimation(Animation):
                         shape_action = self.create_action(b_obj.data.shape_keys, f"{b_obj.name}-Morphs")
 
                     # get the interpolation mode
-                    interp = self.get_b_interp_from_n_interp(morph.interpolation)
+                    interp = self.n_key_type_to_b_interpolation_mode(morph.interpolation)
                     times, keys = self.get_keys_values(morph.keys)
                     tangents = self.get_nif_tangents(
                         morph.keys, morph.interpolation)

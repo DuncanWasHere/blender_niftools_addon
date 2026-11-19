@@ -67,7 +67,7 @@ class ParticleAnimation(Animation):
         n_data = self.get_interpolator_data(controlled.interpolator)
         if n_data and getattr(n_data, "keys", None):
             times, values = self.get_keys_values(n_data.keys)
-            interpolation = self.get_b_interp_from_n_interp(n_data.interpolation)
+            interpolation = self.n_key_type_to_b_interpolation_mode(n_data.interpolation)
             tangents = (self.get_nif_tangents(n_data.keys, n_data.interpolation)
                         if value_type == "FLOAT" else None)
         else:

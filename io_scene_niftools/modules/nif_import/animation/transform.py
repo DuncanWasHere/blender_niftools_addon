@@ -351,7 +351,7 @@ class TransformAnimation(Animation):
                 keys_res = [interpolate(times_all, times, keys) for times, keys in times_keys]
                 # for eulers, the actual interpolation type is apparently stored per channel
                 n_interpolation = n_kfd.xyz_rotations[0].interpolation
-                interp = self.get_b_interp_from_n_interp(n_interpolation)
+                interp = self.n_key_type_to_b_interpolation_mode(n_interpolation)
                 tangents = None
                 same_key_times = all(
                     channel_times == times_keys[0][0]
@@ -387,7 +387,7 @@ class TransformAnimation(Animation):
                 interp = "LINEAR"
                 self.import_keys(QUAT, b_anim_owner, b_action, bone_name, times, keys, flags, interp, n_bind_rot_inv, n_bind_trans)
             times, keys = self.get_keys_values(n_kfd.scales.keys)
-            interp = self.get_b_interp_from_n_interp(n_kfd.scales.interpolation)
+            interp = self.n_key_type_to_b_interpolation_mode(n_kfd.scales.interpolation)
             tangents = self.get_nif_tangents(
                 n_kfd.scales.keys, n_kfd.scales.interpolation)
             self.import_keys(
@@ -395,7 +395,7 @@ class TransformAnimation(Animation):
                 keys, flags, interp, n_bind_rot_inv, n_bind_trans, tangents)
 
             times, keys = self.get_keys_values(n_kfd.translations.keys)
-            interp = self.get_b_interp_from_n_interp(n_kfd.translations.interpolation)
+            interp = self.n_key_type_to_b_interpolation_mode(n_kfd.translations.interpolation)
             tangents = self.get_nif_tangents(
                 n_kfd.translations.keys, n_kfd.translations.interpolation)
             self.import_keys(
@@ -524,7 +524,7 @@ class TransformAnimation(Animation):
             # keys at distinct Blender frames, so use composed samples instead.
             if len({round(time * self.fps) for time in times}) == len(times):
                 values = [scaled_vector(key.value) for key in path_keys]
-                interpolation = self.get_b_interp_from_n_interp(
+                interpolation = self.n_key_type_to_b_interpolation_mode(
                     path_group.interpolation)
                 tangents = self.get_nif_tangents(
                     path_keys, path_group.interpolation)

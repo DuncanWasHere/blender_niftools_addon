@@ -188,16 +188,22 @@ class Animation:
                         space.show_pose_markers = True
 
     @staticmethod
-    def get_b_interp_from_n_interp(n_ipol):
-        if n_ipol in (NifClasses.KeyType.LINEAR_KEY, NifClasses.KeyType.XYZ_ROTATION_KEY):
-            return "LINEAR"
-        elif n_ipol == NifClasses.KeyType.QUADRATIC_KEY:
-            return "BEZIER"
-        elif n_ipol == 0:
-            # guessing, not documented in nif.xml
-            return "CONSTANT"
-        # NifLog.warn(f"Unsupported interpolation mode ({n_ipol}) in nif, using quadratic/bezier.")
-        return "BEZIER"
+    def n_key_type_to_b_interpolation_mode(n_key_type: NifClasses.KeyType):
+        match n_key_type:
+            case NifClasses.KeyType.CONST_KEY:
+                return "CONSTANT"
+            case NifClasses.KeyType.LINEAR_KEY:
+                return "LINEAR"
+            case NifClasses.KeyType.QUADRATIC_KEY:
+                return "QUAD"
+            case NifClasses.KeyType.TBC_KEY:
+                NifLog.warn("TBC keyframe type is not supported; it will be treated as quadratic")
+                return "QUAD"
+            case NifClasses.KeyType.XYZ_ROTATION_KEY:
+                # This is for rotation only, where each axis (channel) has a different mode
+                return None
+            case _:
+                return None
 
     def create_action(self, b_obj, action_name, sequence_name=None):
         """Create or retrieve an action and slot for this datablock.

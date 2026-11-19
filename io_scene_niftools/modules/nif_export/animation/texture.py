@@ -215,17 +215,15 @@ class TextureAnimation(AnimationCommon):
         n_ni_float_data = block_store.create_block("NiFloatData")
         n_ni_float_data.data.num_keys = len(fcurve.keyframe_points)
         n_ni_float_data.data.reset_field("keys")
+        n_ni_float_data.data.interpolation = self.b_interpolation_mode_to_n_key_type(fcurve.keyframe_points[0].interpolation)
 
         for keyframe, n_key in zip(fcurve.keyframe_points, n_ni_float_data.data.keys):
             time = keyframe.co[0]
             value = keyframe.co[1] * value_scale
 
             # add each point of the curves
-            n_key.interpolation = self.get_n_interp_from_b_interp(keyframe.interpolation)
             n_key.time = time / self.fps
             n_key.value = value
-
-        n_ni_float_data.data.interpolation = NifClasses.KeyType.LINEAR_KEY
 
         return n_ni_float_data
 
@@ -254,7 +252,7 @@ class TextureAnimation(AnimationCommon):
             if fcu:
                 NifLog.debug(f"Exporting {fcu} as NiUVData")
                 n_uv_group.num_keys = len(fcu.keyframe_points)
-                n_uv_group.interpolation = NifClasses.KeyType.LINEAR_KEY
+                n_uv_group.interpolation = self.b_interpolation_mode_to_n_key_type(fcu.keyframe_points[0].interpolation)
                 n_uv_group.reset_field("keys")
                 for b_point, n_key in zip(fcu.keyframe_points, n_uv_group.keys):
                     # add each point of the curve

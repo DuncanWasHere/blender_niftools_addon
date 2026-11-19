@@ -228,7 +228,7 @@ class ParticleAnimation(AnimationCommon):
         n_data = block_store.create_block("NiFloatData")
         n_data.data.num_keys = len(points)
         interpolation = (
-            self.get_n_interp_from_b_interp(points[0].interpolation)
+            self.b_interpolation_mode_to_n_key_type(points[0].interpolation)
             if points else NifClasses.KeyType.LINEAR_KEY)
         n_data.data.interpolation = interpolation
         n_data.data.reset_field("keys")

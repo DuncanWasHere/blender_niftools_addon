@@ -125,7 +125,7 @@ class MaterialAnimation(Animation):
             NifLog.info(f"The '{controller_type}' of '{node_name}' holds no keys, so it is skipped")
             return True
 
-        interp = self.get_b_interp_from_n_interp(n_ctrl_data.interpolation)
+        interp = self.n_key_type_to_b_interpolation_mode(n_ctrl_data.interpolation)
         times, keys = self.get_keys_values(n_ctrl_data.keys)
         tangents = self.get_nif_tangents(
             n_ctrl_data.keys, n_ctrl_data.interpolation)
@@ -238,7 +238,7 @@ class MaterialAnimation(Animation):
 
         NifLog.info(f"Importing {description}")
         b_mat_action = self.create_action(b_material.node_tree, f"{b_material.name}-MaterialNodesAction")
-        interp = self.get_b_interp_from_n_interp(n_ctrl_data.interpolation)
+        interp = self.n_key_type_to_b_interpolation_mode(n_ctrl_data.interpolation)
         times, keys = self.get_keys_values(n_ctrl_data.keys)
         tangents = self.get_nif_tangents(
             n_ctrl_data.keys, n_ctrl_data.interpolation)
@@ -297,7 +297,7 @@ class MaterialAnimation(Animation):
             return
 
         times, keys = self.get_keys_values(n_ctrl_data.keys)
-        interp = self.get_b_interp_from_n_interp(n_ctrl_data.interpolation)
+        interp = self.n_key_type_to_b_interpolation_mode(n_ctrl_data.interpolation)
         tangents = self.get_nif_tangents(
             n_ctrl_data.keys, n_ctrl_data.interpolation)
 
@@ -342,7 +342,7 @@ class MaterialAnimation(Animation):
         dtypes = (LOC_DP, 0), (LOC_DP, 1), (SCALE_DP, 0), (SCALE_DP, 1)
         for n_uvgroup, (data_path, array_ind) in zip(n_ctrl.data.uv_groups, dtypes):
             if n_uvgroup.keys:
-                interp = self.get_b_interp_from_n_interp(n_uvgroup.interpolation)
+                interp = self.n_key_type_to_b_interpolation_mode(n_uvgroup.interpolation)
                 times, keys = self.get_keys_values(n_uvgroup.keys)
                 tangents = self.get_nif_tangents(
                     n_uvgroup.keys, n_uvgroup.interpolation)
@@ -400,7 +400,7 @@ class MaterialAnimation(Animation):
                 array_ind = 1
 
             b_mat_action, transform = self.insert_mapping_node(b_material)
-            interp = self.get_b_interp_from_n_interp(n_ctrl_data.interpolation)
+            interp = self.n_key_type_to_b_interpolation_mode(n_ctrl_data.interpolation)
             self.add_keys(
                 b_material.node_tree,
                 b_mat_action,
