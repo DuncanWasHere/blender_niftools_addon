@@ -113,6 +113,10 @@ class BhkCollision(Collision):
 
         # Import collision shape as Blender object
         b_col_obj = self.import_bhk_shape(n_bhk_rigid_body_t.shape)
+        
+        if(b_col_obj == None):
+            return
+
         body_info = n_bhk_rigid_body_t.rigid_body_info
 
         # Set rotation
@@ -140,6 +144,9 @@ class BhkCollision(Collision):
 
     def _import_bhk_rigid_body(self, n_bhk_rigid_body, b_col_obj):
         """Import the bhkRigidBody block properties into the Blender object's rigid body."""
+
+        if(b_col_obj == None):
+            return
 
         n_rigid_body_info = n_bhk_rigid_body.rigid_body_info
         b_r_body = b_col_obj.rigid_body
@@ -325,7 +332,8 @@ class BhkCollision(Collision):
     @staticmethod
     def _apply_local_transform(b_col_obj, transform):
         """Compose a transform without depending on a dependency-graph refresh."""
-
+        if(b_col_obj == None):
+            return
         # matrix_local is evaluated state. On rigid-body objects Blender may not
         # refresh it before the later parenting pass, which then preserves a stale
         # identity matrix and loses this transform. matrix_basis is the stored local
